@@ -157,7 +157,6 @@
     margin-top: 20px;
     margin-right: auto;
     margin-left: 97px;
-    margin-bottom: initial;
   }
 }
 
@@ -171,7 +170,9 @@
   }
 
   .u-section-2 .u-group-1 {
-    margin: -331px 0 60px auto;
+    margin-top: -331px;
+    margin-right: 0;
+    margin-left: auto;
   }
 
   .u-section-2 .u-container-layout-1 {
@@ -198,7 +199,6 @@
   }
 } .u-section-3 {
   background-image: url("images/UE4Editor_JkkPuT8ZKW.png");
-  background-position: 77.98% 10.3%;
 }
 
 .u-section-3 .u-sheet-1 {
@@ -212,6 +212,10 @@
 }
 
 @media (max-width: 1199px) {
+   .u-section-3 {
+    background-position: 77.98% 10.3%;
+  }
+
   .u-section-3 .u-text-1 {
     width: auto;
     margin-top: 894px;
@@ -233,6 +237,10 @@
 }
 
 @media (max-width: 575px) {
+   .u-section-3 {
+    background-position: 50% 50%;
+  }
+
   .u-section-3 .u-sheet-1 {
     min-height: 354px;
   }
