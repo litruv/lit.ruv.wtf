@@ -3,7 +3,7 @@
 }
 
 .u-section-1 .u-sheet-1 {
-  min-height: 835px;
+  min-height: 954px;
 }
 
 .u-section-1 .u-group-1 {
@@ -34,6 +34,10 @@
    .u-section-1 {
     background-position: 51.6% 100%;
     background-size: auto 135%;
+  }
+
+  .u-section-1 .u-sheet-1 {
+    min-height: 835px;
   }
 
   .u-section-1 .u-group-1 {
