@@ -199,13 +199,13 @@
 .u-section-2 .u-image-1 {
   width: 351px;
   height: 750px;
-  margin: -504px auto 0 92px;
+  margin: -408px auto 0 97px;
 }
 
 .u-section-2 .u-image-2 {
   width: 110px;
   height: 110px;
-  margin: -151px 167px 60px auto;
+  margin: -247px 167px 60px auto;
 }
 
 @media (max-width: 1199px) {
@@ -255,7 +255,6 @@
   }
 } .u-section-3 {
   background-image: url("images/UE4Editor_JkkPuT8ZKW.png");
-  background-position: 50% 50%;
 }
 
 .u-section-3 .u-sheet-1 {
@@ -291,10 +290,6 @@
 }
 
 @media (max-width: 767px) {
-   .u-section-3 {
-    background-position: 77.98% 10.3%;
-  }
-
   .u-section-3 .u-sheet-1 {
     min-height: 401px;
   }
@@ -311,5 +306,107 @@
 
   .u-section-3 .u-text-1 {
     font-size: 3rem;
+  }
+}.u-section-4 .u-sheet-1 {
+  min-height: 349px;
+}
+
+.u-section-4 .u-layout-wrap-1 {
+  margin: 60px auto 60px 0;
+}
+
+.u-section-4 .u-layout-cell-1 {
+  min-height: 420px;
+}
+
+.u-section-4 .u-container-layout-1 {
+  padding: 30px;
+}
+
+.u-section-4 .u-image-1 {
+  width: 300px;
+  height: 300px;
+  background-image: url("images/litruvRightWay.png");
+  background-position: 50% 50%;
+  margin: 0 auto;
+}
+
+.u-section-4 .u-layout-cell-2 {
+  min-height: 420px;
+}
+
+.u-section-4 .u-container-layout-2 {
+  padding: 30px;
+}
+
+.u-section-4 .u-text-1 {
+  margin: 0 auto 0 0;
+}
+
+.u-section-4 .u-text-2 {
+  margin: 20px 0 0;
+}
+
+.u-section-4 .u-btn-1 {
+  margin: 20px 0 0;
+}
+
+@media (max-width: 1199px) {
+  .u-section-4 .u-sheet-1 {
+    min-height: 26px;
+  }
+
+  .u-section-4 .u-layout-wrap-1 {
+    margin-right: initial;
+    margin-left: initial;
+  }
+
+  .u-section-4 .u-layout-cell-1 {
+    min-height: 346px;
+  }
+
+  .u-section-4 .u-layout-cell-2 {
+    min-height: 346px;
+  }
+}
+
+@media (max-width: 991px) {
+  .u-section-4 .u-layout-cell-1 {
+    min-height: 100px;
+  }
+
+  .u-section-4 .u-image-1 {
+    width: 216px;
+    height: 216px;
+  }
+
+  .u-section-4 .u-layout-cell-2 {
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 767px) {
+  .u-section-4 .u-container-layout-1 {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .u-section-4 .u-container-layout-2 {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+@media (max-width: 575px) {
+  .u-section-4 .u-layout-cell-2 {
+    min-height: 371px;
+  }
+
+  .u-section-4 .u-text-1 {
+    width: auto;
+  }
+
+  .u-section-4 .u-btn-1 {
+    margin-right: auto;
   }
 }
