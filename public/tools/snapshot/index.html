@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html style="font-size: 16px;"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="keywords" content="">
+    <meta name="description" content="Take a snapshot of an Etherium based NFT contract">
+    <meta name="page_type" content="np-template-header-footer-from-plugin">
+    <title>Take Snapshot</title>
+    <link rel="stylesheet" href="nicepage.css" media="screen">
+<link rel="stylesheet" href="Take-Snapshot.css" media="screen">
+    <script class="u-script" type="text/javascript" src="jquery.js" defer=""></script>
+    
+    <meta name="generator" content="Nicepage 4.3.0, nicepage.com">
+    <meta property="og:title" content="Take Snapshot">
+    <meta property="og:description" content="Take a snapshot of an Etherium based NFT contract">
+    <meta property="og:image" content="https://lit.ruv.wtf/images/chrome_UcQmicZtsN.png">
+    <meta property="og:url" content="https://lit.ruv.wtf/snapshot">
+    
+    <link id="u-theme-google-font" rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i|Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i">
+    
+    <script src="//unpkg.com/cross-fetch/dist/cross-fetch.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/json2csv"></script>
+    
+    <script type="application/ld+json">{
+		"@context": "http://schema.org",
+		"@type": "Organization",
+		"name": "Site4",
+		"logo": "images/LogoLitruvDropShadow.png",
+		"sameAs": [
+				"https://reddit.com/u/litruv",
+				"https://twitter.com/litruv",
+				"https://discordapp.com/users/220772082055774210"
+		]
+}</script>
+    <meta name="theme-color" content="#478ac9">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Take Snapshot">
+    <meta name="twitter:description" content="Site4">
+    <meta property="og:type" content="website">
+  </head>
+  <body data-home-page="Take-Snapshot.html" data-home-page-title="Take Snapshot" class="u-body u-overlap u-overlap-transparent"><header class="u-clearfix u-header u-header" id="sec-2022"><div class="u-clearfix u-sheet u-sheet-1">
+        <a href="https://nicepage.com" class="u-image u-logo u-image-1" data-image-width="2928" data-image-height="1325">
+          <img src="images/LogoLitruvDropShadow.png" class="u-logo-image u-logo-image-1">
+        </a>
+        <div class="u-social-icons u-spacing-10 u-social-icons-1">
+          <a class="u-social-url" title="reddit" target="_blank" href="https://reddit.com/u/litruv"><span class="u-icon u-social-facebook u-social-icon u-icon-1"><svg class="u-svg-link" preserveAspectRatio="xMidYMin slice" viewBox="0 0 512 512" style=""><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#svg-b38c"></use></svg><svg class="u-svg-content" viewBox="0 0 512 512" id="svg-b38c" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;"><g id="Artwork"><circle cx="255.999" cy="255.999" r="256" style="fill:currentColor;"></circle><path d="M426.666,255.999c0,-20.659 -16.767,-37.427 -37.427,-37.427c-10.18,0 -19.163,3.893 -25.75,10.48c-25.45,-18.264 -60.781,-30.241 -99.705,-31.738l17.067,-79.944l55.391,11.677c0.599,14.073 12.276,25.451 26.648,25.451c14.672,0 26.648,-11.977 26.648,-26.648c0,-14.672 -11.976,-26.648 -26.648,-26.648c-10.479,0 -19.462,5.988 -23.653,14.97l-61.979,-13.174c-1.797,-0.299 -3.593,0 -5.09,0.898c-1.497,0.899 -2.396,2.396 -2.995,4.192l-18.863,89.226c-39.822,1.198 -75.452,12.875 -101.202,31.738c-6.587,-6.288 -15.869,-10.48 -25.75,-10.48c-20.659,0 -37.426,16.768 -37.426,37.427c0,15.27 8.982,28.145 22.156,34.134c-0.599,3.593 -0.898,7.485 -0.898,11.377c0,57.488 66.77,103.897 149.408,103.897c82.639,0 149.408,-46.409 149.408,-103.897c0,-3.892 -0.299,-7.485 -0.898,-11.078c12.276,-5.988 21.558,-19.163 21.558,-34.433Zm-256,26.648c0,-14.671 11.977,-26.648 26.648,-26.648c14.671,0 26.648,11.977 26.648,26.648c0,14.672 -11.977,26.648 -26.648,26.648c-14.671,0 -26.648,-11.976 -26.648,-26.648Zm148.809,70.363c-18.264,18.264 -52.996,19.462 -63.176,19.462c-10.18,0 -45.212,-1.497 -63.177,-19.462c-2.695,-2.695 -2.695,-7.186 0,-9.881c2.695,-2.695 7.186,-2.695 9.881,0c11.378,11.378 35.93,15.57 53.595,15.57c17.666,0 41.918,-4.192 53.595,-15.57c2.695,-2.695 7.186,-2.695 9.881,0c2.096,2.994 2.096,7.186 -0.599,9.881Zm-4.79,-43.715c-14.672,0 -26.648,-11.976 -26.648,-26.648c0,-14.671 11.976,-26.648 26.648,-26.648c14.671,0 26.648,11.977 26.648,26.648c0,14.672 -11.977,26.648 -26.648,26.648Z" style="fill:#fff;fill-rule:nonzero;"></path>
+</g></svg></span>
+          </a>
+          <a class="u-social-url" title="twitter" target="_blank" href="https://twitter.com/litruv"><span class="u-icon u-social-icon u-social-twitter u-icon-2"><svg class="u-svg-link" preserveAspectRatio="xMidYMin slice" viewBox="0 0 112 112" style=""><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#svg-db78"></use></svg><svg class="u-svg-content" viewBox="0 0 112 112" x="0" y="0" id="svg-db78"><circle fill="currentColor" class="st0" cx="56.1" cy="56.1" r="55"></circle><path fill="#FFFFFF" d="M83.8,47.3c0,0.6,0,1.2,0,1.7c0,17.7-13.5,38.2-38.2,38.2C38,87.2,31,85,25,81.2c1,0.1,2.1,0.2,3.2,0.2
+            c6.3,0,12.1-2.1,16.7-5.7c-5.9-0.1-10.8-4-12.5-9.3c0.8,0.2,1.7,0.2,2.5,0.2c1.2,0,2.4-0.2,3.5-0.5c-6.1-1.2-10.8-6.7-10.8-13.1
+            c0-0.1,0-0.1,0-0.2c1.8,1,3.9,1.6,6.1,1.7c-3.6-2.4-6-6.5-6-11.2c0-2.5,0.7-4.8,1.8-6.7c6.6,8.1,16.5,13.5,27.6,14
+            c-0.2-1-0.3-2-0.3-3.1c0-7.4,6-13.4,13.4-13.4c3.9,0,7.3,1.6,9.8,4.2c3.1-0.6,5.9-1.7,8.5-3.3c-1,3.1-3.1,5.8-5.9,7.4
+            c2.7-0.3,5.3-1,7.7-2.1C88.7,43,86.4,45.4,83.8,47.3z"></path></svg></span>
+          </a>
+          <a class="u-social-url" title="Discord" target="_blank" href="https://discordapp.com/users/220772082055774210"><span class="u-icon u-social-icon u-social-instagram u-icon-3"><svg class="u-svg-link" preserveAspectRatio="xMidYMin slice" viewBox="0 0 512 512" style=""><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#svg-d0a3"></use></svg><svg class="u-svg-content" viewBox="0 0 512 512" id="svg-d0a3"><circle cx="256" cy="256" fill="currentColor" id="ellipse" r="256"></circle><path d="M372.4,168.7c0,0-33.3-26.1-72.7-29.1l-3.5,7.1c35.6,8.7,51.9,21.2,69,36.5  c-29.4-15-58.5-29.1-109.1-29.1s-79.7,14.1-109.1,29.1c17.1-15.3,36.5-29.2,69-36.5l-3.5-7.1c-41.3,3.9-72.7,29.1-72.7,29.1  s-37.2,54-43.6,160c37.5,43.3,94.5,43.6,94.5,43.6l11.9-15.9c-20.2-7-43.1-19.6-62.8-42.3c23.5,17.8,59.1,36.4,116.4,36.4  s92.8-18.5,116.4-36.4c-19.7,22.7-42.6,35.3-62.8,42.3l11.9,15.9c0,0,57-0.3,94.5-43.6C409.6,222.7,372.4,168.7,372.4,168.7z   M208.7,299.6c-14.1,0-25.5-13-25.5-29.1s11.4-29.1,25.5-29.1c14.1,0,25.5,13,25.5,29.1S222.8,299.6,208.7,299.6z M303.3,299.6  c-14.1,0-25.5-13-25.5-29.1s11.4-29.1,25.5-29.1s25.5,13,25.5,29.1S317.3,299.6,303.3,299.6z" fill="#FFFFFF" id="logo"></path></svg></span>
+          </a>
+        </div>
+      </div></header>
+    <section class="u-clearfix u-video u-video-cover u-section-1" id="sec-308a">
+      <div class="u-background-video u-expanded" style="">
+        <div class="embed-responsive embed-responsive-1">
+          <iframe style="position: absolute;top: 0;left: 0;width: 100%;height: 100%;" class="embed-responsive-item" src="https://www.youtube.com/embed/dQiYnFQX3Qg?playlist=dQiYnFQX3Qg&amp;loop=1&amp;mute=1&amp;showinfo=0&amp;controls=0&amp;start=0&amp;autoplay=1" data-autoplay="1" frameborder="0" allowfullscreen=""></iframe>
+        </div>
+      </div>
+      <div class="u-clearfix u-sheet u-sheet-1">
+        <div class="u-align-center u-container-style u-expanded-width-sm u-expanded-width-xs u-group u-radius-20 u-shape-round u-white window u-group-1">
+          <div class="u-container-layout u-container-layout-1">
+            <h1 class="u-text u-title u-text-1">Take Snapshot</h1>
+            <div class="u-align-center u-form u-form-1">
+              <form action="#" method="POST" class="u-clearfix u-form-spacing-10 u-form-vertical u-inner-form" source="custom" name="form" style="padding: 10px;">
+                <input type="hidden" id="siteId" name="siteId" value="750907750">
+                <input type="hidden" id="pageId" name="pageId" value="279009701">
+                <div class="u-form-group u-form-name">
+                  <label for="name-4e3b" class="u-label">Contract Address</label>
+                  <input type="text" placeholder="0xDEAD69420...." id="collectionAddr" name="collectionAddr" class="u-border-1 u-border-grey-30 u-input u-input-rectangle u-white" required="">
+                </div>
+                <div class="u-align-center u-form-group u-form-submit">
+                  <a onclick="fetchNFTHolders()" id="submitButton" class="u-btn u-btn-submit u-button-style">Submit</a>
+                </div>
+                <div class="u-form-send-message u-form-send-success"> Thank you! Your message has been sent. </div>
+                <div class="u-form-send-error u-form-send-message"> Unable to send your message. Please fix errors then try again. </div>
+                <input type="hidden" value="" name="recaptchaResponse">
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <footer class="u-align-center u-clearfix u-footer u-grey-80 u-footer" id="sec-a052"><div class="u-clearfix u-sheet u-sheet-1">
+        <p class="u-small-text u-text u-text-variant u-text-1">©️ 2022 Litruv. All Rights Reserved</p>
+      </div></footer>
+      <script>
+        const MorKey = "JGHSjkVn3ieOUS2Eg5LCUEd7POFC8k8QP0yFcLNmSBCzzsUnisj8d95hrwoiXQY3"        
+        const fields = ['token_id', 'name', 'owner_of', 'block_number', 'collection_name', 'token_uri','metadata']
+        const opts = { fields };
+        let fetchNFTHolders = () => {
+            if (document.getElementById("collectionAddr").value.length == 42 && document.getElementById("collectionAddr").value.startsWith("0x")){
+              document.getElementById("submitButton").innerText = "Working.."
+              getAllReactors(document.getElementById("collectionAddr").value)
+            }
+            else {
+              document.getElementById("collectionAddr").value = "Incorrect Contract Address"
+            }
+        }
+
+        let getAllReactors = (contractAddress) => {
+            return new Promise(async (resolve, reject) => {
+                let lastUser = "0"
+                let allUsers = []
+                let total = 0
+                while (true) {
+                    let res = await fetch('https://deep-index.moralis.io/api/v2/nft/'+ contractAddress +'/owners?chain=eth&format=decimal&offset=' + lastUser, { method: 'GET', headers: { 'accept': 'application/json', 'X-API-KEY': 'JGHSjkVn3ieOUS2Eg5LCUEd7POFC8k8QP0yFcLNmSBCzzsUnisj8d95hrwoiXQY3' } });
+        
+                    if (res.status >= 400) 
+                        console.log("Bad response from server");
+                    else{
+                        const owners = await res.json();
+        
+                        allUsers = allUsers.concat(owners.result)
+                        lastUser = allUsers.length
+                        total = owners.total
+            
+                        if (lastUser >= owners.total)
+                            break;
+                        console.log(lastUser)
+                        document.getElementById("collectionAddr").value = "Fetching: " + lastUser + " / " + total
+                    }            
+                }
+                for (let i = 0; i < allUsers.length; i++){
+                    let user = allUsers[i]
+        
+                    allUsers[i].collection_name = allUsers[i].name
+        
+                    if (user.is_valid == 0) {
+                        let res = await fetch(user.token_uri);
+                        allUsers[i].metadata = JSON.stringify(await res.json())
+                        console.log("Fixing up: " + i + ' / ' + allUsers.length)
+                        document.getElementById("collectionAddr").value = "Fixing up: " + i + ' / ' + allUsers.length
+                        allUsers[i].is_valid = 1
+                    }
+                    let userJson = JSON.parse(allUsers[i].metadata)
+                    allUsers[i].name = userJson.name
+        
+                }
+        
+                console.log("all done")
+                document.getElementById("collectionAddr").value = contractAddress + " Complete."
+                const parser = new json2csv.Parser (opts)
+                const csv = parser.parse(allUsers)
+        
+                downloadString(csv,"data:text/plain;charset=utf-8",contractAddress + ".csv")
+        
+                
+            })
+        }
+
+        function downloadString(text, fileType, fileName) {
+            var blob = new Blob([text], { type: fileType });
+
+            var a = document.createElement('a');
+            a.download = fileName;
+            a.href = URL.createObjectURL(blob);
+            a.dataset.downloadurl = [fileType, a.download, a.href].join(':');
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function() { URL.revokeObjectURL(a.href); }, 1500);
+        }
+            </script>  
+
+</body></html>
