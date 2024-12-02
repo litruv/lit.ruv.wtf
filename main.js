@@ -83,7 +83,7 @@ async function fetchPosts() {
             reposts: item.post.repostCount || 0,
             url: `https://bsky.app/profile/${item.post.author.handle}/post/${item.post.uri.split('/').pop()}`,
             embed: item.post.embed?.images?.map(img => ({
-                url: img.fullsize,
+                url: img.thumb,
                 alt: img.alt || ''
             })) || []
         }));
