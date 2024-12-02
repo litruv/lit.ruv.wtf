@@ -153,9 +153,6 @@ h1 {
     font-size: 2rem;
     text-decoration: none;
     display: inline-block;
-    pointer-events: none;
-
-    /* Ensure proper alignment for the text-shadow */
 }
 
 .social-links a:hover {
@@ -163,33 +160,26 @@ h1 {
     transition: transform 0.3s ease;
     text-shadow:
         0 0 3px white,
-        /* Solid outline */
 }
 
-/* Specific brand colors on hover */
 .social-links a:hover .fab.fa-github {
     color: #181717;
-    /* GitHub's brand color */
 }
 
 .social-links a:hover .fab.fa-youtube {
     color: #FF0000;
-    /* YouTube's brand color */
 }
 
 .social-links a:hover .fab.fa-steam {
     color: #1b2838;
-    /* Steam's brand color */
 }
 
 .social-links a:hover .fab.fa-discord {
     color: #7289da;
-    /* Discord's brand color */
 }
 
 .social-links a:hover .fa-brands.fa-bluesky {
     color: #3E5BFF;
-    /* Bluesky's brand color */
 }
 
 @keyframes wildSpin {
