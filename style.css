@@ -152,6 +152,8 @@ h1 {
     font-size: 2rem;
     text-decoration: none;
     display: inline-block;
+    pointer-events: none;
+
     /* Ensure proper alignment for the text-shadow */
 }
 
