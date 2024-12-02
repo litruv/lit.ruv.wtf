@@ -248,6 +248,7 @@ h1:hover {
     font-size: 0.875rem;
     opacity: 0;
     transition: opacity 0.2s;
+    white-space: nowrap;
 }
 
 .social-links a:hover::after {
