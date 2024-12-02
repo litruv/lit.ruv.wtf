@@ -6,9 +6,11 @@ function formatDate(dateString) {
         minute: '2-digit'
     });
 }
+
 function getRandomRotation() {
     return Math.random() * 3 - 1.5
 }
+
 function createPost(post) {
     const article = document.createElement('div');
     article.className = 'post';
@@ -26,6 +28,9 @@ function createPost(post) {
             </a>
         `).join('')
         : '';
+
+    const formattedText = post.text.replace(/\n/g, '<br>');
+
     article.innerHTML = `
         <div class="post-header">
             <div class="avatar">
@@ -38,16 +43,20 @@ function createPost(post) {
                 </div>
             </div>
         </div>
-        <div class="post-content">${post.text}</div>
+        <div class="post-content">${formattedText}</div>
         ${imageHTML}
         <div class="post-actions">
             <button class="action-btn like">♥ ${post.likes}</button>
             <button class="action-btn repost">⟲ ${post.reposts}</button>
         </div>
     `;
+    
+    postLink.href = post.url;
     postLink.appendChild(article);
+
     return postLink;
 }
+
 function filterOriginalPosts(feed) {
     return feed.filter((item) => {
         const isRepost = item?.reason?.$type === 'app.bsky.feed.defs#reasonRepost';
@@ -55,6 +64,7 @@ function filterOriginalPosts(feed) {
         return !isRepost && !isReply;
     });
 }
+
 async function fetchPosts() {
     try {
         const response = await fetch("https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=lit.mates.dev&limit=20&filter=posts_no_replies");
@@ -71,7 +81,7 @@ async function fetchPosts() {
             text: item.post.record.text,
             likes: item.post.likeCount || 0,
             reposts: item.post.repostCount || 0,
-            url: `https://bsky.app/profile/${item.post.author.handle}/post/${item.post.cid}`,
+            url: `https://bsky.app/profile/${item.post.author.handle}/post/${item.post.uri.split('/').pop()}`,
             embed: item.post.embed?.images?.map(img => ({
                 url: img.fullsize,
                 alt: img.alt || ''
@@ -86,4 +96,5 @@ async function fetchPosts() {
         console.error('Error fetching posts:', error);
     }
 }
+
 fetchPosts();
