@@ -257,7 +257,6 @@ h1:hover {
     border-radius: 0.3rem;
     font-size: 0.875rem;
     opacity: 0;
-    pointer-events: none;
     transition: opacity 0.2s;
 }
 
