@@ -182,28 +182,6 @@ h1 {
     color: #3E5BFF;
 }
 
-@keyframes wildSpin {
-    0% {
-        transform: scale(1) rotate(0deg);
-    }
-
-    25% {
-        transform: scale(1.5) rotate(180deg) skew(15deg);
-    }
-
-    50% {
-        transform: scale(0.8) rotate(-180deg) skew(-15deg);
-    }
-
-    75% {
-        transform: scale(1.2) rotate(360deg);
-    }
-
-    100% {
-        transform: scale(1) rotate(720deg);
-    }
-}
-
 @keyframes shake {
 
     0%,
@@ -254,3 +232,4 @@ h1:hover {
 .social-links a:hover::after {
     opacity: 1;
 }
+
