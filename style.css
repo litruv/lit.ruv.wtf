@@ -233,3 +233,25 @@ h1:hover {
     opacity: 1;
 }
 
+.project-links {
+    margin-top: 2rem;
+    font-size: 1rem;
+}
+
+.project-links a {
+    display: inline-block;
+    margin: 0.5rem 0;
+    padding: 0.5rem 1rem;
+    background: white;
+    color: #242424;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 20px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.project-links a:hover {
+    background: #2563eb;
+    color: white;
+}
+
