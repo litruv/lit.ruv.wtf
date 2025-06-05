@@ -255,3 +255,19 @@ h1:hover {
     color: white;
 }
 
+footer {
+    text-align: center;
+    margin-top: 3rem;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+footer a {
+    color: #f0f0f0;
+    text-decoration: underline;
+}
+
+footer a:hover {
+    color: #2563eb;
+}
+
