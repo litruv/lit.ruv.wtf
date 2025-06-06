@@ -9,7 +9,7 @@
             const minRotation = 0.5;
             const maxRotation = 2.5;
             const minHeight = 200;
-            const maxHeight = 700;
+            const maxHeight = 600;
             
             // Linear interpolation between min and max rotation based on height
             let rotation = maxRotation - ((height - minHeight) / (maxHeight - minHeight)) * (maxRotation - minRotation);

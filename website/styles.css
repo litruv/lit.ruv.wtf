@@ -1,0 +1,11 @@
+.post {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    position: relative;
+}
+
+.post:hover {
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    z-index: 999 !important;
+    transform: translateY(-4px);
+}

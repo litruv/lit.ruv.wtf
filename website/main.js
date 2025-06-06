@@ -55,7 +55,38 @@ function createPost(t) {
 
     link.href = t.url;
     link.appendChild(post);
+    
+    console.log(`[Main] Created post with ${t.embed.length} images`);
+    
     return link;
+}
+
+// Helper function to add tape to a single image
+function addTapeToSingleImage(image, index) {
+    if (!window.createTapeElement || !window.positionTape) {
+        console.warn('[Main] Tape functions not available');
+        return;
+    }
+    
+    // Determine tape pattern (alternating)
+    const usePattern1 = index % 2 === 0;
+    
+    // Create two tape pieces
+    const tape1 = window.createTapeElement(index, 1);
+    const tape2 = window.createTapeElement(index, 2);
+    
+    if (usePattern1) {
+        // Pattern 1: top-left and bottom-right
+        window.positionTape(tape1, 'top-left', index, 1);
+        window.positionTape(tape2, 'bottom-right', index, 2);
+    } else {
+        // Pattern 2: top-right and bottom-left
+        window.positionTape(tape1, 'top-right', index, 1);
+        window.positionTape(tape2, 'bottom-left', index, 2);
+    }
+    
+    image.appendChild(tape1);
+    image.appendChild(tape2);
 }
 
 function filterOriginalPosts(feed) {
@@ -102,10 +133,22 @@ function getShortestColumn(columns) {
 function layoutPosts(postElements) {
     const numCols = getNumColumns();
     const columns = createColumns(numCols);
-    postElements.forEach(postEl => {
+    postElements.forEach((postEl, index) => {
         const col = getShortestColumn(columns);
+        // Set descending z-index - first post has highest z-index
+        postEl.firstElementChild.style.zIndex = postElements.length - index;
         col.appendChild(postEl);
     });
+    
+    // Use refreshTape to avoid duplicate tape on resize/layout
+    console.log('[Main] Posts laid out, refreshing tape for all images');
+    setTimeout(() => {
+        if (window.refreshTape) {
+            window.refreshTape();
+        } else {
+            console.error('[Main] refreshTape function not available');
+        }
+    }, 200);
 }
 
 async function fetchPosts() {
@@ -130,6 +173,8 @@ async function fetchPosts() {
                 alt: img.alt || ""
             })) || []
         }));
+
+        console.log(`[Main] Fetched ${posts.length} posts, ${posts.filter(p => p.embed.length > 0).length} have images`);
 
         // Only create post elements once
         postElementsCache = posts.map(post => createPost(post));
@@ -156,6 +201,12 @@ async function fetchPosts() {
 window.addEventListener("resize", () => {
     if (postElementsCache) {
         layoutPosts(postElementsCache);
+        // Re-add tape after layout changes
+        if (window.refreshTape) {
+            setTimeout(() => {
+                window.refreshTape();
+            }, 100);
+        }
     }
 });
 

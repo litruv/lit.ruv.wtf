@@ -13,6 +13,11 @@
         
         if (posts.length === 0 || columns.length === 0) return;
         
+        // Assign z-index based on post order (newer posts first)
+        posts.forEach((post, index) => {
+            post.style.zIndex = 100 - index;
+        });
+        
         // Store original positions of posts
         posts.forEach((post, index) => {
             const rect = post.getBoundingClientRect();

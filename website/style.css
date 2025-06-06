@@ -150,7 +150,6 @@ social-links a:hover .fab.fa-youtube {
     transition: none; /* Prevent transitions during layout changes */
     will-change: auto; /* Prevent unnecessary layer promotion */
     /* Prevent reflow during resize */
-    contain: layout;
 }
 
 @media (max-width: 799px) {
@@ -160,18 +159,24 @@ social-links a:hover .fab.fa-youtube {
         transition: none; /* Prevent transitions during layout changes */
         /* Remove the min-height that was causing issues */
         min-height: auto;
-        /* Use layout containment to minimize reflow */
-        contain: layout style size;
+        margin-top: 2rem; /* Add top margin to push posts below header */
+        margin-right: 0px;
+        margin-left:0px;
+        padding-right: 0; /* Remove right padding on mobile */
     }
     .masonry-col {
         min-width: 0;
         width: 100%;
-        /* Prevent content reflow during breakpoint change */
-        contain: layout style;
         /* Hide overflow columns on mobile */
     }
     .masonry-col:not(:first-child) {
         display: none;
+    }
+    
+    /* Ensure posts don't have excessive negative margins on mobile */
+    .post {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
     }
 }
 
@@ -183,7 +188,7 @@ social-links a:hover .fab.fa-youtube {
     margin-left: -40px;
     margin-right: -40px;
     border: 2px solid var(--post-border);
-    position: relative;
+    position: relative; /* Add back for z-index to work */
     box-shadow: 3px 3px 0 var(--shadow-light), 6px 6px 0 var(--shadow-mid);
     transition: transform 0.35s cubic-bezier(0.68, -0.55, 0.27, 1.55), 
                 box-shadow 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55),
@@ -241,8 +246,44 @@ social-links a:hover .fab.fa-youtube {
     border: 4px solid var(--post-border);
     background: var(--avatar-bg);
     text-align: center;
-    transform: rotate(1deg);
+    transform: rotate(0deg); /* Remove rotation from images */
     box-shadow: 4px 4px 0 var(--post-border);
+    display: block; /* Ensure it's a block element */
+}
+
+/* Ensure image containers can hold positioned tape */
+.image-placeholder,
+.image-placeholder img {
+    position: relative;
+}
+
+/* Force relative positioning on image links (containers) */
+a:has(.image-placeholder) {
+    position: relative !important;
+    display: block !important;
+}
+
+/* JavaScript-generated tape styling */
+.tape {
+    position: absolute;
+    background: rgba(255, 248, 220, 0.9);
+    border: 0.5px solid rgba(0, 0, 0, 0.18);
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    background-image: linear-gradient(45deg, 
+        rgba(255, 255, 255, 0.3) 25%, 
+        transparent 25%, 
+        transparent 75%, 
+        rgba(255, 255, 255, 0.3) 75%);
+    background-size: 3px 3px;
+    /* Zig-zag mask on top/bottom (long) sides, subtle and thin */
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 100,0 100,20 0,20' fill='white'/><polyline points='0,0 5,8 10,0 15,8 20,0 25,8 30,0 35,8 40,0 45,8 50,0 55,8 60,0 65,8 70,0 75,8 80,0 85,8 90,0 95,8 100,0' fill='none' stroke='white' stroke-width='1'/><polyline points='0,20 5,12 10,20 15,12 20,20 25,12 30,20 35,12 40,20 45,12 50,20 55,12 60,20 65,12 70,20 75,12 80,20 85,12 90,20 95,12 100,20' fill='none' stroke='white' stroke-width='1'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 100,0 100,20 0,20' fill='white'/><polyline points='0,0 5,8 10,0 15,8 20,0 25,8 30,0 35,8 40,0 45,8 50,0 55,8 60,0 65,8 70,0 75,8 80,0 85,8 90,0 95,8 100,0' fill='none' stroke='white' stroke-width='1'/><polyline points='0,20 5,12 10,20 15,12 20,20 25,12 30,20 35,12 40,20 45,12 50,20 55,12 60,20 65,12 70,20 75,12 80,20 85,12 90,20 95,12 100,20' fill='none' stroke='white' stroke-width='1'/></svg>");
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
 }
 
 .post-actions {
