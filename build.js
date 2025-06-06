@@ -18,9 +18,13 @@ async function buildPage(pageName, outputName) {
     const commonHeaderPath = path.join(__dirname, 'templates', '_header.html');
     const commonFooterPath = path.join(__dirname, 'templates', '_footer.html');
     const contentPath = path.join(__dirname, 'src', `${pageName}.html`);
-    const outputPath = path.join(__dirname, `${outputName}.html`);
+    const outputDir = path.join(__dirname, 'website');
+    const outputPath = path.join(outputDir, `${outputName}.html`);
 
     try {
+        // Ensure the website directory exists
+        await fs.mkdir(outputDir, { recursive: true });
+
         let layoutContent = await fs.readFile(layoutPath, 'utf-8');
         const srcFileContent = await fs.readFile(contentPath, 'utf-8');
 
@@ -100,7 +104,7 @@ async function buildPage(pageName, outputName) {
         console.log(`Successfully built ${outputPath}`);
     } catch (error) {
         console.error(`Error building page ${pageName}:`, error);
-        throw error;
+        throw error; // Re-throw to fail the build process if needed
     }
 }
 
