@@ -12,7 +12,7 @@
     --post-border: #000;
     --avatar-bg: #f0f0f0;
     --avatar-border: #000;
-    --shadow-light: rgba(0, 0, 0, 0.1);
+    --shadow-light: rgba(0, 0, 0, 0.3);
     --shadow-heavy: rgba(0, 0, 0, 1);
     --shadow-mid: rgba(0, 0, 0, 0.05);
     --header-shadow1: #ffffff52;
@@ -182,14 +182,27 @@ social-links a:hover .fab.fa-youtube {
 
 .post {
     background: var(--post-bg);
+    /* Add post-it note lines: slightly darker than background, full width, spaced ~32px apart */
+    background-image:
+        repeating-linear-gradient(
+            to bottom,
+            transparent 0px,
+            transparent 27px,
+            rgba(0,0,0,0.04) 27px,
+            rgba(0,0,0,0.04) 29px,
+            transparent 29px,
+            transparent 32px
+        );
+    background-size: 100% 32px;
+    background-repeat: repeat;
     padding: 2rem 1.5rem;
     margin-bottom: -0.2rem;
     margin-top: -0.2rem;
     margin-left: -40px;
     margin-right: -40px;
-    border: 2px solid var(--post-border);
+    border: 1.8px solid var(--post-border);
     position: relative; /* Add back for z-index to work */
-    box-shadow: 3px 3px 0 var(--shadow-light), 6px 6px 0 var(--shadow-mid);
+    box-shadow: 3px 7px 4px var(--shadow-light);
     transition: transform 0.35s cubic-bezier(0.68, -0.55, 0.27, 1.55), 
                 box-shadow 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55),
                 opacity 0.2s ease;
@@ -209,19 +222,30 @@ social-links a:hover .fab.fa-youtube {
     transform: rotate(var(--rotation-factor));
 }
 
-/* Alternate rotation directions for visual variety */
+/* Remove these alternate rotation rules, JS now handles rotation and color */
+/*
 .post:nth-child(odd) {
     transform: rotate(calc(-1 * var(--rotation-factor)));
 }
-
 .post:nth-child(even) {
     transform: rotate(var(--rotation-factor));
+}
+*/
+
+.post:hover {
+    /* Remove transform here, JS will handle */
+    box-shadow: 6px 6px 30px var(--shadow-heavy);
+    z-index: 100;
 }
 
 .post-header {
     display: flex;
     gap: 1rem;
     margin-bottom: 1rem;
+    margin: -2rem -1.5rem 1.25rem -1.5rem; /* stretch to post edge, extra space below */
+    padding: 0.75rem 1.5rem 0.75rem 1.5rem;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 
 .avatar {
@@ -319,9 +343,9 @@ a:has(.image-placeholder) {
 }
 
 .post:hover {
-    transform: scale(1.1) translateY(-5px) rotate(0deg) !important;
+    /* Remove transform here, JS will handle */
     box-shadow: 6px 6px 30px var(--shadow-heavy);
-    z-index: 10;
+    z-index: 100;
 }
 
 .subtext {

@@ -11,10 +11,37 @@ function getRandomRotation() {
     return 3 * Math.random() - 1.5;
 }
 
+// Post-it note colors
+const postItColors = [
+    '#E6F3FF', // faded blue
+    '#FFF9C4', // yellow
+    '#E8F5E8', // green
+    '#FFE4B5', // orange
+    '#FFE1E6'  // pink
+];
+
+function getRandomPostItColor() {
+    return postItColors[Math.floor(Math.random() * postItColors.length)];
+}
+
 function createPost(t) {
     const post = document.createElement("div");
     post.className = "post";
     post.style.transform = `rotate(${getRandomRotation()}deg)`;
+    post.style.backgroundColor = getRandomPostItColor();
+
+    // --- Shrink-then-grow hover effect ---
+    post.addEventListener('mouseenter', function () {
+        post.style.zIndex = 100;
+        post.style.transition = "transform 0.22s cubic-bezier(.5,1.5,.5,1)";
+        post.style.transform = `rotate(${getRandomRotation()}deg) scale(1.1)`;
+    });
+    post.addEventListener('mouseleave', function () {
+        post.style.transition = "transform 0.18s cubic-bezier(.5,0,.5,1)";
+        post.style.transform = `rotate(${getRandomRotation()}deg)`;
+        post.style.zIndex = 1;
+    });
+    // --- end hover effect ---
 
     const link = document.createElement("a");
     link.href = t.url;
