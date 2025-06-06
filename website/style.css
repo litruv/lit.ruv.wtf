@@ -1,9 +1,40 @@
+:root {
+    --main-bg: #242424;
+    --main-fg: #f0f0f0;
+    --accent: #2563eb;
+    --like: #db2777;
+    --github: #181717;
+    --youtube: #FF0000;
+    --steam: #1b2838;
+    --discord: #7289da;
+    --bluesky: #3E5BFF;
+    --post-bg: #fff;
+    --post-border: #000;
+    --avatar-bg: #f0f0f0;
+    --avatar-border: #000;
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    --shadow-heavy: rgba(0, 0, 0, 1);
+    --shadow-mid: rgba(0, 0, 0, 0.05);
+    --header-shadow1: #ffffff52;
+    --header-shadow2: #000;
+}
+
+html {
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
 body {
     margin: 0;
     min-height: 100vh;
-    background: #242424;
+    background: var(--main-bg);
     font-family: monospace;
     background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h20v20H0V0zm2 2v16h16V2H2z' fill='%23000000' fill-opacity='0.05'/%3E%3C/svg%3E");
+    overflow-x: hidden;
 }
 
 a {
@@ -20,25 +51,29 @@ a {
 }
 
 .container {
-    max-width: 600px;
+    max-width: 1200px; /* set max width */
+    width: 100%;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 2rem 0 2rem 0;
     position: relative;
     z-index: 1;
-    padding-top: 100px;
+    padding-top: 160px; /* increased from 100px */
+    box-sizing: border-box;
+    overflow: visible; /* ensure expanded content is visible */
 }
 
 header {
     text-align: center;
     margin-bottom: 80px;
-    color: #f0f0f0;
+    color: var(--main-fg);
     font-size: 20px;
+    padding-top: 2rem; /* add extra space above header */
+    overflow: visible;
 }
-
 
 h1 {
     transition: all 0.3s ease;
-    text-shadow: 2px 2px 0 #ffffff52, 3px 3px 0 #000;
+    text-shadow: 2px 2px 0 var(--header-shadow1), 3px 3px 0 var(--header-shadow2);
     margin-bottom: 0.5rem;
     transform-origin: center;
     cursor: pointer;
@@ -53,24 +88,129 @@ h1 {
 
 .social-links a {
     margin: 0 10px;
-    color: #f0f0f0;
+    color: var(--main-fg);
     text-decoration: none;
     font-weight: bold;
+    font-size: 2rem;
+    display: inline-block;
 }
 
 .social-links a:hover {
-    color: #2563eb;
+    color: var(--accent);
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+    text-shadow: 0 0 3px white;
+}
+
+.social-links a:hover .fab.fa-github {
+    color: var(--github);
+}
+
+social-links a:hover .fab.fa-youtube {
+    color: var(--youtube);
+}
+
+.social-links a:hover .fab.fa-steam {
+    color: var(--steam);
+}
+
+.social-links a:hover .fab.fa-discord {
+    color: var(--discord);
+}
+
+.social-links a:hover .fa-brands.fa-bluesky {
+    color: var(--bluesky);
+}
+
+#posts {
+    max-width: 1200px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-left: 80px;  /* Increase left padding to balance the negative margin */
+    padding-right: 40px;
+    box-sizing: border-box;
+    text-align: left;
+    min-height: 0; /* Prevent flex container from causing jumps */
+    /* Add stable height to prevent jumps */
+    contain: layout style;
+}
+
+.masonry-col {
+    flex: 1 1 0;
+    min-width: 320px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* Remove gap so negative margins overlap */
+    transition: none; /* Prevent transitions during layout changes */
+    will-change: auto; /* Prevent unnecessary layer promotion */
+    /* Prevent reflow during resize */
+    contain: layout;
+}
+
+@media (max-width: 799px) {
+    #posts {
+        flex-direction: column;
+        gap: 0;
+        transition: none; /* Prevent transitions during layout changes */
+        /* Remove the min-height that was causing issues */
+        min-height: auto;
+        /* Use layout containment to minimize reflow */
+        contain: layout style size;
+    }
+    .masonry-col {
+        min-width: 0;
+        width: 100%;
+        /* Prevent content reflow during breakpoint change */
+        contain: layout style;
+        /* Hide overflow columns on mobile */
+    }
+    .masonry-col:not(:first-child) {
+        display: none;
+    }
 }
 
 .post {
-    background: white;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border: 2px solid #000;
+    background: var(--post-bg);
+    padding: 2rem 1.5rem;
+    margin-bottom: -0.2rem;
+    margin-top: -0.2rem;
+    margin-left: -40px;
+    margin-right: -40px;
+    border: 2px solid var(--post-border);
     position: relative;
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1), 6px 6px 0 rgba(0, 0, 0, 0.05);
+    box-shadow: 3px 3px 0 var(--shadow-light), 6px 6px 0 var(--shadow-mid);
     transition: transform 0.35s cubic-bezier(0.68, -0.55, 0.27, 1.55), 
-                box-shadow 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+                box-shadow 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+                opacity 0.2s ease;
+    display: inline-block;
+    width: 100%;
+    min-width: 320px;
+    break-inside: avoid;
+    z-index: 1;
+    
+    /* Dynamic rotation based on height */
+    --post-height: 300px; /* Default fallback */
+    --min-rotation: 0.5deg; /* Minimum rotation for tall posts */
+    --max-rotation: 3deg; /* Maximum rotation for short posts */
+    --rotation-factor: clamp(var(--min-rotation), calc(var(--max-rotation) - (var(--post-height) - 200px) * 0.005), var(--max-rotation));
+    
+    /* Apply rotation with random direction */
+    transform: rotate(var(--rotation-factor));
+}
+
+/* Alternate rotation directions for visual variety */
+.post:nth-child(odd) {
+    transform: rotate(calc(-1 * var(--rotation-factor)));
+}
+
+.post:nth-child(even) {
+    transform: rotate(var(--rotation-factor));
 }
 
 .post-header {
@@ -82,14 +222,14 @@ h1 {
 .avatar {
     width: 48px;
     height: 48px;
-    background: #f0f0f0;
-    border: 2px solid black;
+    background: var(--avatar-bg);
+    border: 2px solid var(--avatar-border);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     transform: rotate(-2deg);
-    box-shadow: 2px 2px 0 #000;
+    box-shadow: 2px 2px 0 var(--avatar-border);
 }
 
 .post-content {
@@ -98,11 +238,11 @@ h1 {
 
 .image-placeholder {
     margin-top: 1rem;
-    border: 4px solid black;
-    background: #f0f0f0;
+    border: 4px solid var(--post-border);
+    background: var(--avatar-bg);
     text-align: center;
     transform: rotate(1deg);
-    box-shadow: 4px 4px 0 #000;
+    box-shadow: 4px 4px 0 var(--post-border);
 }
 
 .post-actions {
@@ -122,12 +262,12 @@ h1 {
 }
 
 .action-btn.like {
-    color: #db2777;
+    color: var(--like);
     transform: rotate(-1deg);
 }
 
 .action-btn.repost {
-    color: #2563eb;
+    color: var(--accent);
     transform: rotate(1deg);
 }
 
@@ -137,49 +277,14 @@ h1 {
     display: block;
 }
 
-
 .post:hover {
-    transform: scale(1.1) translateY(-5px) !important;
-    box-shadow: 6px 6px 30px rgba(0, 0, 0, 1);
+    transform: scale(1.1) translateY(-5px) rotate(0deg) !important;
+    box-shadow: 6px 6px 30px var(--shadow-heavy);
+    z-index: 10;
 }
 
 .subtext {
     margin-bottom: 30px;
-}
-
-.social-links a {
-    margin: 0 10px;
-    color: #f0f0f0;
-    font-size: 2rem;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.social-links a:hover {
-    transform: scale(1.1);
-    transition: transform 0.3s ease;
-    text-shadow:
-        0 0 3px white,
-}
-
-.social-links a:hover .fab.fa-github {
-    color: #181717;
-}
-
-.social-links a:hover .fab.fa-youtube {
-    color: #FF0000;
-}
-
-.social-links a:hover .fab.fa-steam {
-    color: #1b2838;
-}
-
-.social-links a:hover .fab.fa-discord {
-    color: #7289da;
-}
-
-.social-links a:hover .fa-brands.fa-bluesky {
-    color: #3E5BFF;
 }
 
 @keyframes shake {
@@ -209,11 +314,11 @@ h1:hover {
         shake 0.5s ease-in-out infinite;
 }
 
-.social-links a {
+social-links a {
     position: relative;
 }
 
-.social-links a::after {
+social-links a::after {
     content: attr(title);
     position: absolute;
     bottom: 100%;
@@ -229,7 +334,7 @@ h1:hover {
     white-space: nowrap;
 }
 
-.social-links a:hover::after {
+social-links a:hover::after {
     opacity: 1;
 }
 
@@ -242,8 +347,8 @@ h1:hover {
     display: inline-block;
     margin: 0.5rem 0;
     padding: 0.5rem 1rem;
-    background: white;
-    color: #242424;
+    background: var(--post-bg);
+    color: var(--main-bg);
     text-decoration: none;
     font-weight: bold;
     border-radius: 20px;
@@ -251,8 +356,8 @@ h1:hover {
 }
 
 .project-links a:hover {
-    background: #2563eb;
-    color: white;
+    background: var(--accent);
+    color: var(--post-bg);
 }
 
 footer {
@@ -260,14 +365,15 @@ footer {
     margin-top: 3rem;
     margin-bottom: 2rem;
     font-size: 0.9rem;
+    color: var(--main-fg);
 }
 
 footer a {
-    color: #f0f0f0;
+    color: var(--main-fg);
     text-decoration: underline;
 }
 
 footer a:hover {
-    color: #2563eb;
+    color: var(--accent);
 }
 
