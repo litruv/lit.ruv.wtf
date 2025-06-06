@@ -13,16 +13,53 @@ function extractBlock(content, startDelimiter, endDelimiter) {
     return { blockContent: block, remainingContent: remaining.trim() };
 }
 
+// Helper function to copy files recursively
+async function copyWebsiteFiles() {
+    const websiteDir = path.join(__dirname, 'website');
+    const buildDir = path.join(__dirname, 'build');
+    
+    try {
+        const websiteExists = await fs.access(websiteDir).then(() => true).catch(() => false);
+        if (!websiteExists) {
+            console.log("No website directory found, skipping copy.");
+            return;
+        }
+
+        async function copyRecursive(src, dest) {
+            const stats = await fs.stat(src);
+            
+            if (stats.isDirectory()) {
+                await fs.mkdir(dest, { recursive: true });
+                const items = await fs.readdir(src);
+                
+                for (const item of items) {
+                    const srcPath = path.join(src, item);
+                    const destPath = path.join(dest, item);
+                    await copyRecursive(srcPath, destPath);
+                }
+            } else {
+                await fs.copyFile(src, dest);
+            }
+        }
+        
+        await copyRecursive(websiteDir, buildDir);
+        console.log("Website files copied successfully.");
+    } catch (error) {
+        console.error('Error copying website files:', error);
+        throw error;
+    }
+}
+
 async function buildPage(pageName, outputName) {
     const layoutPath = path.join(__dirname, 'templates', '_layout.html');
     const commonHeaderPath = path.join(__dirname, 'templates', '_header.html');
     const commonFooterPath = path.join(__dirname, 'templates', '_footer.html');
     const contentPath = path.join(__dirname, 'src', `${pageName}.html`);
-    const outputDir = path.join(__dirname, 'website');
+    const outputDir = path.join(__dirname, 'build');
     const outputPath = path.join(outputDir, `${outputName}.html`);
 
     try {
-        // Ensure the website directory exists
+        // Ensure the build directory exists
         await fs.mkdir(outputDir, { recursive: true });
 
         let layoutContent = await fs.readFile(layoutPath, 'utf-8');
@@ -110,6 +147,9 @@ async function buildPage(pageName, outputName) {
 
 async function main() {
     try {
+        // Copy website files first
+        await copyWebsiteFiles();
+        
         const srcDir = path.join(__dirname, 'src');
         const files = await fs.readdir(srcDir);
 
