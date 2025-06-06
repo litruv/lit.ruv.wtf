@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    <meta name="description" content="Privacy Policy for Litruv's website and applications.">
+    <meta name="author" content="Litruv">
+
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+
+    <meta property="og:title" content="Privacy Policy - Litruv">
+    <meta property="og:description" content="Privacy Policy for Litruv's website and applications.">
+    <meta property="og:image" content="https://lit.ruv.wtf/banner.webp"> <!-- Common image -->
+    <meta property="og:url" content="https://lit.ruv.wtf/privacy.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Lit.ruv.wtf" /> <!-- Common site name -->
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Privacy Policy - Litruv">
+    <meta name="twitter:description" content="Privacy Policy for Litruv's website and applications.">
+    <meta name="twitter:image" content="https://lit.ruv.wtf/banner.webp"> <!-- Common image -->
+    <meta name="twitter:url" content="https://lit.ruv.wtf/privacy.html">
+    
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/icons/48.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/180.png">
+
+    <link rel="stylesheet" href="style.css">
+    <style>
+    .privacy-content {
+        background: white;
+        padding: 1.5rem 2rem;
+        margin-top: 2rem;
+        border: 2px solid #000;
+        box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1), 6px 6px 0 rgba(0, 0, 0, 0.05);
+        color: #333;
+        text-align: left;
+    }
+    .privacy-content h1 {
+        text-align: center;
+        font-size: 1.8rem;
+        color: #242424;
+        text-shadow: 1px 1px 0 #ffffff52, 2px 2px 0 #00000080;
+        margin-bottom: 1.5rem;
+    }
+    .privacy-content h2 {
+        font-size: 1.3rem;
+        color: #242424;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .privacy-content p {
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+    .privacy-content a {
+        color: #2563eb;
+        text-decoration: underline;
+    }
+    .privacy-content a:hover {
+        color: #1d4ed8;
+    }
+</style>
+    
+    <script src="main.js" defer></script> <!-- Common main script -->
+    
+
+    <title>Privacy Policy - Litruv</title>
+</head>
+<body> 
+    <div class="bg-pattern"></div>
+    <div class="container">
+        
+        <!-- Main page content for privacy.html -->
+<img src="avatar.webp" alt="Avatar" class="avatar-img" width="250" height="250">
+<header>
+    <h1><a href="/">Litruv</a></h1>
+    <div class="subtext">Privacy Policy</div>
+</header>
+
+<div class="privacy-content">
+    <h1>Privacy Policy</h1>
+
+    <p>I respect your privacy.</p>
+
+    <h2>Apps</h2>
+    <p>My apps do not collect, store, or share any personal information. No analytics, no tracking, no funny business.</p>
+
+    <h2>Website</h2>
+    <p>This site may collect anonymous usage data (such as page views or general browser information) to help improve functionality and performance. This data is non-personal and cannot be used to identify you. I do not sell or share this data with third parties.</p>
+    <p>Additionally, this site uses Cloudflare for performance and security. Cloudflare may collect its own analytics and statistical data, subject to their <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">privacy policy</a>.</p>
+
+    <p>By using this site, you agree to this policy.</p>
+</div>
+        <footer>
+    <a href="privacy.html">Privacy Policy</a>
+    <p>&copy; 2013-<span id="current-year"></span> Max Litruv Boonzaayer</p>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+</footer>
+
+    </div>
+    <script>
+    function getRandomRotation() {
+        return (Math.random() * 3) - 1.5; 
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const privacyBox = document.querySelector('.privacy-content');
+        if (privacyBox) {
+            privacyBox.style.transform = `rotate(${getRandomRotation()}deg)`;
+        }
+        // Ensure avatar also gets random rotation if desired for this page
+        const avatarImg = document.querySelector('.avatar-img');
+        if (avatarImg) {
+            // You might want a different rotation range or logic here
+            // For consistency with how posts might be styled if they were on this page:
+            // avatarImg.style.transform = `rotate(${(Math.random() * 6) - 3}deg)`;
+        }
+    });
+</script>
+</body>
+</html>
