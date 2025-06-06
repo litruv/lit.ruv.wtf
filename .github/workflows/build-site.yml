@@ -3,11 +3,11 @@ name: Build Site
 on:
   push:
     branches:
-      - master # Or your main branch, e.g., main
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.actor != 'github-actions[bot]' && github.ref == 'refs/heads/master' # Or your main branch
+    if: github.actor != 'github-actions[bot]' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # LTS version
+          node-version: '20' 
 
       - name: Build site
         run: node build.js
