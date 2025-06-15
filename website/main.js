@@ -36,6 +36,9 @@ function getPostItColorByDate(dateString) {
     return postItColors[colorIndex];
 }
 
+// Global variable to track last user-set volume (default to 1)
+let lastMediaVolume = 1;
+
 function createPost(t) {
     const post = document.createElement("div");
     post.className = "post";
@@ -60,15 +63,38 @@ function createPost(t) {
     link.target = "_blank";
     link.style.textDecoration = "none";
 
-    const embedHtml = t.embed.length > 0
-        ? t.embed.map(img =>
-            `
-            <a href="${img.url}" target="_blank">
-                <img class="image-placeholder" src="${img.url}" alt="${img.alt || "Image"}" style="width: 100%;" data-fullres="${img.fullres || img.url}" />
-            </a>
-        `
-        ).join("")
-        : "";
+    // --- EMBED HTML (images and videos) ---
+    let embedHtml = "";
+    if (t.embed && t.embed.length > 0) {
+        embedHtml = t.embed.map((embed, idx) => {
+            if (embed.type === "image") {
+                // Image embed
+                return `
+                    <a href="${embed.url}" target="_blank">
+                        <img class="image-placeholder" src="${embed.url}" alt="${embed.alt || "Image"}" style="width: 100%;" data-fullres="${embed.fullres || embed.url}" />
+                    </a>
+                `;
+            } else if (embed.type === "video") {
+                // Video embed
+                // Use a data attribute for m3u8 playlist, set src only if not m3u8
+                const isM3u8 = embed.playlist && embed.playlist.endsWith('.m3u8');
+                return `
+                    <video 
+                        class="video-embed"
+                        ${isM3u8 ? `data-hls-src="${embed.playlist}"` : `src="${embed.playlist}"`}
+                        poster="${embed.thumbnail || ""}" 
+                        controls 
+                        style="width: 100%; max-height: 60vh; margin: 12px 0; background: #000; border-radius: 8px;"
+                        preload="none"
+                    >
+                        Sorry, your browser doesn't support embedded videos.
+                    </video>
+                `;
+            }
+            // ...other embed types can be handled here...
+            return "";
+        }).join("");
+    }
 
     const textHtml = t.text.replace(/\n/g, "<br>");
 
@@ -102,12 +128,57 @@ function createPost(t) {
                 createShadowbox(post, img);
             });
         });
+
+        // --- HLS.js video support for .m3u8 ---
+        const videos = post.querySelectorAll('video[data-hls-src],video.video-embed');
+        videos.forEach(video => {
+            // Set initial volume to lastMediaVolume
+            video.volume = lastMediaVolume;
+
+            // Prevent drag-selection when interacting with video controls (esp. volume)
+            video.addEventListener('mousedown', function (e) {
+                // Only prevent drag if the event is on the controls bar (not the video area)
+                // This is a best-effort: always prevent drag for any mousedown on video controls
+                e.stopPropagation();
+            });
+
+            // Listen for volume changes and sync to all players
+            video.addEventListener('volumechange', function () {
+                if (!isNaN(video.volume)) {
+                    lastMediaVolume = video.volume;
+                    // Sync all other videos on the page
+                    document.querySelectorAll('video.video-embed').forEach(v => {
+                        if (v !== video && Math.abs(v.volume - lastMediaVolume) > 0.01) {
+                            v.volume = lastMediaVolume;
+                        }
+                    });
+                }
+            });
+        });
+
+        // HLS.js setup for m3u8
+        const hlsVideos = post.querySelectorAll('video[data-hls-src]');
+        if (hlsVideos.length > 0 && window.Hls) {
+            hlsVideos.forEach(video => {
+                const src = video.getAttribute('data-hls-src');
+                if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = src;
+                } else if (window.Hls.isSupported()) {
+                    const hls = new window.Hls();
+                    hls.loadSource(src);
+                    hls.attachMedia(video);
+                } else {
+                    video.outerHTML = '<div style="color:red;padding:1em;text-align:center;">Video format not supported</div>';
+                }
+            });
+        }
+        // --- end HLS.js support ---
     }, 0);
 
     link.href = t.url;
     link.appendChild(post);
     
-    console.log(`[Main] Created post with ${t.embed.length} images`);
+    console.log(`[Main] Created post with ${t.embed.length} embeds`);
     
     return link;
 }
@@ -346,6 +417,11 @@ function getShortestColumn(columns) {
 }
 
 function layoutPosts(postElements) {
+    // Prevent layout if any video is in fullscreen
+    if (document.fullscreenElement && document.fullscreenElement.tagName === "VIDEO") {
+        console.log('[Main] Skipping layoutPosts: video is fullscreen');
+        return;
+    }
     const numCols = getNumColumns();
     const columns = createColumns(numCols);
     postElements.forEach((postEl, index) => {
@@ -374,23 +450,48 @@ async function fetchPosts() {
         if (!res.ok) throw new Error("Failed to fetch posts");
         const data = await res.json();
 
-        const posts = filterOriginalPosts(data.feed).map(item => ({
-            author: item.post.author.displayName,
-            handle: item.post.author.handle,
-            avatar: item.post.author.avatar,
-            createdAt: item.post.record.createdAt,
-            text: item.post.record.text,
-            likes: item.post.likeCount || 0,
-            reposts: item.post.repostCount || 0,
-            url: `https://bsky.app/profile/${item.post.author.handle}/post/${item.post.uri.split("/").pop()}`,
-            embed: item.post.embed?.images?.map(img => ({
-                url: img.thumb,
-                alt: img.alt || "",
-                fullres: img.fullsize || img.full || img.thumb // fallback to thumb if no fullres
-            })) || []
-        }));
+        const posts = filterOriginalPosts(data.feed).map(item => {
+            // --- EMBED HANDLING ---
+            let embeds = [];
+            const embedObj = item.post.embed;
+            if (embedObj) {
+                // Debug output (optional)
+                // console.log("[Main] Post embed:", embedObj);
+                // console.log("[Main] Embed $type:", embedObj.$type);
 
-        console.log(`[Main] Fetched ${posts.length} posts, ${posts.filter(p => p.embed.length > 0).length} have images`);
+                if (embedObj.$type === "app.bsky.embed.images#view" && Array.isArray(embedObj.images)) {
+                    embeds = embedObj.images.map(img => ({
+                        type: "image",
+                        url: img.thumb,
+                        alt: img.alt || "",
+                        fullres: img.fullsize || img.full || img.thumb // fallback to thumb if no fullres
+                    }));
+                } else if (embedObj.$type === "app.bsky.embed.video#view") {
+                    embeds = [{
+                        type: "video",
+                        playlist: embedObj.playlist,
+                        thumbnail: embedObj.thumbnail,
+                        alt: embedObj.alt || "",
+                        aspectRatio: embedObj.aspectRatio || null
+                    }];
+                }
+                // Optionally handle other embed types (external, record, etc) here
+            }
+
+            return {
+                author: item.post.author.displayName,
+                handle: item.post.author.handle,
+                avatar: item.post.author.avatar,
+                createdAt: item.post.record.createdAt,
+                text: item.post.record.text,
+                likes: item.post.likeCount || 0,
+                reposts: item.post.repostCount || 0,
+                url: `https://bsky.app/profile/${item.post.author.handle}/post/${item.post.uri.split("/").pop()}`,
+                embed: embeds
+            };
+        });
+
+        console.log(`[Main] Fetched ${posts.length} posts, ${posts.filter(p => p.embed.some(e => e.type === "image")).length} have images, ${posts.filter(p => p.embed.some(e => e.type === "video")).length} have videos`);
 
         // Only create post elements once
         postElementsCache = posts.map(post => createPost(post));
@@ -415,6 +516,11 @@ async function fetchPosts() {
 
 // Only re-layout on resize, do not re-fetch or re-create posts
 window.addEventListener("resize", () => {
+    // Prevent layout if any video is in fullscreen
+    if (document.fullscreenElement && document.fullscreenElement.tagName === "VIDEO") {
+        console.log('[Main] Skipping resize layout: video is fullscreen');
+        return;
+    }
     if (postElementsCache) {
         layoutPosts(postElementsCache);
         // Re-add tape after layout changes

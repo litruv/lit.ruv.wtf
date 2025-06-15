@@ -8,7 +8,7 @@
     <meta name="description" content="<!-- ::META_DESCRIPTION:: -->">
     <meta name="author" content="Litruv">
 
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; <!-- ::PAGE_CSP_OTHER_DIRECTIVES:: -->">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; worker-src 'self' blob:; <!-- ::PAGE_CSP_OTHER_DIRECTIVES:: -->">
 
     <meta property="og:title" content="<!-- ::OG_TITLE:: -->">
     <meta property="og:description" content="<!-- ::OG_DESCRIPTION:: -->">
@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="style.css">
     <!-- ::PAGE_SPECIFIC_STYLES:: -->
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js" defer></script>
     <script src="main.js" defer></script> <!-- Common main script -->
     <script src="dynamic-rotation.js" defer></script> <!-- Common main script -->
     <script src="tape.js" defer></script>
