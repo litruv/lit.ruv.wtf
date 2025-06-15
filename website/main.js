@@ -52,7 +52,7 @@ function createPost(t) {
         ? t.embed.map(img =>
             `
             <a href="${img.url}" target="_blank">
-                <img class="image-placeholder" src="${img.url}" alt="${img.alt || "Image"}" style="width: 100%;" />
+                <img class="image-placeholder" src="${img.url}" alt="${img.alt || "Image"}" style="width: 100%;" data-fullres="${img.fullres || img.url}" />
             </a>
         `
         ).join("")
@@ -80,6 +80,18 @@ function createPost(t) {
         </div>
     `;
 
+    // Add shadowbox event to images (after DOM is ready)
+    setTimeout(() => {
+        const imgs = post.querySelectorAll('img');
+        imgs.forEach(img => {
+            img.addEventListener('click', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                createShadowbox(post, img);
+            });
+        });
+    }, 0);
+
     link.href = t.url;
     link.appendChild(post);
     
@@ -88,32 +100,196 @@ function createPost(t) {
     return link;
 }
 
-// Helper function to add tape to a single image
-function addTapeToSingleImage(image, index) {
-    if (!window.createTapeElement || !window.positionTape) {
-        console.warn('[Main] Tape functions not available');
-        return;
+// --- Shadowbox Modal with Smooth Animation ---
+function createShadowbox(postEl, imgEl) {
+    // Remove any existing shadowbox
+    const existing = document.getElementById('shadowbox-modal');
+    if (existing) existing.remove();
+
+    // Clone the post node
+    const modal = document.createElement('div');
+    modal.id = 'shadowbox-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = 0;
+    modal.style.left = 0;
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.0)';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'flex-end'; // print from bottom
+    modal.style.justifyContent = 'center';
+    modal.style.zIndex = 9999;
+    modal.style.cursor = 'zoom-out';
+    modal.style.transition = 'background 0.35s cubic-bezier(.5,1.5,.5,1)';
+
+    // Container for the post
+    const postClone = postEl.cloneNode(true);
+    postClone.style.transform = 'translateY(100vh) scale(0.98)';
+    postClone.style.background = postEl.style.backgroundColor || '#fff';
+    postClone.style.maxWidth = '95vw';
+    postClone.style.maxHeight = '90vh';
+    postClone.style.overflow = 'auto';
+    postClone.style.position = 'relative';
+    postClone.style.zIndex = 10001;
+    postClone.style.cursor = 'default';
+    postClone.style.opacity = '0';
+    postClone.style.transition = 'opacity 0.25s cubic-bezier(.5,1.5,.5,1), transform 0.5s cubic-bezier(.5,1.5,.5,1)';
+
+    // Remove tape elements from the shadowbox
+    const tapeElements = postClone.querySelectorAll('.tape');
+    tapeElements.forEach(tape => tape.remove());
+
+    // Focus on the clicked image: zoom it in
+    const imgs = postClone.querySelectorAll('img');
+    const originalImgs = postEl.querySelectorAll('img');
+    let focusedImg = null;
+    let clickedImageIndex = -1;
+    
+    // Find the index of the clicked image in the original post
+    originalImgs.forEach((originalImg, idx) => {
+        if (originalImg === imgEl) {
+            clickedImageIndex = idx;
+        }
+    });
+
+    imgs.forEach((cloneImg, idx) => {
+        // Always use the full-size image for all images in the modal
+        if (cloneImg.classList.contains('image-placeholder')) {
+            const fullSizeUrl = getFullSizeImageUrl(cloneImg.src);
+            cloneImg.src = fullSizeUrl;
+            // Apply modal styles to all images immediately
+            cloneImg.style.maxWidth = '90vw';
+            cloneImg.style.maxHeight = '80vh';
+            cloneImg.style.width = '';
+            cloneImg.style.objectFit = 'contain';
+            cloneImg.style.display = 'block';
+            cloneImg.style.margin = '24px auto';
+            cloneImg.style.opacity = 1;
+        }
+        // Use index matching instead of URL comparison
+        if (idx === clickedImageIndex && cloneImg.classList.contains('image-placeholder')) {
+            focusedImg = cloneImg;
+        }
+    });
+
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '10px';
+    closeBtn.style.right = '16px';
+    closeBtn.style.fontSize = '2rem';
+    closeBtn.style.background = 'rgba(0,0,0,0.2)';
+    closeBtn.style.color = '#fff';
+    closeBtn.style.border = 'none';
+    closeBtn.style.width = '40px';
+    closeBtn.style.height = '40px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.zIndex = 10002;
+    closeBtn.style.transition = 'background 0.2s';
+    closeBtn.addEventListener('mouseenter', () => closeBtn.style.background = 'rgba(0,0,0,0.5)');
+    closeBtn.addEventListener('mouseleave', () => closeBtn.style.background = 'rgba(0,0,0,0.2)');
+    closeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        closeShadowbox();
+    });
+    postClone.appendChild(closeBtn);
+
+    // Prevent click inside post from closing modal
+    postClone.addEventListener('click', e => e.stopPropagation());
+
+    modal.appendChild(postClone);
+
+    // Click outside closes modal
+    modal.addEventListener('click', closeShadowbox);
+
+    document.body.appendChild(modal);
+
+    // --- Animate modal background and post "printing" from bottom ---
+    setTimeout(() => {
+        modal.style.background = 'rgba(0,0,0,0.7)';
+        postClone.style.transform = 'translateY(0) scale(1)';
+        postClone.style.opacity = '1';
+    }, 10);
+
+    // Scroll to focused image smoothly after animation
+    setTimeout(() => {
+        if (focusedImg) {
+            focusedImg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 400);
+
+    // Animate out and remove
+    function closeShadowbox() {
+        modal.style.background = 'rgba(0,0,0,0.0)';
+        postClone.style.transform = 'translateY(100vh) scale(0.98)';
+        postClone.style.opacity = '0';
+        setTimeout(() => {
+            modal.remove();
+        }, 350);
     }
-    
-    // Determine tape pattern (alternating)
-    const usePattern1 = index % 2 === 0;
-    
-    // Create two tape pieces
-    const tape1 = window.createTapeElement(index, 1);
-    const tape2 = window.createTapeElement(index, 2);
-    
-    if (usePattern1) {
-        // Pattern 1: top-left and bottom-right
-        window.positionTape(tape1, 'top-left', index, 1);
-        window.positionTape(tape2, 'bottom-right', index, 2);
-    } else {
-        // Pattern 2: top-right and bottom-left
-        window.positionTape(tape1, 'top-right', index, 1);
-        window.positionTape(tape2, 'bottom-left', index, 2);
+
+    // Escape key closes modal
+    function escListener(e) {
+        if (e.key === 'Escape') {
+            closeShadowbox();
+            window.removeEventListener('keydown', escListener);
+        }
     }
+    window.addEventListener('keydown', escListener);
+
+    // --- Snap scroll to next image in post on scroll ---
+    let lastFocusedIdx = Array.from(imgs).findIndex(cloneImg => cloneImg === focusedImg);
+    let snapTimeout = null;
+    let isInitialScroll = true;
     
-    image.appendChild(tape1);
-    image.appendChild(tape2);
+    // Disable initial scroll detection after the automatic scroll completes
+    setTimeout(() => {
+        isInitialScroll = false;
+    }, 800);
+    
+    postClone.addEventListener('scroll', () => {
+        // Skip scroll detection during initial automatic scroll
+        if (isInitialScroll) return;
+        
+        // Find the image closest to the center of the viewport
+        let modalRect = postClone.getBoundingClientRect();
+        let modalCenter = modalRect.top + modalRect.height / 2;
+
+        // Find all images whose center is within a threshold of the modal center
+        let candidates = [];
+        imgs.forEach((img, idx) => {
+            const rect = img.getBoundingClientRect();
+            const center = rect.top + rect.height / 2;
+            const dist = Math.abs(center - modalCenter);
+            candidates.push({ idx, dist, center, rect });
+        });
+
+        // Sort by distance to center
+        candidates.sort((a, b) => a.dist - b.dist);
+
+        // If the closest image is not the current, and its center is within 15% of its height from modal center, focus it
+        let best = candidates[0];
+        if (
+            best.idx !== lastFocusedIdx &&
+            best.dist < best.rect.height * 0.75
+        ) {
+            // Just update the lastFocusedIdx and scroll, don't change styles
+            lastFocusedIdx = best.idx;
+            // Snap scroll after short delay
+            if (snapTimeout) clearTimeout(snapTimeout);
+            snapTimeout = setTimeout(() => {
+                imgs[lastFocusedIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 60);
+        }
+    });
+}
+
+// Helper function to convert thumbnail URL to full-size URL
+function getFullSizeImageUrl(thumbUrl) {
+    if (!thumbUrl) return thumbUrl;
+    // Convert Bluesky thumbnail URLs to full-size by removing size parameters
+    return thumbUrl.replace(/@jpeg$/, '').replace(/\?.*$/, '');
 }
 
 function filterOriginalPosts(feed) {
@@ -197,7 +373,8 @@ async function fetchPosts() {
             url: `https://bsky.app/profile/${item.post.author.handle}/post/${item.post.uri.split("/").pop()}`,
             embed: item.post.embed?.images?.map(img => ({
                 url: img.thumb,
-                alt: img.alt || ""
+                alt: img.alt || "",
+                fullres: img.fullsize || img.full || img.thumb // fallback to thumb if no fullres
             })) || []
         }));
 
