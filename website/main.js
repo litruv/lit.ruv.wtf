@@ -24,11 +24,23 @@ function getRandomPostItColor() {
     return postItColors[Math.floor(Math.random() * postItColors.length)];
 }
 
+function getPostItColorByDate(dateString) {
+    // Create a simple hash from the date string
+    let hash = 0;
+    for (let i = 0; i < dateString.length; i++) {
+        hash = ((hash << 5) - hash) + dateString.charCodeAt(i);
+        hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Use absolute value and modulo to get color index
+    const colorIndex = Math.abs(hash) % postItColors.length;
+    return postItColors[colorIndex];
+}
+
 function createPost(t) {
     const post = document.createElement("div");
     post.className = "post";
     post.style.transform = `rotate(${getRandomRotation()}deg)`;
-    post.style.backgroundColor = getRandomPostItColor();
+    post.style.backgroundColor = getPostItColorByDate(t.createdAt);
 
     // --- Shrink-then-grow hover effect ---
     post.addEventListener('mouseenter', function () {
