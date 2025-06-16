@@ -265,16 +265,6 @@ social-links a:hover .fab.fa-youtube {
     text-shadow: 1px 1px 0 #fff;
 }
 
-.image-placeholder {
-    margin-top: 1rem;
-    border: 4px solid var(--post-border);
-    background: var(--avatar-bg);
-    text-align: center;
-    transform: rotate(0deg); /* Remove rotation from images */
-    box-shadow: 4px 4px 0 var(--post-border);
-    display: block; /* Ensure it's a block element */
-}
-
 /* Ensure image containers can hold positioned tape */
 .image-placeholder,
 .image-placeholder img {
@@ -442,3 +432,211 @@ footer a:hover {
     color: var(--accent);
 }
 
+.hashtag {
+    color: #222;
+    /* Remove text rotation/skew, only background is "sloppy" */
+    background: none;
+    border-radius: 6px 12px 8px 10px / 10px 8px 12px 6px;
+    padding: 0 6px 2px 6px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow:
+        0 2px 8px 0 rgba(255, 248, 154, 0.18),
+        0 1px 0 0 rgba(255, 248, 154, 0.25);
+    display: inline-block;
+    margin: 0 2px;
+    position: relative;
+    z-index: 1;
+}
+.hashtag::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: -3px;
+    right: -3px;
+    top: 2px;
+    bottom: 2px;
+    /* Default fallback color, will be overridden inline by JS */
+    background: linear-gradient(
+        4deg,
+        var(--hashtag-bg, #fff89a) 0%,
+        var(--hashtag-bg, #fff89a) 100%
+    );
+    opacity: 0.7;
+    border-radius: 8px 14px 10px 12px / 12px 10px 14px 8px;
+    transform: rotate(-2deg) skewX(-2deg);
+    pointer-events: none;
+}
+
+.mention {
+    color: #388e3c;
+    background: #e8f5e9;
+    border-radius: 4px;
+    color: #388e3c;
+    background: #e8f5e9;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-weight: 500;    cursor: pointer;
+}
+
+/* Video center play button styling */
+.video-center-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.video-center-play::before {
+    content: "▶";
+    color: white;
+    font-size: 24px;
+    margin-left: 4px; /* Slight offset to center the triangle visually */
+}
+
+.video-center-play:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.video-center-play:focus {
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+
+/* Video embed container and video styling */
+.video-embed-container {
+    position: relative;
+}
+
+.video-embed {
+    width: 100%;
+    max-height: 60vh;
+    margin: 1.5rem 0 12px 0;
+    background: #000;
+    border-radius: 8px;
+}
+
+/* Shadowbox modal styling */
+.shadowbox-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.0);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 9999;
+    cursor: zoom-out;
+    transition: background 0.35s cubic-bezier(.5,1.5,.5,1);
+}
+
+.shadowbox-modal.visible {
+    background: rgba(0,0,0,0.7);
+}
+
+.shadowbox-post {
+    transform: translateY(100vh) scale(0.98);
+    max-width: 75vw;
+    max-height: 90vh;
+    overflow: auto;
+    position: relative;
+    z-index: 10001;
+    cursor: default;
+    opacity: 0;
+    transition: opacity 0.25s cubic-bezier(.5,1.5,.5,1), transform 0.5s cubic-bezier(.5,1.5,.5,1);
+}
+
+.shadowbox-post.visible {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 1;
+}
+
+.shadowbox-image {
+    max-width: 90vw !important;
+    max-height: 80vh !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 24px auto !important;
+    opacity: 1 !important;
+}
+
+.shadowbox-close {
+    position: absolute;
+    top: 10px;
+    right: 16px;
+    font-size: 2rem;
+    background: rgba(0,0,0,0.2);
+    color: #fff;
+    border: none;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    z-index: 10002;
+    transition: background 0.2s;
+}
+
+.shadowbox-close:hover {
+    background: rgba(0,0,0,0.5);
+}
+
+/* Post header avatar image styling */
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Post metadata styling */
+.post-author {
+    font-weight: bold;
+}
+
+.post-date {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+/* Image placeholder styling */
+.image-placeholder {
+    width: 100%;
+    margin-top: 1.5rem;
+    border: 4px solid var(--post-border);
+    background: var(--avatar-bg);
+    text-align: center;
+    transform: rotate(0deg);
+    box-shadow: 4px 4px 0 var(--post-border);
+    display: block;
+}
+
+/* Post animation for loading */
+@keyframes slideUpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(50px) rotate(var(--post-rotation, 0deg));
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) rotate(var(--post-rotation, 0deg));
+    }
+}
+
+.post.loading {
+    opacity: 0;
+    transform: translateY(50px) rotate(var(--post-rotation, 0deg));
+    animation: slideUpFadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}

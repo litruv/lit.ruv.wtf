@@ -125,6 +125,51 @@ function refreshTape() {
     addTapeToImages();
 }
 
+// Add tape to a specific post element
+function addTapeToPost(postElement) {
+    const images = postElement.querySelectorAll('.image-placeholder');
+    console.log(`[Tape] Found ${images.length} images in post to add tape to`);
+    
+    if (images.length === 0) {
+        return;
+    }
+    
+    images.forEach((image, index) => {
+        // Check if image already has tape
+        const existingTape = image.parentElement.querySelectorAll('.tape');
+        if (existingTape.length > 0) {
+            console.log(`[Tape] Image ${index + 1} already has tape, skipping`);
+            return;
+        }
+        
+        // Ensure the image parent has relative positioning
+        const imageParent = image.parentElement;
+        if (imageParent && window.getComputedStyle(imageParent).position === 'static') {
+            imageParent.style.position = 'relative';
+        }
+        
+        // Create two tape pieces
+        const tape1 = createTapeElement(index, 1);
+        const tape2 = createTapeElement(index, 2);
+        
+        // Position based on pattern
+        const usePattern1 = index % 2 === 0;
+        if (usePattern1) {
+            positionTape(tape1, 'top-left');
+            positionTape(tape2, 'bottom-right');
+        } else {
+            positionTape(tape1, 'top-right');
+            positionTape(tape2, 'bottom-left');
+        }
+        
+        // Add to the image's parent container
+        imageParent.appendChild(tape1);
+        imageParent.appendChild(tape2);
+        
+        console.log(`[Tape] Added tape to image ${index + 1} in specific post`);
+    });
+}
+
 // Simple test function
 function testSimpleTape() {
     console.log('[Tape Test] Creating simple test...');
@@ -168,6 +213,7 @@ function testSimpleTape() {
 
 // Export functions
 window.addTapeToImages = addTapeToImages;
+window.addTapeToPost = addTapeToPost;
 window.refreshTape = refreshTape;
 window.testSimpleTape = testSimpleTape;
 

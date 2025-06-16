@@ -11,7 +11,6 @@ function getRandomRotation() {
     return 3 * Math.random() - 1.5;
 }
 
-// Post-it note colors
 const postItColors = [
     '#E6F3FF', // faded blue
     '#FFF9C4', // yellow
@@ -25,87 +24,116 @@ function getRandomPostItColor() {
 }
 
 function getPostItColorByDate(dateString) {
-    // Create a simple hash from the date string
     let hash = 0;
     for (let i = 0; i < dateString.length; i++) {
         hash = ((hash << 5) - hash) + dateString.charCodeAt(i);
-        hash = hash & hash; // Convert to 32-bit integer
+        hash = hash & hash;
     }
-    // Use absolute value and modulo to get color index
     const colorIndex = Math.abs(hash) % postItColors.length;
     return postItColors[colorIndex];
 }
 
-// Global variable to track last user-set volume (default to 1)
 let lastMediaVolume = 1;
+
+// Define attachHoverListeners function
+function attachHoverListeners(postElement) {
+    // The base rotation is what was used for the loading animation.
+    // It's stored in the CSS custom property '--post-rotation'.
+    const baseRotation = postElement.style.getPropertyValue('--post-rotation');
+
+    postElement.addEventListener('mouseenter', function () {
+        postElement.style.zIndex = 100;
+        // Apply specific transition for this hover effect
+        postElement.style.transition = "transform 0.22s cubic-bezier(.5,1.5,.5,1), box-shadow 0.22s cubic-bezier(.5,1.5,.5,1)";
+        // Hover transform: new random rotation + scale
+        postElement.style.transform = `rotate(${getRandomRotation()}deg) scale(1.1)`;
+    });
+
+    postElement.addEventListener('mouseleave', function () {
+        // Apply specific transition for unhover
+        postElement.style.transition = "transform 0.18s cubic-bezier(.5,0,.5,1), box-shadow 0.18s cubic-bezier(.5,0,.5,1)";
+        // Return to base rotation + scale(1)
+        postElement.style.transform = `rotate(${baseRotation || '0deg'}) scale(1)`;
+        postElement.style.zIndex = 1;
+    });
+}
 
 function createPost(t) {
     const post = document.createElement("div");
     post.className = "post";
+    // Set initial transform. This will be used by addPostToLayout to set --post-rotation.
     post.style.transform = `rotate(${getRandomRotation()}deg)`;
     post.style.backgroundColor = getPostItColorByDate(t.createdAt);
 
-    // --- Shrink-then-grow hover effect ---
-    post.addEventListener('mouseenter', function () {
-        post.style.zIndex = 100;
-        post.style.transition = "transform 0.22s cubic-bezier(.5,1.5,.5,1)";
-        post.style.transform = `rotate(${getRandomRotation()}deg) scale(1.1)`;
-    });
-    post.addEventListener('mouseleave', function () {
-        post.style.transition = "transform 0.18s cubic-bezier(.5,0,.5,1)";
-        post.style.transform = `rotate(${getRandomRotation()}deg)`;
-        post.style.zIndex = 1;
-    });
-    // --- end hover effect ---
+    // Hover listeners are now attached in addPostToLayout after the loading animation.
 
     const link = document.createElement("a");
     link.href = t.url;
     link.target = "_blank";
     link.style.textDecoration = "none";
 
-    // --- EMBED HTML (images and videos) ---
     let embedHtml = "";
     if (t.embed && t.embed.length > 0) {
         embedHtml = t.embed.map((embed, idx) => {
             if (embed.type === "image") {
-                // Image embed
                 return `
                     <a href="${embed.url}" target="_blank">
-                        <img class="image-placeholder" src="${embed.url}" alt="${embed.alt || "Image"}" style="width: 100%;" data-fullres="${embed.fullres || embed.url}" />
+                        <img class="image-placeholder" src="${embed.url}" alt="${embed.alt || "Image"}" data-fullres="${embed.fullres || embed.url}" />
                     </a>
                 `;
             } else if (embed.type === "video") {
-                // Video embed
-                // Use a data attribute for m3u8 playlist, set src only if not m3u8
                 const isM3u8 = embed.playlist && embed.playlist.endsWith('.m3u8');
                 return `
-                    <video 
-                        class="video-embed"
-                        ${isM3u8 ? `data-hls-src="${embed.playlist}"` : `src="${embed.playlist}"`}
-                        poster="${embed.thumbnail || ""}" 
-                        controls 
-                        style="width: 100%; max-height: 60vh; margin: 12px 0; background: #000; border-radius: 8px;"
-                        preload="none"
-                    >
-                        Sorry, your browser doesn't support embedded videos.
-                    </video>
+                    <div class="video-embed-container">
+                        <video 
+                            class="video-embed"
+                            ${isM3u8 ? `data-hls-src="${embed.playlist}"` : `src="${embed.playlist}"`}
+                            poster="${embed.thumbnail || ""}" 
+                            controls
+                            preload="metadata"
+                            tabindex="0"
+                        >
+                            Sorry, your browser doesn't support embedded videos.
+                        </video>
+                    </div>
                 `;
             }
-            // ...other embed types can be handled here...
             return "";
         }).join("");
     }
 
-    const textHtml = t.text.replace(/\n/g, "<br>");
+    function linkifyText(text, highlightColor) {
+        text = text.replace(/(^|[\s.,;:!?])#([a-zA-Z0-9_]{2,50})\b/g, (m, pre, tag) =>
+            `${pre}<span class="hashtag" style="--hashtag-bg:${highlightColor};">#${tag}</span>`
+        );
+        text = text.replace(/(^|[\s.,;:!?])@([a-zA-Z0-9_.-]+\.[a-zA-Z0-9_.-]+)/g, (m, pre, handle) =>
+            `${pre}<span class="mention"><b>@${handle}</b></span>`
+        );
+        return text;
+    }
+
+    function getHighlighterColor(cardColor) {
+        if (cardColor === '#E6F3FF') return '#ffb7ce';
+        if (cardColor === '#FFF9C4') return '#b7e0fd';
+        if (cardColor === '#E8F5E8') return '#fff89a';
+        if (cardColor === '#FFE4B5') return '#b6fcb6';
+        if (cardColor === '#FFE1E6') return '#ffd59e';
+        return '#fff89a';
+    }
+
+    const cardColor = getPostItColorByDate(t.createdAt);
+    const highlightColor = getHighlighterColor(cardColor);
+
+    const textHtml = linkifyText(t.text, highlightColor).replace(/\n/g, "<br>");
 
     post.innerHTML = `
         <div class="post-header">
             <div class="avatar">
-                <img src="${t.avatar}" alt="${t.author}" style="width: 100%; height: 100%; object-fit: cover;" />
+                <img src="${t.avatar}" alt="${t.author}" />
             </div>
             <div>
-                <div style="font-weight: bold;">${t.author} (@${t.handle})</div>
-                <div style="font-size: 0.875rem; color: #666;">
+                <div class="post-author">${t.author} (@${t.handle})</div>
+                <div class="post-date">
                     ${formatDate(t.createdAt)}
                 </div>
             </div>
@@ -118,7 +146,6 @@ function createPost(t) {
         </div>
     `;
 
-    // Add shadowbox event to images (after DOM is ready)
     setTimeout(() => {
         const imgs = post.querySelectorAll('img');
         imgs.forEach(img => {
@@ -129,24 +156,19 @@ function createPost(t) {
             });
         });
 
-        // --- HLS.js video support for .m3u8 ---
-        const videos = post.querySelectorAll('video[data-hls-src],video.video-embed');
-        videos.forEach(video => {
-            // Set initial volume to lastMediaVolume
+        post.querySelectorAll('.video-embed-container').forEach(container => {
+            const video = container.querySelector('video');
+            if (!video) return;
+
             video.volume = lastMediaVolume;
 
-            // Prevent drag-selection when interacting with video controls (esp. volume)
             video.addEventListener('mousedown', function (e) {
-                // Only prevent drag if the event is on the controls bar (not the video area)
-                // This is a best-effort: always prevent drag for any mousedown on video controls
                 e.stopPropagation();
             });
 
-            // Listen for volume changes and sync to all players
             video.addEventListener('volumechange', function () {
                 if (!isNaN(video.volume)) {
                     lastMediaVolume = video.volume;
-                    // Sync all other videos on the page
                     document.querySelectorAll('video.video-embed').forEach(v => {
                         if (v !== video && Math.abs(v.volume - lastMediaVolume) > 0.01) {
                             v.volume = lastMediaVolume;
@@ -154,9 +176,27 @@ function createPost(t) {
                     });
                 }
             });
+
+            video.addEventListener('play', function () {
+                document.querySelectorAll('video.video-embed').forEach(v => {
+                    if (v !== video && !v.paused) {
+                        v.pause();
+                    }
+                });
+            });
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting && !video.paused) {
+                        video.pause();
+                    }
+                });
+            }, {
+                threshold: 0.25
+            });
+            observer.observe(video);
         });
 
-        // HLS.js setup for m3u8
         const hlsVideos = post.querySelectorAll('video[data-hls-src]');
         if (hlsVideos.length > 0 && window.Hls) {
             hlsVideos.forEach(video => {
@@ -172,7 +212,6 @@ function createPost(t) {
                 }
             });
         }
-        // --- end HLS.js support ---
     }, 0);
 
     link.href = t.url;
@@ -183,52 +222,26 @@ function createPost(t) {
     return link;
 }
 
-// --- Shadowbox Modal with Smooth Animation ---
 function createShadowbox(postEl, imgEl) {
-    // Remove any existing shadowbox
     const existing = document.getElementById('shadowbox-modal');
     if (existing) existing.remove();
 
-    // Clone the post node
     const modal = document.createElement('div');
     modal.id = 'shadowbox-modal';
-    modal.style.position = 'fixed';
-    modal.style.top = 0;
-    modal.style.left = 0;
-    modal.style.width = '100vw';
-    modal.style.height = '100vh';
-    modal.style.background = 'rgba(0,0,0,0.0)';
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'flex-end'; // print from bottom
-    modal.style.justifyContent = 'center';
-    modal.style.zIndex = 9999;
-    modal.style.cursor = 'zoom-out';
-    modal.style.transition = 'background 0.35s cubic-bezier(.5,1.5,.5,1)';
+    modal.className = 'shadowbox-modal';
 
-    // Container for the post
     const postClone = postEl.cloneNode(true);
-    postClone.style.transform = 'translateY(100vh) scale(0.98)';
+    postClone.className += ' shadowbox-post';
     postClone.style.background = postEl.style.backgroundColor || '#fff';
-    postClone.style.maxWidth = '95vw';
-    postClone.style.maxHeight = '90vh';
-    postClone.style.overflow = 'auto';
-    postClone.style.position = 'relative';
-    postClone.style.zIndex = 10001;
-    postClone.style.cursor = 'default';
-    postClone.style.opacity = '0';
-    postClone.style.transition = 'opacity 0.25s cubic-bezier(.5,1.5,.5,1), transform 0.5s cubic-bezier(.5,1.5,.5,1)';
 
-    // Remove tape elements from the shadowbox
     const tapeElements = postClone.querySelectorAll('.tape');
     tapeElements.forEach(tape => tape.remove());
 
-    // Focus on the clicked image: zoom it in
     const imgs = postClone.querySelectorAll('img');
     const originalImgs = postEl.querySelectorAll('img');
     let focusedImg = null;
     let clickedImageIndex = -1;
     
-    // Find the index of the clicked image in the original post
     originalImgs.forEach((originalImg, idx) => {
         if (originalImg === imgEl) {
             clickedImageIndex = idx;
@@ -236,83 +249,49 @@ function createShadowbox(postEl, imgEl) {
     });
 
     imgs.forEach((cloneImg, idx) => {
-        // Always use the full-size image for all images in the modal
         if (cloneImg.classList.contains('image-placeholder')) {
             const fullSizeUrl = getFullSizeImageUrl(cloneImg.src);
             cloneImg.src = fullSizeUrl;
-            // Apply modal styles to all images immediately
-            cloneImg.style.maxWidth = '90vw';
-            cloneImg.style.maxHeight = '80vh';
-            cloneImg.style.width = '';
-            cloneImg.style.objectFit = 'contain';
-            cloneImg.style.display = 'block';
-            cloneImg.style.margin = '24px auto';
-            cloneImg.style.opacity = 1;
+            cloneImg.className += ' shadowbox-image';
         }
-        // Use index matching instead of URL comparison
         if (idx === clickedImageIndex && cloneImg.classList.contains('image-placeholder')) {
             focusedImg = cloneImg;
         }
     });
 
-    // Add close button
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '×';
-    closeBtn.style.position = 'absolute';
-    closeBtn.style.top = '10px';
-    closeBtn.style.right = '16px';
-    closeBtn.style.fontSize = '2rem';
-    closeBtn.style.background = 'rgba(0,0,0,0.2)';
-    closeBtn.style.color = '#fff';
-    closeBtn.style.border = 'none';
-    closeBtn.style.width = '40px';
-    closeBtn.style.height = '40px';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.zIndex = 10002;
-    closeBtn.style.transition = 'background 0.2s';
-    closeBtn.addEventListener('mouseenter', () => closeBtn.style.background = 'rgba(0,0,0,0.5)');
-    closeBtn.addEventListener('mouseleave', () => closeBtn.style.background = 'rgba(0,0,0,0.2)');
+    closeBtn.className = 'shadowbox-close';
     closeBtn.addEventListener('click', e => {
         e.stopPropagation();
         closeShadowbox();
     });
     postClone.appendChild(closeBtn);
 
-    // Prevent click inside post from closing modal
     postClone.addEventListener('click', e => e.stopPropagation());
-
     modal.appendChild(postClone);
-
-    // Click outside closes modal
     modal.addEventListener('click', closeShadowbox);
-
     document.body.appendChild(modal);
 
-    // --- Animate modal background and post "printing" from bottom ---
     setTimeout(() => {
-        modal.style.background = 'rgba(0,0,0,0.7)';
-        postClone.style.transform = 'translateY(0) scale(1)';
-        postClone.style.opacity = '1';
+        modal.classList.add('visible');
+        postClone.classList.add('visible');
     }, 10);
 
-    // Scroll to focused image smoothly after animation
     setTimeout(() => {
         if (focusedImg) {
             focusedImg.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }, 400);
 
-    // Animate out and remove
     function closeShadowbox() {
-        modal.style.background = 'rgba(0,0,0,0.0)';
-        postClone.style.transform = 'translateY(100vh) scale(0.98)';
-        postClone.style.opacity = '0';
+        modal.classList.remove('visible');
+        postClone.classList.remove('visible');
         setTimeout(() => {
             modal.remove();
         }, 350);
     }
 
-    // Escape key closes modal
     function escListener(e) {
         if (e.key === 'Escape') {
             closeShadowbox();
@@ -321,25 +300,20 @@ function createShadowbox(postEl, imgEl) {
     }
     window.addEventListener('keydown', escListener);
 
-    // --- Snap scroll to next image in post on scroll ---
     let lastFocusedIdx = Array.from(imgs).findIndex(cloneImg => cloneImg === focusedImg);
     let snapTimeout = null;
     let isInitialScroll = true;
     
-    // Disable initial scroll detection after the automatic scroll completes
     setTimeout(() => {
         isInitialScroll = false;
     }, 800);
     
     postClone.addEventListener('scroll', () => {
-        // Skip scroll detection during initial automatic scroll
         if (isInitialScroll) return;
         
-        // Find the image closest to the center of the viewport
         let modalRect = postClone.getBoundingClientRect();
         let modalCenter = modalRect.top + modalRect.height / 2;
 
-        // Find all images whose center is within a threshold of the modal center
         let candidates = [];
         imgs.forEach((img, idx) => {
             const rect = img.getBoundingClientRect();
@@ -348,18 +322,14 @@ function createShadowbox(postEl, imgEl) {
             candidates.push({ idx, dist, center, rect });
         });
 
-        // Sort by distance to center
         candidates.sort((a, b) => a.dist - b.dist);
 
-        // If the closest image is not the current, and its center is within 15% of its height from modal center, focus it
         let best = candidates[0];
         if (
             best.idx !== lastFocusedIdx &&
             best.dist < best.rect.height * 0.75
         ) {
-            // Just update the lastFocusedIdx and scroll, don't change styles
             lastFocusedIdx = best.idx;
-            // Snap scroll after short delay
             if (snapTimeout) clearTimeout(snapTimeout);
             snapTimeout = setTimeout(() => {
                 imgs[lastFocusedIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -368,10 +338,8 @@ function createShadowbox(postEl, imgEl) {
     });
 }
 
-// Helper function to convert thumbnail URL to full-size URL
 function getFullSizeImageUrl(thumbUrl) {
     if (!thumbUrl) return thumbUrl;
-    // Convert Bluesky thumbnail URLs to full-size by removing size parameters
     return thumbUrl.replace(/@jpeg$/, '').replace(/\?.*$/, '');
 }
 
@@ -384,6 +352,9 @@ function filterOriginalPosts(feed) {
 }
 
 let postElementsCache = null;
+let layoutColumns = null;
+let postQueue = [];
+let isProcessingQueue = false;
 
 function createColumns(num) {
     const postsContainer = document.getElementById("posts");
@@ -405,19 +376,128 @@ function getNumColumns() {
 }
 
 function getShortestColumn(columns) {
-    let minHeight = columns[0].offsetHeight;
-    let minCol = columns[0];
+    let minHeight = Infinity;
+    let shortestColumns = [];
+    
+    // Find all columns with the minimum height
     for (const col of columns) {
-        if (col.offsetHeight < minHeight) {
-            minHeight = col.offsetHeight;
-            minCol = col;
+        const height = col.offsetHeight;
+        if (height < minHeight) {
+            minHeight = height;
+            shortestColumns = [col];
+        } else if (height === minHeight) {
+            shortestColumns.push(col);
         }
     }
-    return minCol;
+    
+    // If multiple columns have the same height, prefer the middle one
+    if (shortestColumns.length > 1) {
+        const middleIndex = Math.floor(columns.length / 2);
+        const middleColumn = columns[middleIndex];
+        if (shortestColumns.includes(middleColumn)) {
+            return middleColumn;
+        }
+        // If middle column isn't shortest, return the one closest to middle
+        let closestToMiddle = shortestColumns[0];
+        let minDistance = Math.abs(columns.indexOf(closestToMiddle) - middleIndex);
+        
+        for (const col of shortestColumns) {
+            const distance = Math.abs(columns.indexOf(col) - middleIndex);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestToMiddle = col;
+            }
+        }
+        return closestToMiddle;
+    }
+    
+    return shortestColumns[0];
+}
+
+function addPostToLayout(postEl, zIndex) {
+    if (!layoutColumns) return;
+    
+    const col = getShortestColumn(layoutColumns);
+    const postDiv = postEl.firstElementChild; // This is the .post div
+    
+    // Store the current rotation (from postDiv.style.transform) for the animation
+    const currentTransform = postDiv.style.transform;
+    const rotationMatch = currentTransform.match(/rotate\(([-\d.]+deg)\)/);
+    const rotation = rotationMatch ? rotationMatch[1] : '0deg';
+    
+    postDiv.style.setProperty('--post-rotation', rotation); // Used by slideUpFadeIn animation
+    postDiv.style.zIndex = zIndex;
+    
+    // Add loading animation class
+    postDiv.classList.add('loading');
+    
+    col.appendChild(postEl);
+    
+    // Remove animation class after animation completes AND THEN attach hover listeners
+    setTimeout(() => {
+        postDiv.classList.remove('loading');
+        // Now that the loading animation is done, attach hover listeners
+        attachHoverListeners(postDiv);
+    }, 600); // Duration of slideUpFadeIn animation (0.6s)
+    
+    // Add tape only for this specific post
+    setTimeout(() => {
+        const imgs = postEl.querySelectorAll('img.image-placeholder');
+        if (imgs.length > 0 && window.addTapeToPost) {
+            window.addTapeToPost(postEl);
+        }
+    }, 50);
+}
+
+async function processPostQueue() {
+    if (isProcessingQueue || postQueue.length === 0) return;
+    
+    isProcessingQueue = true;
+    
+    while (postQueue.length > 0) {
+        const { postEl, zIndex } = postQueue.shift();
+        
+        // Create promises for this post's media
+        const promises = [];
+        
+        // Preload images
+        const imgs = postEl.querySelectorAll("img");
+        if (imgs.length) {
+            promises.push(...Array.from(imgs).map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(res => {
+                    img.onload = img.onerror = res;
+                });
+            }));
+        }
+        
+        // Preload video metadata
+        const videos = postEl.querySelectorAll("video");
+        if (videos.length) {
+            promises.push(...Array.from(videos).map(video => {
+                if (video.readyState >= 1) return Promise.resolve();
+                return new Promise(res => {
+                    video.onloadedmetadata = video.onerror = res;
+                });
+            }));
+        }
+        
+        // Wait for this post's media to load before adding to layout
+        if (promises.length > 0) {
+            await Promise.all(promises);
+        }
+        
+        // Add post to layout
+        addPostToLayout(postEl, zIndex);
+        
+        // Small delay between posts for visual effect
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    isProcessingQueue = false;
 }
 
 function layoutPosts(postElements) {
-    // Prevent layout if any video is in fullscreen
     if (document.fullscreenElement && document.fullscreenElement.tagName === "VIDEO") {
         console.log('[Main] Skipping layoutPosts: video is fullscreen');
         return;
@@ -426,18 +506,16 @@ function layoutPosts(postElements) {
     const columns = createColumns(numCols);
     postElements.forEach((postEl, index) => {
         const col = getShortestColumn(columns);
-        // Set descending z-index - first post has highest z-index
         postEl.firstElementChild.style.zIndex = postElements.length - index;
         col.appendChild(postEl);
     });
     
-    // Use refreshTape to avoid duplicate tape on resize/layout
-    console.log('[Main] Posts laid out, refreshing tape for all images');
+    console.log('[Main] Posts laid out, adding tape for all images');
     setTimeout(() => {
-        if (window.refreshTape) {
-            window.refreshTape();
+        if (window.addTapeToImages) {
+            window.addTapeToImages();
         } else {
-            console.error('[Main] refreshTape function not available');
+            console.error('[Main] addTapeToImages function not available');
         }
     }, 200);
 }
@@ -451,20 +529,15 @@ async function fetchPosts() {
         const data = await res.json();
 
         const posts = filterOriginalPosts(data.feed).map(item => {
-            // --- EMBED HANDLING ---
             let embeds = [];
             const embedObj = item.post.embed;
             if (embedObj) {
-                // Debug output (optional)
-                // console.log("[Main] Post embed:", embedObj);
-                // console.log("[Main] Embed $type:", embedObj.$type);
-
                 if (embedObj.$type === "app.bsky.embed.images#view" && Array.isArray(embedObj.images)) {
                     embeds = embedObj.images.map(img => ({
                         type: "image",
                         url: img.thumb,
                         alt: img.alt || "",
-                        fullres: img.fullsize || img.full || img.thumb // fallback to thumb if no fullres
+                        fullres: img.fullsize || img.full || img.thumb
                     }));
                 } else if (embedObj.$type === "app.bsky.embed.video#view") {
                     embeds = [{
@@ -475,7 +548,6 @@ async function fetchPosts() {
                         aspectRatio: embedObj.aspectRatio || null
                     }];
                 }
-                // Optionally handle other embed types (external, record, etc) here
             }
 
             return {
@@ -493,42 +565,50 @@ async function fetchPosts() {
 
         console.log(`[Main] Fetched ${posts.length} posts, ${posts.filter(p => p.embed.some(e => e.type === "image")).length} have images, ${posts.filter(p => p.embed.some(e => e.type === "video")).length} have videos`);
 
-        // Only create post elements once
+        // Initialize layout columns
+        const numCols = getNumColumns();
+        layoutColumns = createColumns(numCols);
+        
+        // Create all post elements
         postElementsCache = posts.map(post => createPost(post));
-        // Preload images
-        await Promise.all(postElementsCache.map(el => {
-            const imgs = el.querySelectorAll("img");
-            if (!imgs.length) return Promise.resolve();
-            return Promise.all(Array.from(imgs).map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise(res => {
-                    img.onload = img.onerror = res;
-                });
-            }));
+        
+        // Add posts to queue in order
+        postQueue = postElementsCache.map((postEl, index) => ({
+            postEl,
+            zIndex: postElementsCache.length - index
         }));
-
-        layoutPosts(postElementsCache);
+        
+        // Start processing the queue
+        processPostQueue();
 
     } catch (err) {
         console.error("Error fetching posts:", err);
     }
 }
 
-// Only re-layout on resize, do not re-fetch or re-create posts
 window.addEventListener("resize", () => {
-    // Prevent layout if any video is in fullscreen
     if (document.fullscreenElement && document.fullscreenElement.tagName === "VIDEO") {
         console.log('[Main] Skipping resize layout: video is fullscreen');
         return;
     }
-    if (postElementsCache) {
-        layoutPosts(postElementsCache);
-        // Re-add tape after layout changes
-        if (window.refreshTape) {
-            setTimeout(() => {
+    if (postElementsCache && layoutColumns) {
+        // Re-layout all existing posts
+        layoutColumns = createColumns(getNumColumns());
+        postElementsCache.forEach((postEl, index) => {
+            if (postEl.parentNode) { // Only re-layout posts that are already added
+                const zIndex = postElementsCache.length - index;
+                const col = getShortestColumn(layoutColumns);
+                const postDiv = postEl.firstElementChild;
+                postDiv.style.zIndex = zIndex;
+                col.appendChild(postEl);
+            }
+        });
+        // Re-add tape after layout changes using the full refresh
+        setTimeout(() => {
+            if (window.refreshTape) {
                 window.refreshTape();
-            }, 100);
-        }
+            }
+        }, 100);
     }
 });
 
