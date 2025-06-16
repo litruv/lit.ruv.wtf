@@ -344,6 +344,7 @@ let postElementsCache = null;
 let layoutColumns = null;
 let postQueue = [];
 let isProcessingQueue = false;
+let currentNumColumns = 0; // Variable to store the current number of columns
 
 function createColumns(num) {
     const postsContainer = document.getElementById("posts");
@@ -548,6 +549,7 @@ async function fetchPosts() {
         // Initialize layout columns
         const numCols = getNumColumns();
         layoutColumns = createColumns(numCols);
+        currentNumColumns = numCols; // Initialize currentNumColumns
         
         // Create all post elements
         postElementsCache = posts.map(post => createPost(post));
@@ -570,9 +572,13 @@ window.addEventListener("resize", () => {
     if (document.fullscreenElement && document.fullscreenElement.tagName === "VIDEO") {
         return;
     }
-    if (postElementsCache && layoutColumns) {
+
+    const newNumCols = getNumColumns();
+
+    if (postElementsCache && layoutColumns && newNumCols !== currentNumColumns) {
+        currentNumColumns = newNumCols; // Update the current number of columns
         // Re-layout all existing posts
-        layoutColumns = createColumns(getNumColumns());
+        layoutColumns = createColumns(newNumCols);
         postElementsCache.forEach((postEl, index) => {
             if (postEl.parentNode) { // Only re-layout posts that are already added
                 const zIndex = postElementsCache.length - index;
