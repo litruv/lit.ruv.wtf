@@ -37,22 +37,16 @@ let lastMediaVolume = 1;
 
 // Define attachHoverListeners function
 function attachHoverListeners(postElement) {
-    // The base rotation is what was used for the loading animation.
-    // It's stored in the CSS custom property '--post-rotation'.
     const baseRotation = postElement.style.getPropertyValue('--post-rotation');
 
     postElement.addEventListener('mouseenter', function () {
         postElement.style.zIndex = 100;
-        // Apply specific transition for this hover effect
         postElement.style.transition = "transform 0.22s cubic-bezier(.5,1.5,.5,1), box-shadow 0.22s cubic-bezier(.5,1.5,.5,1)";
-        // Hover transform: new random rotation + scale
         postElement.style.transform = `rotate(${getRandomRotation()}deg) scale(1.1)`;
     });
 
     postElement.addEventListener('mouseleave', function () {
-        // Apply specific transition for unhover
         postElement.style.transition = "transform 0.18s cubic-bezier(.5,0,.5,1), box-shadow 0.18s cubic-bezier(.5,0,.5,1)";
-        // Return to base rotation + scale(1)
         postElement.style.transform = `rotate(${baseRotation || '0deg'}) scale(1)`;
         postElement.style.zIndex = 1;
     });
@@ -61,11 +55,8 @@ function attachHoverListeners(postElement) {
 function createPost(t) {
     const post = document.createElement("div");
     post.className = "post";
-    // Set initial transform. This will be used by addPostToLayout to set --post-rotation.
     post.style.transform = `rotate(${getRandomRotation()}deg)`;
     post.style.backgroundColor = getPostItColorByDate(t.createdAt);
-
-    // Hover listeners are now attached in addPostToLayout after the loading animation.
 
     const link = document.createElement("a");
     link.href = t.url;
@@ -216,8 +207,6 @@ function createPost(t) {
 
     link.href = t.url;
     link.appendChild(post);
-    
-    console.log(`[Main] Created post with ${t.embed.length} embeds`);
     
     return link;
 }
@@ -418,29 +407,24 @@ function addPostToLayout(postEl, zIndex) {
     if (!layoutColumns) return;
     
     const col = getShortestColumn(layoutColumns);
-    const postDiv = postEl.firstElementChild; // This is the .post div
+    const postDiv = postEl.firstElementChild; 
     
-    // Store the current rotation (from postDiv.style.transform) for the animation
     const currentTransform = postDiv.style.transform;
     const rotationMatch = currentTransform.match(/rotate\(([-\d.]+deg)\)/);
     const rotation = rotationMatch ? rotationMatch[1] : '0deg';
     
-    postDiv.style.setProperty('--post-rotation', rotation); // Used by slideUpFadeIn animation
+    postDiv.style.setProperty('--post-rotation', rotation); 
     postDiv.style.zIndex = zIndex;
     
-    // Add loading animation class
     postDiv.classList.add('loading');
     
     col.appendChild(postEl);
     
-    // Remove animation class after animation completes AND THEN attach hover listeners
     setTimeout(() => {
         postDiv.classList.remove('loading');
-        // Now that the loading animation is done, attach hover listeners
         attachHoverListeners(postDiv);
-    }, 600); // Duration of slideUpFadeIn animation (0.6s)
+    }, 600); 
     
-    // Add tape only for this specific post
     setTimeout(() => {
         const imgs = postEl.querySelectorAll('img.image-placeholder');
         if (imgs.length > 0 && window.addTapeToPost) {
@@ -499,7 +483,6 @@ async function processPostQueue() {
 
 function layoutPosts(postElements) {
     if (document.fullscreenElement && document.fullscreenElement.tagName === "VIDEO") {
-        console.log('[Main] Skipping layoutPosts: video is fullscreen');
         return;
     }
     const numCols = getNumColumns();
@@ -510,7 +493,6 @@ function layoutPosts(postElements) {
         col.appendChild(postEl);
     });
     
-    console.log('[Main] Posts laid out, adding tape for all images');
     setTimeout(() => {
         if (window.addTapeToImages) {
             window.addTapeToImages();
@@ -563,8 +545,6 @@ async function fetchPosts() {
             };
         });
 
-        console.log(`[Main] Fetched ${posts.length} posts, ${posts.filter(p => p.embed.some(e => e.type === "image")).length} have images, ${posts.filter(p => p.embed.some(e => e.type === "video")).length} have videos`);
-
         // Initialize layout columns
         const numCols = getNumColumns();
         layoutColumns = createColumns(numCols);
@@ -588,7 +568,6 @@ async function fetchPosts() {
 
 window.addEventListener("resize", () => {
     if (document.fullscreenElement && document.fullscreenElement.tagName === "VIDEO") {
-        console.log('[Main] Skipping resize layout: video is fullscreen');
         return;
     }
     if (postElementsCache && layoutColumns) {
