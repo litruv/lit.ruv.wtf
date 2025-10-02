@@ -134,7 +134,7 @@ function createPost(t) {
         <div class="post-actions">
             <button class="action-btn like">♥ ${t.likes}</button>
             <button class="action-btn repost">⟲ ${t.reposts}</button>
-            <button class="action-btn comment">» ${t.comments}</button>
+            <button class="action-btn comment">↳ ${t.comments}</button>
         </div>
     `;
 
