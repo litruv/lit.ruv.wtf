@@ -97,7 +97,6 @@ h1 {
 }
 
 .social-links a:hover {
-    color: var(--accent);
     transform: scale(1.1);
     transition: transform 0.3s ease;
     text-shadow: 0 0 3px white;
@@ -107,7 +106,7 @@ h1 {
     color: var(--github);
 }
 
-social-links a:hover .fab.fa-youtube {
+.social-links a:hover .fab.fa-youtube {
     color: var(--youtube);
 }
 
@@ -660,8 +659,8 @@ footer a:hover {
     animation: slideUpFadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-/* Loading indicator styles */
-.loading-posts {
+/* Loading indicator and view more button styles */
+.loading-posts, .view-more-posts {
     text-align: center;
     margin: 2rem auto;
     padding: 2rem;
@@ -673,9 +672,22 @@ footer a:hover {
     color: #666;
     font-family: inherit;
     position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.loading-posts::before {
+.view-more-posts {
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+}
+
+.view-more-posts:hover {
+    transform: rotate(-1deg) scale(1.05);
+    box-shadow: 6px 6px 0 var(--shadow-light);
+    color: var(--bluesky);
+}
+
+.loading-posts::before, .view-more-posts::before {
     content: "";
     position: absolute;
     top: 5px;
@@ -688,7 +700,7 @@ footer a:hover {
     filter: blur(3px);
 }
 
-.loading-posts-content {
+.loading-posts-content, .view-more-posts-content {
     position: relative;
     z-index: 1;
 }

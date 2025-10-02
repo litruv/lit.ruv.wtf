@@ -482,8 +482,9 @@ async function processPostQueue() {
     
     isProcessingQueue = false;
     
-    // Hide loading indicator when all posts are processed
+    // Replace loading indicator with "view more" button when all posts are processed
     hideLoadingIndicator();
+    showViewMoreButton();
 }
 
 function layoutPosts(postElements) {
@@ -526,6 +527,21 @@ function hideLoadingIndicator() {
     if (loadingDiv) {
         loadingDiv.remove();
     }
+}
+
+function showViewMoreButton() {
+    const postsContainer = document.getElementById("posts");
+    const viewMoreDiv = document.createElement("a");
+    viewMoreDiv.href = "https://bsky.app/profile/lit.mates.dev";
+    viewMoreDiv.target = "_blank";
+    viewMoreDiv.className = "view-more-posts";
+    viewMoreDiv.innerHTML = `
+        <div class="view-more-posts-content">
+            <strong>View more on Bluesky →</strong><br>
+            <small>Follow @lit.mates.dev for more posts</small>
+        </div>
+    `;
+    postsContainer.appendChild(viewMoreDiv);
 }
 
 async function fetchPosts() {
