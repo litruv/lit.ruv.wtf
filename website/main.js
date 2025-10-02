@@ -531,7 +531,15 @@ function hideLoadingIndicator() {
 
 function showViewMoreButton() {
     const postsContainer = document.getElementById("posts");
+    const containerDiv = postsContainer.parentElement; // Get the main container
+    
+    // Check if button already exists
+    if (document.getElementById("view-more-button")) {
+        return;
+    }
+    
     const viewMoreDiv = document.createElement("a");
+    viewMoreDiv.id = "view-more-button";
     viewMoreDiv.href = "https://bsky.app/profile/lit.mates.dev";
     viewMoreDiv.target = "_blank";
     viewMoreDiv.className = "view-more-posts";
@@ -541,7 +549,7 @@ function showViewMoreButton() {
             <small>Follow @lit.mates.dev for more posts</small>
         </div>
     `;
-    postsContainer.appendChild(viewMoreDiv);
+    containerDiv.appendChild(viewMoreDiv); // Add to main container, not posts container
 }
 
 async function fetchPosts() {

@@ -679,6 +679,8 @@ footer a:hover {
     cursor: pointer;
     text-decoration: none;
     display: block;
+    clear: both;
+    margin-top: 3rem;
 }
 
 .view-more-posts:hover {
