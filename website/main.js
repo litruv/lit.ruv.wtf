@@ -134,6 +134,7 @@ function createPost(t) {
         <div class="post-actions">
             <button class="action-btn like">♥ ${t.likes}</button>
             <button class="action-btn repost">⟲ ${t.reposts}</button>
+            <button class="action-btn comment">» ${t.comments}</button>
         </div>
     `;
 
@@ -541,6 +542,7 @@ async function fetchPosts() {
                 text: item.post.record.text,
                 likes: item.post.likeCount || 0,
                 reposts: item.post.repostCount || 0,
+                comments: item.post.replyCount || 0,
                 url: `https://bsky.app/profile/${item.post.author.handle}/post/${item.post.uri.split("/").pop()}`,
                 embed: embeds
             };

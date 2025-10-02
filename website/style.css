@@ -3,6 +3,7 @@
     --main-fg: #f0f0f0;
     --accent: #2563eb;
     --like: #db2777;
+    --comment: #059669;
     --github: #181717;
     --youtube: #FF0000;
     --steam: #1b2838;
@@ -337,6 +338,11 @@ a:has(.image-placeholder) {
 .action-btn.repost {
     color: var(--accent);
     transform: rotate(1deg);
+}
+
+.action-btn.comment {
+    color: var(--comment);
+    transform: rotate(-0.5deg);
 }
 
 .avatar-img {
