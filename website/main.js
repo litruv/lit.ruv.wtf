@@ -481,6 +481,9 @@ async function processPostQueue() {
     }
     
     isProcessingQueue = false;
+    
+    // Hide loading indicator when all posts are processed
+    hideLoadingIndicator();
 }
 
 function layoutPosts(postElements) {
@@ -504,7 +507,31 @@ function layoutPosts(postElements) {
     }, 200);
 }
 
+function showLoadingIndicator() {
+    const postsContainer = document.getElementById("posts");
+    const loadingDiv = document.createElement("div");
+    loadingDiv.id = "loading-posts";
+    loadingDiv.className = "loading-posts";
+    loadingDiv.innerHTML = `
+        <div class="loading-posts-content">
+            <div class="loading-spinner"></div>
+            Loading posts...
+        </div>
+    `;
+    postsContainer.appendChild(loadingDiv);
+}
+
+function hideLoadingIndicator() {
+    const loadingDiv = document.getElementById("loading-posts");
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
+}
+
 async function fetchPosts() {
+    // Show loading indicator
+    showLoadingIndicator();
+    
     try {
         const res = await fetch(
             "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=lit.mates.dev&limit=20&filter=posts_no_replies"
@@ -567,6 +594,19 @@ async function fetchPosts() {
 
     } catch (err) {
         console.error("Error fetching posts:", err);
+        // Hide loading indicator on error
+        hideLoadingIndicator();
+        
+        // Show error message
+        const postsContainer = document.getElementById("posts");
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "loading-posts";
+        errorDiv.innerHTML = `
+            <div class="loading-posts-content" style="color: #dc2626;">
+                ⚠ Failed to load posts. Please refresh the page.
+            </div>
+        `;
+        postsContainer.appendChild(errorDiv);
     }
 }
 
