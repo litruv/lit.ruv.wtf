@@ -531,7 +531,6 @@ function hideLoadingIndicator() {
 
 function showViewMoreButton() {
     const postsContainer = document.getElementById("posts");
-    const containerDiv = postsContainer.parentElement; // Get the main container
     
     // Check if button already exists
     if (document.getElementById("view-more-button")) {
@@ -549,7 +548,9 @@ function showViewMoreButton() {
             <small>Follow @lit.mates.dev for more posts</small>
         </div>
     `;
-    containerDiv.appendChild(viewMoreDiv); // Add to main container, not posts container
+    
+    // Insert after the posts container but before footer
+    postsContainer.insertAdjacentElement('afterend', viewMoreDiv);
 }
 
 async function fetchPosts() {
