@@ -102,24 +102,29 @@ h1 {
     text-shadow: 0 0 3px white;
 }
 
+.social-links a:hover.fa-github,
 .social-links a:hover .fab.fa-github {
-    color: var(--github);
+    color: var(--github) !important;
 }
 
+.social-links a:hover.fa-youtube,
 .social-links a:hover .fab.fa-youtube {
-    color: var(--youtube);
+    color: var(--youtube) !important;
 }
 
+.social-links a:hover.fa-steam,
 .social-links a:hover .fab.fa-steam {
-    color: var(--steam);
+    color: var(--steam) !important;
 }
 
+.social-links a:hover.fa-discord,
 .social-links a:hover .fab.fa-discord {
-    color: var(--discord);
+    color: var(--discord) !important;
 }
 
+.social-links a:hover.fa-bluesky,
 .social-links a:hover .fa-brands.fa-bluesky {
-    color: var(--bluesky);
+    color: var(--bluesky) !important;
 }
 
 #posts {
