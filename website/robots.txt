@@ -1,3 +1,4 @@
 User-agent: *
 Disallow: /cdn-cgi/
 Sitemap: https://lit.ruv.wtf/sitemap.xml
+Sitemap: https://lit.ruv.wtf/docs/sitemap.xml
