@@ -66,6 +66,23 @@
       <p><strong>What counts as wrap-around?</strong> Reading order connections across a row break, provided every intervening cell is empty.</p>
     </aside>
   </main>
+  <div class="numbermatch-dialog-backdrop" id="summaryDialogBackdrop" hidden>
+    <div class="numbermatch-dialog" id="summaryDialog" role="dialog" aria-modal="true" aria-labelledby="summaryDialogTitle" aria-describedby="summaryDialogDescription" tabindex="-1">
+      <h2 id="summaryDialogTitle">Puzzle summary</h2>
+      <p id="summaryDialogDescription">Here’s how you did this round:</p>
+      <ul class="numbermatch-dialog__metrics">
+        <li><strong>Time:</strong> <span id="summaryDialogTime">0s</span></li>
+        <li><strong>Matches:</strong> <span id="summaryDialogMatches">0</span></li>
+        <li><strong>Moves:</strong> <span id="summaryDialogMoves">0</span></li>
+        <li><strong>Best time:</strong> <span id="summaryDialogBestTime">—</span></li>
+        <li><strong>Best matches:</strong> <span id="summaryDialogBestMatches">—</span></li>
+      </ul>
+      <div class="numbermatch-dialog__actions">
+        <button type="button" class="numbermatch-dialog__button numbermatch-dialog__button--neutral" id="closeSummaryDialogButton">Nicely done</button>
+        <button type="button" class="numbermatch-dialog__button numbermatch-dialog__button--confirm" id="newGameFromSummaryButton">Start new game</button>
+      </div>
+    </div>
+  </div>
   <script src="numbermatch.js" defer></script>
 </body>
 </html>

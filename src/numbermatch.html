@@ -60,12 +60,12 @@ METADATA:{
   }
 
   .numbermatch-page .app__game:hover {
-    transform: scale(1.01);
+    transform: none;
     box-shadow: 6px 9px 0 var(--shadow-light);
   }
 
   .numbermatch-page .app__info:hover {
-    transform: rotate(0deg) scale(1.01);
+    transform: rotate(0.55deg);
     box-shadow: 6px 9px 0 var(--shadow-light);
   }
 
@@ -264,7 +264,6 @@ METADATA:{
 
   .numbermatch-page .tile--selected {
     background: linear-gradient(160deg, #fde68a 0%, #fb923c 100%);
-    box-shadow: 4px 6px 0 rgba(251, 191, 36, 0.4);
   }
 
   .numbermatch-page .tile--hinted:not(.tile--selected) {
@@ -379,6 +378,11 @@ METADATA:{
     color: #fff;
   }
 
+  .numbermatch-dialog-button--neutral {
+    background: var(--post-bg);
+    color: #111827;
+  }
+
   @media (max-width: 1023px) {
     .numbermatch-page .app {
       grid-template-columns: minmax(0, 1fr);
@@ -449,6 +453,12 @@ METADATA:{
           <span class="status__metric">
             Hints used: <strong id="hintsUsed">0</strong>
           </span>
+          <span class="status__metric">
+            Best time: <strong id="bestTimeStat">—</strong>
+          </span>
+          <span class="status__metric">
+            Fewest matches: <strong id="bestMatchesStat">—</strong>
+          </span>
         </div>
       </section>
       <section class="board" id="board" aria-label="Number grid"></section>
@@ -493,6 +503,24 @@ METADATA:{
     <div class="numbermatch-dialog-actions">
       <button type="button" class="numbermatch-dialog-button" id="cancelNewGameButton">Keep playing</button>
       <button type="button" class="numbermatch-dialog-button numbermatch-dialog-button--danger" id="confirmNewGameButton">New game</button>
+    </div>
+  </div>
+</div>
+
+<div class="numbermatch-dialog-backdrop" id="summaryDialogBackdrop" hidden>
+  <div class="numbermatch-dialog" id="summaryDialog" role="dialog" aria-modal="true" aria-labelledby="summaryDialogTitle" aria-describedby="summaryDialogDescription" tabindex="-1">
+    <h2 id="summaryDialogTitle">Puzzle summary</h2>
+    <p id="summaryDialogDescription">Here’s how you did this round:</p>
+    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem 0; color: #111827;">
+      <li><strong>Time:</strong> <span id="summaryDialogTime">0s</span></li>
+      <li><strong>Matches:</strong> <span id="summaryDialogMatches">0</span></li>
+      <li><strong>Moves:</strong> <span id="summaryDialogMoves">0</span></li>
+      <li><strong>Best time:</strong> <span id="summaryDialogBestTime">—</span></li>
+      <li><strong>Best matches:</strong> <span id="summaryDialogBestMatches">—</span></li>
+    </ul>
+    <div class="numbermatch-dialog-actions">
+      <button type="button" class="numbermatch-dialog-button numbermatch-dialog-button--neutral" id="closeSummaryDialogButton">Nicely done</button>
+      <button type="button" class="numbermatch-dialog-button numbermatch-dialog-button--confirm" id="newGameFromSummaryButton">Start new game</button>
     </div>
   </div>
 </div>

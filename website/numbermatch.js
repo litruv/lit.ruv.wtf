@@ -505,6 +505,8 @@ class NumberMatchUI {
     this.addNumbersElement = /** @type {HTMLElement} */ (document.getElementById("addNumbersUsed"));
     this.addNumbersBadgeElement = /** @type {HTMLElement} */ (document.getElementById("addNumbersCounter"));
     this.hintsElement = /** @type {HTMLElement} */ (document.getElementById("hintsUsed"));
+    this.bestTimeElement = /** @type {HTMLElement | null} */ (document.getElementById("bestTimeStat"));
+    this.bestMatchesElement = /** @type {HTMLElement | null} */ (document.getElementById("bestMatchesStat"));
     this.addNumbersButton = /** @type {HTMLButtonElement} */ (document.getElementById("addNumbersButton"));
     this.hintButton = /** @type {HTMLButtonElement} */ (document.getElementById("hintButton"));
     this.newGameButton = /** @type {HTMLButtonElement} */ (document.getElementById("newGameButton"));
@@ -512,13 +514,31 @@ class NumberMatchUI {
     this.newGameDialog = /** @type {HTMLElement | null} */ (document.getElementById("newGameDialog"));
     this.newGameConfirmButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("confirmNewGameButton"));
     this.newGameCancelButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("cancelNewGameButton"));
+    this.summaryDialogBackdrop = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialogBackdrop"));
+    this.summaryDialog = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialog"));
+    this.summaryCloseButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("closeSummaryDialogButton"));
+    this.summaryNewGameButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("newGameFromSummaryButton"));
+    this.summaryTitleElement = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialogTitle"));
+    this.summaryDescriptionElement = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialogDescription"));
+    this.summaryTimeElement = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialogTime"));
+    this.summaryMatchesElement = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialogMatches"));
+    this.summaryMovesElement = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialogMoves"));
+    this.summaryBestTimeElement = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialogBestTime"));
+    this.summaryBestMatchesElement = /** @type {HTMLElement | null} */ (document.getElementById("summaryDialogBestMatches"));
     this.previouslyFocusedElement = null;
 
     this.selectedIndices = [];
     this.matchesCleared = 0;
     this.addNumbersUsed = 0;
     this.hintsUsed = 0;
+    this.movesAttempted = 0;
     this.highlightedIndices = [];
+    this.timerStartedAt = Date.now();
+    this.elapsedMs = 0;
+    this.summaryDialogDisplayed = false;
+    this.summaryDialogReason = null;
+    this.bestTimeMs = null;
+    this.bestMatches = null;
   }
 
   /**
@@ -545,21 +565,30 @@ class NumberMatchUI {
    */
   bindControlEvents() {
     this.addNumbersButton.addEventListener("click", () => {
-      const remainingUses = NumberMatchUI.ADD_NUMBERS_LIMIT - this.addNumbersUsed;
+      const remainingUses = this.remainingAddNumbersUses();
+      if (remainingUses <= 0) {
+        this.addNumbersButton.disabled = true;
+        this.showMessage("No additional numbers remaining.", "error");
+        this.updateAddNumbersPrompt();
+        this.persistState();
+        this.maybeShowStallSummary();
+        return;
+      }
       const appended = this.game.addNumbers(remainingUses);
       if (appended) {
-        if (remainingUses > 0) {
-          this.addNumbersUsed += 1;
-        }
+        this.addNumbersUsed += 1;
         this.showMessage("Numbers duplicated to the end of the grid.", "success");
         this.selectedIndices = [];
         this.clearHighlights();
         this.renderBoard();
         this.updateMetrics();
         this.persistState();
+        this.maybeShowStallSummary();
       } else {
         this.showMessage("No numbers remain to duplicate.", "error");
         this.updateAddNumbersPrompt();
+        this.persistState();
+        this.maybeShowStallSummary();
       }
     });
 
@@ -606,6 +635,30 @@ class NumberMatchUI {
         }
       });
     }
+
+    if (this.summaryDialogBackdrop && this.summaryDialog && this.summaryCloseButton && this.summaryNewGameButton) {
+      this.summaryCloseButton.addEventListener("click", () => {
+        this.closeSummaryDialog();
+      });
+
+      this.summaryNewGameButton.addEventListener("click", () => {
+        this.closeSummaryDialog();
+        this.startNewGame();
+      });
+
+      this.summaryDialogBackdrop.addEventListener("mousedown", (event) => {
+        if (event.target === this.summaryDialogBackdrop) {
+          this.closeSummaryDialog();
+        }
+      });
+
+      this.summaryDialogBackdrop.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          this.closeSummaryDialog();
+        }
+      });
+    }
   }
 
   /**
@@ -636,6 +689,7 @@ class NumberMatchUI {
     this.renderBoard();
     this.clearHighlights();
     const [first, second] = this.selectedIndices;
+    this.movesAttempted += 1;
     const didMatch = this.game.selectPair(first, second);
     if (didMatch) {
       this.matchesCleared += 1;
@@ -648,13 +702,18 @@ class NumberMatchUI {
         this.addNumbersButton.disabled = true;
         this.hintButton.disabled = true;
         this.clearHighlights();
+        this.showSummaryDialog("complete");
+        return;
       }
       this.persistState();
+      this.maybeShowStallSummary();
       return;
     }
 
     this.selectedIndices = [second];
     this.renderBoard();
+    this.persistState();
+    this.maybeShowStallSummary();
   }
 
   /**
@@ -676,7 +735,6 @@ class NumberMatchUI {
         tile.setAttribute("aria-hidden", "true");
       } else {
         tile.textContent = String(value);
-        tile.addEventListener("click", () => this.handleTileClick(index));
       }
       if (this.selectedIndices.includes(index)) {
         tile.classList.add("tile--selected");
@@ -699,6 +757,7 @@ class NumberMatchUI {
     this.addNumbersElement.textContent = `${this.addNumbersUsed}/${NumberMatchUI.ADD_NUMBERS_LIMIT}`;
     this.hintsElement.textContent = String(this.hintsUsed);
     this.updateAddNumbersBadge();
+    this.updateBestMetricsDisplay();
   }
 
   /**
@@ -706,10 +765,184 @@ class NumberMatchUI {
    * @returns {void}
    */
   updateAddNumbersBadge() {
-    const remaining = Math.max(0, NumberMatchUI.ADD_NUMBERS_LIMIT - this.addNumbersUsed);
+    const remaining = this.remainingAddNumbersUses();
     if (this.addNumbersBadgeElement) {
-      this.addNumbersBadgeElement.textContent = String(remaining);
       this.addNumbersBadgeElement.classList.toggle("board-action__badge--empty", remaining === 0);
+    }
+  }
+
+  /**
+   * Update personal best metrics rendered within the page.
+   * @returns {void}
+   */
+  updateBestMetricsDisplay() {
+    if (this.bestTimeElement) {
+      this.bestTimeElement.textContent = this.bestTimeMs !== null ? NumberMatchUI.formatDuration(this.bestTimeMs) : "—";
+    }
+    if (this.bestMatchesElement) {
+      this.bestMatchesElement.textContent = this.bestMatches !== null ? String(this.bestMatches) : "—";
+    }
+  }
+
+  /**
+   * Calculate the remaining Add Numbers uses.
+   * @returns {number} Remaining uses.
+   */
+  remainingAddNumbersUses() {
+    return Math.max(0, NumberMatchUI.ADD_NUMBERS_LIMIT - this.addNumbersUsed);
+  }
+
+  /**
+   * Retrieve accumulated elapsed play time in milliseconds.
+   * @returns {number} Elapsed time in milliseconds.
+    return this.elapsedMs + Math.max(0, now - this.timerStartedAt);
+  }
+
+  /**
+   * Update stored best stats if the current run improved them.
+   * @returns {boolean} True if any personal best was improved.
+   */
+  updateBestStatsIfImproved() {
+    let improved = false;
+    const elapsed = this.getElapsedMs();
+    if (elapsed > 0 && (this.bestTimeMs === null || elapsed < this.bestTimeMs)) {
+      this.bestTimeMs = elapsed;
+      improved = true;
+    }
+
+    const matches = this.matchesCleared;
+    if (matches > 0 && (this.bestMatches === null || matches < this.bestMatches)) {
+      this.bestMatches = matches;
+      improved = true;
+    }
+
+    if (improved) {
+      this.updateBestMetricsDisplay();
+    }
+
+    return improved;
+  }
+
+  /**
+   * Populate and display the no-moves summary dialog when appropriate.
+   * @returns {void}
+   */
+  maybeShowStallSummary() {
+    if (this.summaryDialogDisplayed) {
+      return;
+    }
+
+    if (!this.summaryDialogBackdrop || !this.summaryDialog || !this.summaryCloseButton || !this.summaryNewGameButton) {
+      return;
+    }
+
+    if (this.game.isComplete()) {
+      return;
+    }
+
+    const usesRemaining = this.remainingAddNumbersUses();
+    const noMovesLeft = !this.hasAvailableMoves();
+    if (usesRemaining > 0 || !noMovesLeft) {
+      return;
+    }
+
+    this.showSummaryDialog("stalled");
+  }
+
+  /**
+   * Persist stats, populate content, and reveal the summary dialog.
+   * @param {"stalled"|"complete"} reason Display context for the dialog.
+   * @returns {void}
+   */
+  showSummaryDialog(reason) {
+    if (this.summaryDialogDisplayed) {
+      return;
+    }
+
+    if (!this.summaryDialogBackdrop || !this.summaryDialog || !this.summaryCloseButton) {
+      return;
+    }
+
+    this.updateBestStatsIfImproved();
+    this.persistState();
+    this.summaryDialogDisplayed = true;
+    this.summaryDialogReason = reason;
+    this.populateSummaryDialog(reason);
+    this.openSummaryDialog();
+  }
+
+  /**
+   * Send focus to the summary dialog and reveal it.
+   * @returns {void}
+   */
+  openSummaryDialog() {
+    if (!this.summaryDialogBackdrop || !this.summaryDialog || !this.summaryCloseButton) {
+      return;
+    }
+
+    this.previouslyFocusedElement = document.activeElement;
+    this.summaryDialogBackdrop.hidden = false;
+    requestAnimationFrame(() => {
+      if (!this.summaryDialogBackdrop || !this.summaryDialog || !this.summaryCloseButton) {
+        return;
+      }
+      this.summaryDialogBackdrop.classList.add("is-visible");
+      this.summaryDialogBackdrop.setAttribute("aria-hidden", "false");
+      this.summaryDialog.focus({ preventScroll: true });
+      this.summaryCloseButton.focus({ preventScroll: true });
+    });
+  }
+
+  /**
+   * Hide the summary dialog and gently restore focus.
+   * @returns {void}
+   */
+  closeSummaryDialog() {
+    if (!this.summaryDialogBackdrop) {
+      return;
+    }
+    this.summaryDialogBackdrop.classList.remove("is-visible");
+    this.summaryDialogBackdrop.setAttribute("aria-hidden", "true");
+    setTimeout(() => {
+      if (this.summaryDialogBackdrop) {
+        this.summaryDialogBackdrop.hidden = true;
+      }
+    }, 180);
+
+    if (this.previouslyFocusedElement instanceof HTMLElement) {
+      this.previouslyFocusedElement.focus({ preventScroll: true });
+    }
+  }
+
+  /**
+   * Fill the summary dialog with the latest run statistics.
+   * @param {"stalled"|"complete"} reason Display context for the dialog.
+   * @returns {void}
+   */
+  populateSummaryDialog(reason) {
+    if (this.summaryTitleElement) {
+      this.summaryTitleElement.textContent = reason === "complete" ? "Board cleared!" : "No moves left";
+    }
+    if (this.summaryDescriptionElement) {
+      this.summaryDescriptionElement.textContent =
+        reason === "complete"
+          ? "Every tile is gone. Bask in the perfection."
+          : "You’ve squeezed everything out of this board. Here’s how you did:";
+    }
+    if (this.summaryTimeElement) {
+      this.summaryTimeElement.textContent = NumberMatchUI.formatDuration(this.getElapsedMs());
+    }
+    if (this.summaryMatchesElement) {
+      this.summaryMatchesElement.textContent = String(this.matchesCleared);
+    }
+    if (this.summaryMovesElement) {
+      this.summaryMovesElement.textContent = String(this.movesAttempted);
+    }
+    if (this.summaryBestTimeElement) {
+      this.summaryBestTimeElement.textContent = this.bestTimeMs !== null ? NumberMatchUI.formatDuration(this.bestTimeMs) : "—";
+    }
+    if (this.summaryBestMatchesElement) {
+      this.summaryBestMatchesElement.textContent = this.bestMatches !== null ? String(this.bestMatches) : "—";
     }
   }
 
@@ -746,6 +979,12 @@ class NumberMatchUI {
     this.matchesCleared = 0;
     this.addNumbersUsed = 0;
     this.hintsUsed = 0;
+    this.movesAttempted = 0;
+    this.elapsedMs = 0;
+    this.timerStartedAt = Date.now();
+    this.summaryDialogDisplayed = false;
+    this.summaryDialogReason = null;
+    this.closeSummaryDialog();
     this.selectedIndices = [];
     this.addNumbersButton.disabled = false;
     this.hintButton.disabled = false;
@@ -753,7 +992,6 @@ class NumberMatchUI {
     this.renderBoard();
     this.updateMetrics();
     this.showMessage("New puzzle loaded. Good luck!", "success");
-    this.hintButton.disabled = false;
     this.persistState();
   }
 
@@ -812,13 +1050,15 @@ class NumberMatchUI {
    */
   updateAddNumbersPrompt() {
     const hasNumbersRemaining = this.game.getRemainingCount() > 0;
-    const activeAction = hasNumbersRemaining && !this.game.isComplete();
+    const usesRemaining = this.remainingAddNumbersUses();
+    const activeAction = hasNumbersRemaining && !this.game.isComplete() && usesRemaining > 0;
     this.addNumbersButton.disabled = !activeAction;
 
     const noMoves = !this.hasAvailableMoves();
-    const shouldGlow = noMoves && hasNumbersRemaining && activeAction;
+    const shouldGlow = noMoves && hasNumbersRemaining && usesRemaining > 0 && !this.game.isComplete();
     this.addNumbersButton.classList.toggle("board-action--attention", shouldGlow);
     this.updateAddNumbersBadge();
+    this.maybeShowStallSummary();
   }
 
   /**
@@ -831,6 +1071,7 @@ class NumberMatchUI {
       if (!storage) {
         return;
       }
+      const totalElapsed = this.getElapsedMs();
       const state = {
         version: NumberMatchUI.STORAGE_VERSION,
         width: this.game.width,
@@ -839,9 +1080,15 @@ class NumberMatchUI {
         matchesCleared: this.matchesCleared,
         addNumbersUsed: this.addNumbersUsed,
         hintsUsed: this.hintsUsed,
+        movesAttempted: this.movesAttempted,
+        elapsedMs: totalElapsed,
+        bestTimeMs: this.bestTimeMs,
+        bestMatches: this.bestMatches,
         timestamp: Date.now()
       };
       storage.setItem(NumberMatchUI.STORAGE_KEY, JSON.stringify(state));
+      this.elapsedMs = totalElapsed;
+      this.timerStartedAt = Date.now();
     } catch (error) {
       console.error("[NumberMatch] Failed to persist state", error);
     }
@@ -903,9 +1150,28 @@ class NumberMatchUI {
         return result;
       };
 
+      const optionalPositive = (value) => {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric) || numeric < 0) {
+          return null;
+        }
+        return numeric;
+      };
+
       this.matchesCleared = numericOrDefault(parsed.matchesCleared, 0, 0, Number.MAX_SAFE_INTEGER);
       this.addNumbersUsed = numericOrDefault(parsed.addNumbersUsed, 0, 0, NumberMatchUI.ADD_NUMBERS_LIMIT);
       this.hintsUsed = numericOrDefault(parsed.hintsUsed, 0, 0, Number.MAX_SAFE_INTEGER);
+      this.movesAttempted = numericOrDefault(parsed.movesAttempted, 0, 0, Number.MAX_SAFE_INTEGER);
+      const restoredElapsed = numericOrDefault(parsed.elapsedMs, 0, 0, Number.MAX_SAFE_INTEGER);
+      this.elapsedMs = restoredElapsed;
+      this.timerStartedAt = Date.now();
+      this.summaryDialogDisplayed = false;
+      this.summaryDialogReason = null;
+      this.bestTimeMs = optionalPositive(parsed.bestTimeMs);
+      this.bestMatches = optionalPositive(parsed.bestMatches);
       this.selectedIndices = [];
       this.highlightedIndices = [];
       return true;
@@ -917,8 +1183,6 @@ class NumberMatchUI {
 
   /**
    * Find a valid pair of tiles for hint functionality.
-NumberMatchUI.STORAGE_KEY = "numbermatch-state-v1";
-NumberMatchUI.STORAGE_VERSION = 1;
    * @returns {[number, number] | null} Tuple of indices or null when no match exists.
    */
   findHintPair() {
@@ -947,9 +1211,29 @@ NumberMatchUI.STORAGE_VERSION = 1;
     }
     return null;
   }
+
+  /**
+   * Convert a duration to a clock-style string.
+   * @param {number} durationMs Duration in milliseconds.
+   * @returns {string} Formatted duration string.
+   */
+  static formatDuration(durationMs) {
+    const safeMs = Number.isFinite(durationMs) ? Math.max(0, durationMs) : 0;
+    const totalSeconds = Math.floor(safeMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (value) => value.toString().padStart(2, "0");
+    if (hours > 0) {
+      return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+    }
+    return `${minutes}:${pad(seconds)}`;
+  }
 }
 
 NumberMatchUI.ADD_NUMBERS_LIMIT = 3;
+NumberMatchUI.STORAGE_KEY = "numbermatch-state-v1";
+NumberMatchUI.STORAGE_VERSION = 1;
 
 window.addEventListener("DOMContentLoaded", () => {
   const game = new NumberMatchGame({ width: 9, rows: 6 });
