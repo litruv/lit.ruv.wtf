@@ -1,0 +1,498 @@
+<!--
+METADATA:{
+  "title": "Number Match - Litruv",
+  "metaDescription": "Play Number Match right on Litruv's site. Pair numbers that match or add to ten and clear the board.",
+  "csp": "script-src 'self' 'unsafe-inline';",
+  "ogTitle": "Number Match - Litruv",
+  "ogDescription": "Clear the board by pairing numbers that match or add to ten.",
+  "ogUrl": "https://lit.ruv.wtf/numbermatch.html",
+  "twitterTitle": "Number Match - Litruv",
+  "twitterDescription": "Clear the board by pairing numbers that match or add to ten.",
+  "twitterUrl": "https://lit.ruv.wtf/numbermatch.html",
+  "useCommonHeader": true,
+  "useCommonFooter": true
+}
+-->
+<!-- START_STYLES -->
+<style>
+  .numbermatch-page {
+    margin-top: 2.5rem;
+    padding: 0 1rem 3.5rem;
+    color: #1f2933;
+  }
+
+  .numbermatch-page .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+
+  .numbermatch-page .app {
+    display: grid;
+    gap: 2.5rem;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .numbermatch-page .app__game,
+  .numbermatch-page .app__info {
+    background: var(--post-bg);
+    border: 2px solid var(--post-border);
+    box-shadow: 4px 6px 0 var(--shadow-light);
+    padding: 2rem 2.25rem;
+    position: relative;
+    transform-origin: center;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .numbermatch-page .app__game {
+    transform: none;
+  }
+
+  .numbermatch-page .app__info {
+    transform: rotate(0.55deg);
+  }
+
+  .numbermatch-page .app__game:hover {
+    transform: scale(1.01);
+    box-shadow: 6px 9px 0 var(--shadow-light);
+  }
+
+  .numbermatch-page .app__info:hover {
+    transform: rotate(0deg) scale(1.01);
+    box-shadow: 6px 9px 0 var(--shadow-light);
+  }
+
+  .numbermatch-page .app__title {
+    margin: 0;
+    font-size: 2rem;
+    text-shadow: 1px 1px 0 #fff;
+    color: #111827;
+  }
+
+  .numbermatch-page .app__subtitle {
+    margin: 0.5rem 0 0;
+    color: #364152;
+    font-size: 1rem;
+  }
+
+  .numbermatch-page .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 2rem 0 1.5rem;
+  }
+
+  .numbermatch-page .control-button {
+    border: 2px solid var(--post-border);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.65rem 1.75rem;
+    box-shadow: 3px 4px 0 var(--shadow-light);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    font-family: inherit;
+  }
+
+  .numbermatch-page .control-button:hover,
+  .numbermatch-page .control-button:focus {
+    transform: translateY(-2px);
+    box-shadow: 5px 6px 0 var(--shadow-light);
+  }
+
+  .numbermatch-page .control-button:active {
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 var(--shadow-light);
+  }
+
+  .numbermatch-page .control-button--secondary {
+    background: var(--main-bg);
+    color: var(--main-fg);
+  }
+
+  .numbermatch-page .status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    background: rgba(36, 36, 36, 0.04);
+    border: 1px dashed rgba(0, 0, 0, 0.12);
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+  }
+
+  .numbermatch-page .status__message {
+    min-height: 1.5rem;
+    margin: 0;
+    font-weight: 600;
+    color: #1f2933;
+  }
+
+  .numbermatch-page .status__message.status__message--error {
+    color: #be123c;
+  }
+
+  .numbermatch-page .status__message.status__message--success {
+    color: #15803d;
+  }
+
+  .numbermatch-page .status__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.95rem;
+    color: #364152;
+  }
+
+  .numbermatch-page .status__metric strong {
+    color: #111827;
+  }
+
+  .numbermatch-page .board {
+    margin-top: 1.75rem;
+    display: grid;
+    gap: 0.6rem;
+    width: 100%;
+  }
+
+  .numbermatch-page .board-actions {
+    margin-top: 1.75rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .numbermatch-page .board-action {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    border: 2px solid var(--post-border);
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--main-bg);
+    background: var(--accent);
+    box-shadow: 3px 4px 0 var(--shadow-light);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    position: relative;
+  }
+
+  .numbermatch-page .board-action:hover,
+  .numbermatch-page .board-action:focus {
+    transform: translateY(-2px);
+    box-shadow: 5px 6px 0 var(--shadow-light);
+  }
+
+  .numbermatch-page .board-action:active {
+    transform: translateY(0);
+    box-shadow: 2px 2px 0 var(--shadow-light);
+  }
+
+  .numbermatch-page .board-action--secondary {
+    background: var(--post-bg);
+    color: #111827;
+  }
+
+  .numbermatch-page .board-action__badge {
+    position: absolute;
+    top: -0.45rem;
+    right: -0.45rem;
+    min-width: 1.5rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: var(--like);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 6px 12px rgba(219, 39, 119, 0.35);
+  }
+
+  .numbermatch-page .board-action__badge.board-action__badge--empty {
+    background: rgba(0, 0, 0, 0.12);
+    color: #111827;
+    box-shadow: none;
+  }
+
+  .numbermatch-page .board-action--attention {
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18), 0 12px 24px rgba(37, 99, 235, 0.3);
+    animation: numbermatch-attention 0.95s ease-in-out infinite alternate;
+  }
+
+  @keyframes numbermatch-attention {
+    from {
+      transform: translateY(-2px) scale(1);
+    }
+    to {
+      transform: translateY(-3px) scale(1.05);
+    }
+  }
+
+  .numbermatch-page .tile {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 14px;
+    border: 1.5px solid var(--post-border);
+    font-size: clamp(1.1rem, 4vw, 1.55rem);
+    font-weight: 700;
+    color: #111827;
+    background: linear-gradient(165deg, #fffef4 0%, #f7f0b7 100%);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.15);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    position: relative;
+  }
+
+  .numbermatch-page .tile:hover,
+  .numbermatch-page .tile:focus {
+    transform: translateY(-2px);
+    box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .numbermatch-page .tile--selected {
+    background: linear-gradient(160deg, #fde68a 0%, #fb923c 100%);
+    box-shadow: 4px 6px 0 rgba(251, 191, 36, 0.4);
+  }
+
+  .numbermatch-page .tile--hinted:not(.tile--selected) {
+    background: linear-gradient(160deg, #bfdbfe 0%, #93c5fd 100%);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.35), 4px 6px 0 rgba(37, 99, 235, 0.25);
+  }
+
+  .numbermatch-page .tile--empty {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1.5px dashed rgba(0, 0, 0, 0.25);
+    cursor: default;
+    box-shadow: none;
+  }
+
+  .numbermatch-page .tile--empty:hover,
+  .numbermatch-page .tile--empty:focus {
+    transform: none;
+  }
+
+  .numbermatch-page .app__info h2,
+  .numbermatch-page .app__info h3 {
+    margin-top: 0;
+    color: #111827;
+    text-shadow: 1px 1px 0 #fff;
+  }
+
+  .numbermatch-page .app__info p,
+  .numbermatch-page .app__info li {
+    color: #364152;
+    line-height: 1.6;
+  }
+
+  .numbermatch-page .app__info ul {
+    padding-left: 1.25rem;
+    margin: 0.75rem 0 1.5rem;
+  }
+
+  .numbermatch-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .numbermatch-dialog-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .numbermatch-dialog {
+    background: var(--post-bg);
+    border: 2px solid var(--post-border);
+    box-shadow: 6px 8px 0 var(--shadow-light);
+    padding: 1.75rem 2rem;
+    max-width: 420px;
+    width: calc(100% - 2rem);
+    transform: rotate(-1deg);
+    position: relative;
+  }
+
+  .numbermatch-dialog h2 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.35rem;
+    color: #111827;
+  }
+
+  .numbermatch-dialog p {
+    margin: 0 0 1.5rem;
+    color: #374151;
+    line-height: 1.5;
+  }
+
+  .numbermatch-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .numbermatch-dialog-button {
+    border: 2px solid var(--post-border);
+    padding: 0.55rem 1.35rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 3px 4px 0 var(--shadow-light);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    background: var(--post-bg);
+    color: #111827;
+  }
+
+  .numbermatch-dialog-button:hover,
+  .numbermatch-dialog-button:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 5px 6px 0 var(--shadow-light);
+  }
+
+  .numbermatch-dialog-button--confirm {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .numbermatch-dialog-button--danger {
+    background: var(--like);
+    color: #fff;
+  }
+
+  @media (max-width: 1023px) {
+    .numbermatch-page .app {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .numbermatch-page .app__game,
+    .numbermatch-page .app__info {
+      transform: rotate(0deg);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .numbermatch-page {
+      padding: 0 0 3rem;
+    }
+
+    .numbermatch-page .app__game,
+    .numbermatch-page .app__info {
+      padding: 1.5rem;
+    }
+
+    .numbermatch-page .board {
+      gap: 0.4rem;
+    }
+
+    .numbermatch-page .board-action {
+      width: 3.1rem;
+      height: 3.1rem;
+      font-size: 1.8rem;
+    }
+
+    .numbermatch-page .board-action__badge {
+      top: -0.25rem;
+      right: -0.25rem;
+      min-width: 1.35rem;
+      font-size: 0.75rem;
+    }
+  }
+</style>
+<!-- END_STYLES -->
+
+<!-- START_SCRIPTS_DEFER -->
+<script src="numbermatch.js" defer></script>
+<!-- END_SCRIPTS_DEFER -->
+
+<div class="numbermatch-page">
+  <div class="app">
+    <section class="app__game" aria-label="Number Match board and controls">
+      <header class="app__header">
+        <h1 class="app__title">Number Match</h1>
+        <p class="app__subtitle">Clear the board by pairing numbers that match or add to ten.</p>
+      </header>
+      <div class="controls" role="group" aria-label="Game controls">
+        <button id="newGameButton" type="button" class="control-button control-button--secondary">New Game</button>
+      </div>
+      <section class="status" aria-live="polite">
+        <p id="message" class="status__message" role="status"></p>
+        <div class="status__metrics">
+          <span class="status__metric">
+            Matches cleared: <strong id="matchesCount">0</strong>
+          </span>
+          <span class="status__metric">
+            Tiles remaining: <strong id="tilesRemaining">0</strong>
+          </span>
+          <span class="status__metric">
+            Add Numbers used: <strong id="addNumbersUsed">0/3</strong>
+          </span>
+          <span class="status__metric">
+            Hints used: <strong id="hintsUsed">0</strong>
+          </span>
+        </div>
+      </section>
+      <section class="board" id="board" aria-label="Number grid"></section>
+      <div class="board-actions">
+        <button id="addNumbersButton" type="button" class="board-action board-action--primary" aria-label="Add numbers">
+          <span aria-hidden="true" class="board-action__icon">+</span>
+          <span id="addNumbersCounter" class="board-action__badge" aria-hidden="true">3</span>
+          <span class="sr-only">Add numbers</span>
+        </button>
+        <button id="hintButton" type="button" class="board-action board-action--secondary" aria-label="Hint">
+          <span aria-hidden="true">?</span>
+          <span class="sr-only">Hint</span>
+        </button>
+      </div>
+    </section>
+    <aside class="app__info" aria-labelledby="info-heading">
+      <h2 id="info-heading">How To Play</h2>
+      <p>Select two tiles that are either identical (like 8 and 8) or sum to ten (for example, 3 and 7). Clear every number to win.</p>
+      <h3>Match Rules</h3>
+      <ul>
+        <li>Paths can run horizontally, vertically, diagonally, or wrap in reading order.</li>
+        <li>Every cell between selections must be empty along the chosen path.</li>
+        <li>Wrap-around allows the end of a row to connect to the start of the next when the path is clear.</li>
+      </ul>
+      <h3>Strategy &amp; Tips</h3>
+      <ul>
+        <li>Scan rows and columns for classic pairs like 9-1, 8-2, 7-3, 6-4, and 5-5.</li>
+        <li>Use diagonal and wrap-around matches to reach blocked numbers.</li>
+        <li><em>Add Numbers</em> unlocks fresh tiles in three batches—save it for when the board runs dry.</li>
+      </ul>
+      <h3>Frequently Asked Questions</h3>
+      <p><strong>Which numbers appear?</strong> Numbers 1-9 are distributed to encourage plenty of identical and ten-sum pairs.</p>
+      <p><strong>What counts as wrap-around?</strong> Reading order connections across a row break, provided every intervening cell is empty.</p>
+    </aside>
+  </div>
+</div>
+
+<div class="numbermatch-dialog-backdrop" id="newGameDialogBackdrop" hidden>
+  <div class="numbermatch-dialog" id="newGameDialog" role="dialog" aria-modal="true" aria-labelledby="newGameDialogTitle" aria-describedby="newGameDialogDescription" tabindex="-1">
+    <h2 id="newGameDialogTitle">Start a fresh puzzle?</h2>
+    <p id="newGameDialogDescription">Your current board and progress will be replaced with a new layout. You can always reload the page to resume later.</p>
+    <div class="numbermatch-dialog-actions">
+      <button type="button" class="numbermatch-dialog-button" id="cancelNewGameButton">Keep playing</button>
+      <button type="button" class="numbermatch-dialog-button numbermatch-dialog-button--danger" id="confirmNewGameButton">New game</button>
+    </div>
+  </div>
+</div>

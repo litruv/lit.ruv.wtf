@@ -508,6 +508,11 @@ class NumberMatchUI {
     this.addNumbersButton = /** @type {HTMLButtonElement} */ (document.getElementById("addNumbersButton"));
     this.hintButton = /** @type {HTMLButtonElement} */ (document.getElementById("hintButton"));
     this.newGameButton = /** @type {HTMLButtonElement} */ (document.getElementById("newGameButton"));
+    this.newGameDialogBackdrop = /** @type {HTMLElement | null} */ (document.getElementById("newGameDialogBackdrop"));
+    this.newGameDialog = /** @type {HTMLElement | null} */ (document.getElementById("newGameDialog"));
+    this.newGameConfirmButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("confirmNewGameButton"));
+    this.newGameCancelButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("cancelNewGameButton"));
+    this.previouslyFocusedElement = null;
 
     this.selectedIndices = [];
     this.matchesCleared = 0;
@@ -524,9 +529,16 @@ class NumberMatchUI {
    */
   init() {
     this.bindControlEvents();
+    const restored = this.restoreState();
     this.renderBoard();
     this.updateMetrics();
-    this.showMessage("Select two tiles that match or sum to ten.");
+    this.hintButton.disabled = this.game.isComplete();
+    if (restored) {
+      this.showMessage("Welcome back! Your last board was restored.", "success");
+    } else {
+      this.showMessage("Select two tiles that match or sum to ten.");
+    }
+    this.persistState();
   }
 
   /**
@@ -546,6 +558,7 @@ class NumberMatchUI {
         this.clearHighlights();
         this.renderBoard();
         this.updateMetrics();
+        this.persistState();
       } else {
         this.showMessage("No numbers remain to duplicate.", "error");
         this.updateAddNumbersPrompt();
@@ -565,11 +578,36 @@ class NumberMatchUI {
       this.renderBoard();
       this.updateMetrics();
       this.showMessage("Try matching the highlighted tiles.");
+      this.persistState();
     });
 
     this.newGameButton.addEventListener("click", () => {
-      this.startNewGame();
+      this.openNewGameDialog();
     });
+
+    if (this.newGameDialogBackdrop && this.newGameConfirmButton && this.newGameCancelButton) {
+      this.newGameConfirmButton.addEventListener("click", () => {
+        this.closeNewGameDialog();
+        this.startNewGame();
+      });
+
+      this.newGameCancelButton.addEventListener("click", () => {
+        this.closeNewGameDialog();
+      });
+
+      this.newGameDialogBackdrop.addEventListener("mousedown", (event) => {
+        if (event.target === this.newGameDialogBackdrop) {
+          this.closeNewGameDialog();
+        }
+      });
+
+      this.newGameDialogBackdrop.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          this.closeNewGameDialog();
+        }
+      });
+    }
   }
 
   /**
@@ -620,6 +658,7 @@ class NumberMatchUI {
         this.hintButton.disabled = true;
         this.clearHighlights();
       }
+      this.persistState();
       return;
     }
 
@@ -677,6 +716,7 @@ class NumberMatchUI {
           this.hintButton.disabled = true;
           this.clearHighlights();
         }
+        this.persistState();
       }
     }
   }
@@ -825,6 +865,49 @@ class NumberMatchUI {
     this.renderBoard();
     this.updateMetrics();
     this.showMessage("New puzzle loaded. Good luck!", "success");
+    this.hintButton.disabled = false;
+    this.persistState();
+  }
+
+  /**
+   * Display the custom new game confirmation dialog.
+   * @returns {void}
+   */
+  openNewGameDialog() {
+    if (!this.newGameDialogBackdrop || !this.newGameDialog || !this.newGameConfirmButton) {
+      this.startNewGame();
+      return;
+    }
+
+    this.previouslyFocusedElement = document.activeElement;
+    this.newGameDialogBackdrop.hidden = false;
+    requestAnimationFrame(() => {
+      this.newGameDialogBackdrop.classList.add("is-visible");
+      this.newGameDialogBackdrop.setAttribute("aria-hidden", "false");
+      this.newGameDialog.focus({ preventScroll: true });
+      this.newGameConfirmButton.focus({ preventScroll: true });
+    });
+  }
+
+  /**
+   * Hide the custom new game dialog and restore focus.
+   * @returns {void}
+   */
+  closeNewGameDialog() {
+    if (!this.newGameDialogBackdrop) {
+      return;
+    }
+    this.newGameDialogBackdrop.classList.remove("is-visible");
+    this.newGameDialogBackdrop.setAttribute("aria-hidden", "true");
+    setTimeout(() => {
+      if (this.newGameDialogBackdrop) {
+        this.newGameDialogBackdrop.hidden = true;
+      }
+    }, 180);
+
+    if (this.previouslyFocusedElement instanceof HTMLElement) {
+      this.previouslyFocusedElement.focus({ preventScroll: true });
+    }
   }
 
   /**
@@ -851,7 +934,104 @@ class NumberMatchUI {
   }
 
   /**
+   * Persist the current board and score metrics to localStorage.
+   * @returns {void}
+   */
+  persistState() {
+    try {
+      const storage = window.localStorage;
+      if (!storage) {
+        return;
+      }
+      const state = {
+        version: NumberMatchUI.STORAGE_VERSION,
+        width: this.game.width,
+        tiles: this.game.getTiles(),
+        reserveTiles: Array.isArray(this.game.reserveTiles) ? [...this.game.reserveTiles] : undefined,
+        matchesCleared: this.matchesCleared,
+        addNumbersUsed: this.addNumbersUsed,
+        hintsUsed: this.hintsUsed,
+        timestamp: Date.now()
+      };
+      storage.setItem(NumberMatchUI.STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.error("[NumberMatch] Failed to persist state", error);
+    }
+  }
+
+  /**
+   * Attempt to restore board and metrics from localStorage.
+   * @returns {boolean} True when a valid state was restored.
+   */
+  restoreState() {
+    try {
+      const storage = window.localStorage;
+      if (!storage) {
+        return false;
+      }
+      const raw = storage.getItem(NumberMatchUI.STORAGE_KEY);
+      if (!raw) {
+        return false;
+      }
+      const parsed = JSON.parse(raw);
+      if (!parsed || parsed.version !== NumberMatchUI.STORAGE_VERSION) {
+        return false;
+      }
+      if (parsed.width !== this.game.width || !Array.isArray(parsed.tiles)) {
+        return false;
+      }
+
+      const tiles = parsed.tiles.map((value) => {
+        if (value === null) {
+          return null;
+        }
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : null;
+      });
+
+      if (tiles.length === 0 || tiles.every((value) => value === undefined)) {
+        return false;
+      }
+
+      this.game.tiles = tiles;
+      if (Array.isArray(parsed.reserveTiles)) {
+        this.game.reserveTiles = parsed.reserveTiles
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value));
+      }
+
+      const numericOrDefault = (value, fallback, clampMin = null, clampMax = null) => {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+          return fallback;
+        }
+        let result = numeric;
+        if (clampMin !== null) {
+          result = Math.max(clampMin, result);
+        }
+        if (clampMax !== null) {
+          result = Math.min(clampMax, result);
+        }
+        return result;
+      };
+
+      this.matchesCleared = numericOrDefault(parsed.matchesCleared, 0, 0, Number.MAX_SAFE_INTEGER);
+      this.addNumbersUsed = numericOrDefault(parsed.addNumbersUsed, 0, 0, NumberMatchUI.ADD_NUMBERS_LIMIT);
+      this.hintsUsed = numericOrDefault(parsed.hintsUsed, 0, 0, Number.MAX_SAFE_INTEGER);
+      this.selectedIndices = [];
+      this.highlightedIndices = [];
+      this.dragStartIndex = null;
+      return true;
+    } catch (error) {
+      console.error("[NumberMatch] Failed to restore state", error);
+      return false;
+    }
+  }
+
+  /**
    * Find a valid pair of tiles for hint functionality.
+NumberMatchUI.STORAGE_KEY = "numbermatch-state-v1";
+NumberMatchUI.STORAGE_VERSION = 1;
    * @returns {[number, number] | null} Tuple of indices or null when no match exists.
    */
   findHintPair() {
