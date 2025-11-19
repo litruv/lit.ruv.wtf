@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Match</title>
+  <link rel="stylesheet" href="numbermatchstyle.css">
+</head>
+<body>
+  <main class="app">
+    <section class="app__game" aria-label="Number Match board and controls">
+      <header class="app__header">
+        <h1 class="app__title">Number Match</h1>
+        <p class="app__subtitle">Clear the board by pairing numbers that match or add to ten.</p>
+      </header>
+      <div class="controls" role="group" aria-label="Game controls">
+        <button id="newGameButton" type="button" class="control-button control-button--secondary">New Game</button>
+      </div>
+      <section class="status" aria-live="polite">
+        <p id="message" class="status__message" role="status"></p>
+        <div class="status__metrics">
+          <span class="status__metric">
+            Matches cleared: <strong id="matchesCount">0</strong>
+          </span>
+          <span class="status__metric">
+            Tiles remaining: <strong id="tilesRemaining">0</strong>
+          </span>
+          <span class="status__metric">
+            Add Numbers used: <strong id="addNumbersUsed">0/3</strong>
+          </span>
+          <span class="status__metric">
+            Hints used: <strong id="hintsUsed">0</strong>
+          </span>
+        </div>
+      </section>
+      <section class="board" id="board" aria-label="Number grid"></section>
+      <div class="board-actions">
+        <button id="addNumbersButton" type="button" class="board-action board-action--primary" aria-label="Add numbers">
+          <span aria-hidden="true" class="board-action__icon">+</span>
+          <span id="addNumbersCounter" class="board-action__badge" aria-hidden="true">3</span>
+          <span class="sr-only">Add numbers</span>
+        </button>
+        <button id="hintButton" type="button" class="board-action board-action--secondary" aria-label="Hint">
+          <span aria-hidden="true">?</span>
+          <span class="sr-only">Hint</span>
+        </button>
+      </div>
+    </section>
+    <aside class="app__info" aria-labelledby="info-heading">
+      <h2 id="info-heading">How To Play</h2>
+      <p>Select two tiles that are either identical (for example, 8 and 8) or sum to ten (like 3 and 7). Clear every number to win.</p>
+      <h3>Match Rules</h3>
+      <ul>
+        <li>Paths can run horizontally, vertically, diagonally, or wrap in reading order.</li>
+        <li>Every cell between selections must be empty along the chosen path.</li>
+        <li>Wrap-around allows the end of a row to connect to the start of the next when the path is clear.</li>
+      </ul>
+      <h3>Strategy &amp; Tips</h3>
+      <ul>
+        <li>Scan rows and columns first for obvious pairs like 9-1, 8-2, 7-3, 6-4, and 5-5.</li>
+        <li>Use diagonal and wrap-around matches to reach blocked numbers.</li>
+        <li><em>Add Numbers</em> unlocks fresh tiles in up to three batches—save it for when the board runs dry.</li>
+      </ul>
+      <h3>Frequently Asked Questions</h3>
+      <p><strong>Which numbers appear?</strong> Numbers 1-9 are distributed to encourage plenty of identical and ten-sum pairs.</p>
+      <p><strong>What counts as wrap-around?</strong> Reading order connections across a row break, provided every intervening cell is empty.</p>
+    </aside>
+  </main>
+  <script src="numbermatch.js" defer></script>
+</body>
+</html>
