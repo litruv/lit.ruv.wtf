@@ -519,8 +519,6 @@ class NumberMatchUI {
     this.addNumbersUsed = 0;
     this.hintsUsed = 0;
     this.highlightedIndices = [];
-    this.dragStartIndex = null;
-    this.isDragging = false;
   }
 
   /**
@@ -616,9 +614,6 @@ class NumberMatchUI {
    * @returns {void}
    */
   handleTileClick(index) {
-    if (this.isDragging) {
-      return;
-    }
     const tiles = this.game.getTiles();
     this.clearHighlights();
     if (tiles[index] === null) {
@@ -627,9 +622,6 @@ class NumberMatchUI {
 
     if (this.selectedIndices.includes(index)) {
       this.selectedIndices = this.selectedIndices.filter((item) => item !== index);
-      if (this.selectedIndices.length === 1) {
-        this.highlightCompatibleTiles(this.selectedIndices[0]);
-      }
       this.renderBoard();
       return;
     }
@@ -637,7 +629,6 @@ class NumberMatchUI {
     this.selectedIndices.push(index);
 
     if (this.selectedIndices.length < 2) {
-      this.highlightCompatibleTiles(index);
       this.renderBoard();
       return;
     }
@@ -663,73 +654,7 @@ class NumberMatchUI {
     }
 
     this.selectedIndices = [second];
-    this.highlightCompatibleTiles(second);
     this.renderBoard();
-  }
-
-  /**
-   * Handle pointer down events for drag-to-match functionality.
-   * @param {number} index Tile index where pointer down occurred.
-   * @returns {void}
-   */
-  handleTilePointerDown(index, event) {
-    const tiles = this.game.getTiles();
-    if (tiles[index] === null) {
-      return;
-    }
-    this.dragStartIndex = index;
-    this.isDragging = false;
-    event.target.setPointerCapture(event.pointerId);
-  }
-
-  /**
-   * Handle pointer enter events during drag.
-   * @param {number} index Tile index being entered.
-   * @returns {void}
-   */
-  handleTilePointerEnter(index, event) {
-    if (this.dragStartIndex === null || this.dragStartIndex === undefined) {
-      return;
-    }
-    const tiles = this.game.getTiles();
-    if (tiles[index] === null) {
-      return;
-    }
-    if (index === this.dragStartIndex) {
-      return;
-    }
-    
-    if (event.pressure > 0 || event.buttons > 0) {
-      this.isDragging = true;
-      const didMatch = this.game.selectPair(this.dragStartIndex, index);
-      if (didMatch) {
-        this.matchesCleared += 1;
-        this.selectedIndices = [];
-        this.clearHighlights();
-        this.dragStartIndex = null;
-        this.renderBoard();
-        this.updateMetrics();
-        this.showMessage("Great match!", "success");
-        if (this.game.isComplete()) {
-          this.showMessage("Board cleared! Start a new game when you are ready.", "success");
-          this.addNumbersButton.disabled = true;
-          this.hintButton.disabled = true;
-          this.clearHighlights();
-        }
-        this.persistState();
-      }
-    }
-  }
-
-  /**
-   * Handle pointer up events to reset drag state.
-   * @returns {void}
-   */
-  handleTilePointerUp() {
-    this.dragStartIndex = null;
-    setTimeout(() => {
-      this.isDragging = false;
-    }, 10);
   }
 
   /**
@@ -752,11 +677,6 @@ class NumberMatchUI {
       } else {
         tile.textContent = String(value);
         tile.addEventListener("click", () => this.handleTileClick(index));
-        tile.addEventListener("pointerdown", (e) => this.handleTilePointerDown(index, e));
-        tile.addEventListener("pointermove", (e) => this.handleTilePointerEnter(index, e));
-        tile.addEventListener("pointerup", () => this.handleTilePointerUp());
-        tile.addEventListener("pointercancel", () => this.handleTilePointerUp());
-        tile.style.touchAction = "none";
       }
       if (this.selectedIndices.includes(index)) {
         tile.classList.add("tile--selected");
@@ -794,37 +714,6 @@ class NumberMatchUI {
   }
 
   /**
-   * Highlight tiles compatible with the currently selected tile.
-   * @param {number} baseIndex Index of the selected tile.
-   * @returns {void}
-   */
-  highlightCompatibleTiles(baseIndex) {
-    const tiles = this.game.getTiles();
-    const baseValue = tiles[baseIndex];
-    if (baseValue === null) {
-      this.highlightedIndices = [];
-      return;
-    }
-
-    const matches = [];
-    for (let i = 0; i < tiles.length; i += 1) {
-      if (i === baseIndex) {
-        continue;
-      }
-      const value = tiles[i];
-      if (value === null) {
-        continue;
-      }
-      if (value === baseValue || value + baseValue === 10) {
-        if (this.game.canPair(baseIndex, i)) {
-          matches.push(i);
-        }
-      }
-    }
-    this.highlightedIndices = matches;
-  }
-
-  /**
    * Clear any highlighted tile indices.
    * @returns {void}
    */
@@ -858,7 +747,6 @@ class NumberMatchUI {
     this.addNumbersUsed = 0;
     this.hintsUsed = 0;
     this.selectedIndices = [];
-    this.dragStartIndex = null;
     this.addNumbersButton.disabled = false;
     this.hintButton.disabled = false;
     this.clearHighlights();
@@ -1020,7 +908,6 @@ class NumberMatchUI {
       this.hintsUsed = numericOrDefault(parsed.hintsUsed, 0, 0, Number.MAX_SAFE_INTEGER);
       this.selectedIndices = [];
       this.highlightedIndices = [];
-      this.dragStartIndex = null;
       return true;
     } catch (error) {
       console.error("[NumberMatch] Failed to restore state", error);
