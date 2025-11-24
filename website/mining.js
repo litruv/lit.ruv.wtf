@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Configuration ---
     let GRID_SIZE = 5; // 5x5 grid (Dynamic)
-    const VISIBLE_LAYERS = 7; // How many layers deep we render
+    let VISIBLE_LAYERS = 7; // How many layers deep we render (Dynamic)
     const BLOCK_SIZE = 1;
     
     const SELL_PRICES = { coal: 10, iron: 20, gold: 50, diamond: 200, emerald: 500 };
@@ -418,6 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Update GRID_SIZE based on loaded upgrade
                 GRID_SIZE = 5 + (upgrades.grid_size * 2);
+                VISIBLE_LAYERS = 7 + upgrades.grid_size;
                 
                 // Adjust camera for larger grids
                 if (upgrades.grid_size > 0) {
@@ -477,6 +478,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 layers.push(layer);
             });
+
+            // Fill missing layers if VISIBLE_LAYERS increased
+            while (layers.length < VISIBLE_LAYERS) {
+                const layerIdx = layers.length;
+                const absDepth = depth + layerIdx;
+                layers.push(generateLayer(layerIdx, absDepth));
+            }
 
             // Rebuild extraBlocks
             extraBlocks = [];
@@ -1885,7 +1893,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function expandGrid() {
         const oldSize = GRID_SIZE;
+        const oldVisibleLayers = VISIBLE_LAYERS;
+
         GRID_SIZE = 5 + (upgrades.grid_size * 2);
+        VISIBLE_LAYERS = 7 + upgrades.grid_size;
+        
         const offsetDiff = (GRID_SIZE - oldSize) / 2;
         
         // Adjust camera
@@ -1934,6 +1946,13 @@ document.addEventListener('DOMContentLoaded', () => {
             newLayers.push(newLayer);
         });
         layers = newLayers;
+
+        // Add new layers at the bottom if VISIBLE_LAYERS increased
+        while (layers.length < VISIBLE_LAYERS) {
+            const layerIdx = layers.length;
+            const absDepth = depth + layerIdx;
+            layers.push(generateLayer(layerIdx, absDepth));
+        }
     }
 
     // --- TNT System ---
