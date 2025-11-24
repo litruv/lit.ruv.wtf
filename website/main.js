@@ -349,6 +349,7 @@ let currentNumColumns = 0; // Variable to store the current number of columns
 
 function createColumns(num) {
     const postsContainer = document.getElementById("posts");
+    if (!postsContainer) return [];
     postsContainer.innerHTML = "";
     const columns = [];
     for (let i = 0; i < num; i++) {
@@ -510,6 +511,8 @@ function layoutPosts(postElements) {
 
 function showLoadingIndicator() {
     const postsContainer = document.getElementById("posts");
+    if (!postsContainer) return;
+
     const loadingDiv = document.createElement("div");
     loadingDiv.id = "loading-posts";
     loadingDiv.className = "loading-posts";
@@ -624,14 +627,16 @@ async function fetchPosts() {
         
         // Show error message
         const postsContainer = document.getElementById("posts");
-        const errorDiv = document.createElement("div");
-        errorDiv.className = "loading-posts";
-        errorDiv.innerHTML = `
-            <div class="loading-posts-content" style="color: #dc2626;">
-                ⚠ Failed to load posts. Please refresh the page.
-            </div>
-        `;
-        postsContainer.appendChild(errorDiv);
+        if (postsContainer) {
+            const errorDiv = document.createElement("div");
+            errorDiv.className = "loading-posts";
+            errorDiv.innerHTML = `
+                <div class="loading-posts-content" style="color: #dc2626;">
+                    ⚠ Failed to load posts. Please refresh the page.
+                </div>
+            `;
+            postsContainer.appendChild(errorDiv);
+        }
     }
 }
 
@@ -664,4 +669,6 @@ window.addEventListener("resize", () => {
     }
 });
 
-fetchPosts();
+if (document.getElementById("posts")) {
+    fetchPosts();
+}

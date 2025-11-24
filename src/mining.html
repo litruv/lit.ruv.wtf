@@ -1,0 +1,259 @@
+<!--
+METADATA:{
+  "title": "Prison Mine - Litruv",
+  "metaDescription": "Infinite isometric prison mining game.",
+  "csp": "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;",
+  "ogTitle": "Prison Mine - Litruv",
+  "ogDescription": "Dig deep in this infinite isometric mining game.",
+  "ogUrl": "https://lit.ruv.wtf/mining.html",
+  "twitterTitle": "Prison Mine - Litruv",
+  "twitterDescription": "Dig deep in this infinite isometric mining game.",
+  "twitterUrl": "https://lit.ruv.wtf/mining.html",
+  "useCommonHeader": true,
+  "useCommonFooter": true
+}
+-->
+<!-- START_STYLES -->
+<style>
+    .mining-container {
+        width: min(100%, 80vh);
+        aspect-ratio: 1;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+        background: #000;
+        border: 2px solid var(--post-border);
+        box-shadow: 4px 6px 0 var(--shadow-light);
+    }
+    
+    #game-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .mining-ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        font-family: 'Minecraft', monospace; /* Fallback */
+        pointer-events: none;
+        text-shadow: 2px 2px 0 #000;
+        z-index: 10;
+    }
+
+    .mining-stat {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .inventory-container {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 5px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 5px;
+        border-radius: 5px;
+        pointer-events: auto;
+    }
+    .inventory-slot {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #555;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .inventory-slot img {
+        width: 32px;
+        height: 32px;
+        image-rendering: pixelated;
+    }
+    .inventory-count {
+        position: absolute;
+        bottom: 0;
+        right: 2px;
+        font-size: 12px;
+        color: white;
+        text-shadow: 1px 1px 0 #000;
+    }
+
+    .crafting-container {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 5px;
+        border-radius: 5px;
+        pointer-events: auto; /* Allow clicking */
+    }
+    .crafting-slot {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #555;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .crafting-slot:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    .crafting-slot.can-craft {
+        border-color: #79C05A;
+        background: rgba(121, 192, 90, 0.2);
+    }
+    .crafting-slot img {
+        width: 32px;
+        height: 32px;
+        image-rendering: pixelated;
+    }
+    .crafting-tooltip {
+        position: absolute;
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        white-space: nowrap;
+        display: none;
+        margin-right: 10px;
+        pointer-events: none;
+        z-index: 20;
+    }
+    .crafting-slot:hover .crafting-tooltip {
+        display: block;
+    }
+
+    .shop-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #4CAF50;
+        color: white;
+        border: 2px solid #388E3C;
+        padding: 5px 10px;
+        font-family: 'Minecraft', monospace;
+        cursor: pointer;
+        z-index: 20;
+    }
+    .shop-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        border: 2px solid #555;
+        padding: 20px;
+        color: white;
+        font-family: 'Minecraft', monospace;
+        display: none;
+        z-index: 30;
+        min-width: 300px;
+    }
+    .shop-section {
+        margin-bottom: 20px;
+    }
+    .shop-section h3 {
+        border-bottom: 1px solid #555;
+        padding-bottom: 5px;
+        margin-top: 0;
+    }
+    .shop-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+        padding: 5px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .shop-item button {
+        background: #333;
+        color: white;
+        border: 1px solid #555;
+        padding: 2px 5px;
+        cursor: pointer;
+        font-family: inherit;
+    }
+    .shop-item button:hover {
+        background: #555;
+    }
+    .close-shop {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    /* Override for buttons inside shop */
+    .shop-container .shop-btn {
+        position: static;
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+        background: #333;
+        text-align: left;
+    }
+    .shop-container .shop-btn:hover {
+        background: #555;
+    }
+    .shop-container .close-btn {
+        text-align: center;
+        background: #d32f2f;
+        border-color: #b71c1c;
+    }
+    .shop-container .close-btn:hover {
+        background: #f44336;
+    }
+</style>
+<!-- END_STYLES -->
+
+<!-- START_SCRIPTS_DEFER -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SSAOShader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SSAOPass.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/GammaCorrectionShader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/SimplexNoise.js" defer></script>
+<script src="mining.js" defer></script>
+<!-- END_SCRIPTS_DEFER -->
+
+<div class="mining-container">
+    <div class="mining-ui">
+        <div class="mining-stat">Depth: <span id="depth-counter">0</span></div>
+        <div class="mining-stat">Score: <span id="score-counter">0</span></div>
+    </div>
+    <button id="shop-btn" class="shop-btn" onclick="toggleShop()">Shop</button>
+    <div id="shop-modal" class="shop-container" style="display:none; flex-direction:column; max-height: 80vh; overflow-y: auto;">
+        <div id="shop-content"></div>
+    </div>
+    <div id="inventory-display" class="inventory-container">
+        <!-- Slots will be added here dynamically -->
+    </div>
+    <div id="crafting-display" class="crafting-container">
+        <!-- Crafting slots will be added here dynamically -->
+    </div>
+    <canvas id="game-canvas"></canvas>
+</div>
