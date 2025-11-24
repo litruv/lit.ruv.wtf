@@ -1726,7 +1726,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const aspect = width / height;
         // Dynamic view size based on grid size
-        const d = 5 + (upgrades.grid_size || 0);
+        let d = 5 + (upgrades.grid_size || 0);
+        
+        // Adjust for portrait mode to ensure width fits
+        if (aspect < 1) {
+            d = d / aspect;
+        }
         
         camera.left = -d * aspect;
         camera.right = d * aspect;
