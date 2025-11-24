@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     camera.updateProjectionMatrix();
 
     const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: false, antialias: true });
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     renderer.setPixelRatio(window.devicePixelRatio);
     // renderer.outputEncoding = THREE.sRGBEncoding; // We use GammaCorrectionShader instead
     renderer.shadowMap.enabled = true;
@@ -993,12 +993,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 vector.project(camera);
                 
                 const canvas = renderer.domElement;
-                const rect = canvas.getBoundingClientRect();
-                const scrollX = window.scrollX || window.pageXOffset;
-                const scrollY = window.scrollY || window.pageYOffset;
-                
-                const x = (vector.x + 1) / 2 * rect.width + rect.left + scrollX;
-                const y = -(vector.y - 1) / 2 * rect.height + rect.top + scrollY;
+                // Use relative coordinates for the container
+                const x = (vector.x + 1) / 2 * canvas.clientWidth;
+                const y = -(vector.y - 1) / 2 * canvas.clientHeight;
                 
                 // Create 2D floating item
                 createFloatingItem(drop.userData.type, x - 16, y - 16, drop.userData.count || 1);
@@ -1721,9 +1718,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Handle resize
-    window.addEventListener('resize', () => {
-        const aspect = canvas.clientWidth / canvas.clientHeight;
-        const d = 5;
+    const resizeObserver = new ResizeObserver(() => {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        
+        if (width === 0 || height === 0) return;
+
+        const aspect = width / height;
+        // Dynamic view size based on grid size
+        const d = 5 + (upgrades.grid_size || 0);
+        
         camera.left = -d * aspect;
         camera.right = d * aspect;
         camera.top = d;
@@ -1731,9 +1735,11 @@ document.addEventListener('DOMContentLoaded', () => {
         camera.updateProjectionMatrix();
         
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-        composer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.setSize(width, height, false);
+        composer.setSize(width, height);
+        if (ssaoPass) ssaoPass.setSize(width, height);
     });
+    resizeObserver.observe(canvas);
 
     // Start
     initGame();
@@ -1876,6 +1882,18 @@ document.addEventListener('DOMContentLoaded', () => {
         geometry.setIndex(indices);
         return geometry;
     }
+
+    // Fullscreen
+    window.toggleFullscreen = function() {
+        const elem = document.querySelector('.mining-container');
+        if (!document.fullscreenElement) {
+            elem.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    };
 
     // Shop System
     window.toggleShop = function() {
@@ -2287,20 +2305,21 @@ document.addEventListener('DOMContentLoaded', () => {
         img.style.pointerEvents = 'none';
         img.style.zIndex = '1000';
         
-        document.body.appendChild(img);
+        const container = document.querySelector('.mining-container');
+        container.appendChild(img);
 
-        // Find target
-        const scrollX = window.scrollX || window.pageXOffset;
-        const scrollY = window.scrollY || window.pageYOffset;
-
-        let targetX = (window.innerWidth / 2) + scrollX;
-        let targetY = (window.innerHeight - 50) + scrollY;
+        // Find target relative to container
+        const containerRect = container.getBoundingClientRect();
+        
+        // Default target (center bottom if slot not found)
+        let targetX = containerRect.width / 2;
+        let targetY = containerRect.height - 50;
         
         const slot = document.querySelector(`.inventory-slot[data-type="${type}"]`);
         if (slot) {
             const rect = slot.getBoundingClientRect();
-            targetX = rect.left + rect.width / 2 - 16 + scrollX;
-            targetY = rect.top + rect.height / 2 - 16 + scrollY;
+            targetX = rect.left - containerRect.left + rect.width / 2 - 16;
+            targetY = rect.top - containerRect.top + rect.height / 2 - 16;
         }
 
         // Control point for Bezier curve
@@ -2337,7 +2356,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 requestAnimationFrame(animate);
             } else {
                 if (img.parentNode) {
-                    document.body.removeChild(img);
+                    img.parentNode.removeChild(img);
                 }
                 addToInventory(type, count);
             }

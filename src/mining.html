@@ -30,6 +30,10 @@ METADATA:{
         width: 100%;
         height: 100%;
         display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
     }
 
     .mining-ui {
@@ -40,7 +44,7 @@ METADATA:{
         font-family: 'Minecraft', monospace; /* Fallback */
         pointer-events: none;
         text-shadow: 2px 2px 0 #000;
-        z-index: 10;
+        z-index: 100;
     }
 
     .mining-stat {
@@ -59,8 +63,26 @@ METADATA:{
         padding: 5px;
         border-radius: 5px;
         pointer-events: auto;
+        overflow-x: auto;
+        max-width: 95%;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        z-index: 100;
+    }
+    /* Scrollbar styling for inventory */
+    .inventory-container::-webkit-scrollbar {
+        height: 6px;
+    }
+    .inventory-container::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.3);
+        border-radius: 3px;
+    }
+    .inventory-container::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.3);
+        border-radius: 3px;
     }
     .inventory-slot {
+        flex: 0 0 auto; /* Don't shrink */
         width: 40px;
         height: 40px;
         background: rgba(255, 255, 255, 0.1);
@@ -96,6 +118,22 @@ METADATA:{
         padding: 5px;
         border-radius: 5px;
         pointer-events: auto; /* Allow clicking */
+        overflow-y: auto;
+        max-height: 60vh;
+        -webkit-overflow-scrolling: touch;
+        z-index: 100;
+    }
+    /* Scrollbar styling for crafting */
+    .crafting-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    .crafting-container::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.3);
+        border-radius: 3px;
+    }
+    .crafting-container::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.3);
+        border-radius: 3px;
     }
     .crafting-slot {
         width: 40px;
@@ -151,21 +189,24 @@ METADATA:{
         padding: 5px 10px;
         font-family: 'Minecraft', monospace;
         cursor: pointer;
-        z-index: 20;
+        z-index: 100;
     }
     .shop-container {
         position: absolute;
-        top: 50%;
+        top: 10%;
         left: 50%;
-        transform: translate(-50%, -50%);
+        transform: translateX(-50%);
         background: rgba(0, 0, 0, 0.9);
         border: 2px solid #555;
         padding: 20px;
         color: white;
         font-family: 'Minecraft', monospace;
         display: none;
-        z-index: 30;
+        z-index: 101;
         min-width: 300px;
+        max-height: 80vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     .shop-section {
         margin-bottom: 20px;
@@ -224,6 +265,35 @@ METADATA:{
     .shop-container .close-btn:hover {
         background: #f44336;
     }
+
+    .fullscreen-btn {
+        position: absolute;
+        top: 10px;
+        right: 80px;
+        background: #2196F3;
+        color: white;
+        border: 2px solid #1976D2;
+        padding: 5px 10px;
+        font-family: 'Minecraft', monospace;
+        cursor: pointer;
+        z-index: 100;
+    }
+    .fullscreen-btn:hover {
+        background: #42A5F5;
+    }
+
+    .mining-container:fullscreen {
+        width: 100vw;
+        height: 100vh;
+        max-width: none;
+        aspect-ratio: auto;
+        border: none;
+        background: #87CEEB; /* Match sky color */
+    }
+    .mining-container:fullscreen #game-canvas {
+        width: 100vw;
+        height: 100vh;
+    }
 </style>
 <!-- END_STYLES -->
 
@@ -245,15 +315,16 @@ METADATA:{
         <div class="mining-stat">Depth: <span id="depth-counter">0</span></div>
         <div class="mining-stat">Score: <span id="score-counter">0</span></div>
     </div>
+    <button id="fullscreen-btn" class="fullscreen-btn" onclick="toggleFullscreen()">[ ]</button>
     <button id="shop-btn" class="shop-btn" onclick="toggleShop()">Shop</button>
-    <div id="shop-modal" class="shop-container" style="display:none; flex-direction:column; max-height: 80vh; overflow-y: auto;">
-        <div id="shop-content"></div>
-    </div>
     <div id="inventory-display" class="inventory-container">
         <!-- Slots will be added here dynamically -->
     </div>
     <div id="crafting-display" class="crafting-container">
         <!-- Crafting slots will be added here dynamically -->
+    </div>
+    <div id="shop-modal" class="shop-container" style="display:none; flex-direction:column; max-height: 80vh; overflow-y: auto;">
+        <div id="shop-content"></div>
     </div>
     <canvas id="game-canvas"></canvas>
 </div>
