@@ -130,7 +130,16 @@ document.addEventListener('DOMContentLoaded', () => {
         stone_pickaxe: loadItemTexture('stone_pickaxe.png'),
         iron_pickaxe: loadItemTexture('iron_pickaxe.png'),
         gold_pickaxe: loadItemTexture('gold_pickaxe.png'),
-        diamond_pickaxe: loadItemTexture('diamond_pickaxe.png')
+        diamond_pickaxe: loadItemTexture('diamond_pickaxe.png'),
+        tnt_side: loadTexture('tnt_side.png'),
+        tnt_top: loadTexture('tnt_top.png'),
+        tnt_bottom: loadTexture('tnt_bottom.png'),
+        particle: (() => {
+            const t = new THREE.TextureLoader().load('particle/particles.png');
+            t.magFilter = THREE.NearestFilter;
+            t.minFilter = THREE.NearestFilter;
+            return t;
+        })()
     };
 
     // Load destroy stages
@@ -1619,28 +1628,96 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Animation Loop ---
-    function animate() {
-        requestAnimationFrame(animate);
-        processMining();
-        updateDrops();
-        updateSaplings();
-        updateTNT();
-        checkCollection();
+    // --- Particle System ---
+    let particles = [];
 
-        // Camera offset logic
-        const targetOffset = extraBlocks.length > 0 ? 3.5 : 0;
-        if (Math.abs(cameraOffsetY - targetOffset) > 0.01) {
-            cameraOffsetY += (targetOffset - cameraOffsetY) * 0.05;
-            camera.position.set(20, 14 + cameraOffsetY, 20);
-            camera.lookAt(0, cameraOffsetY, 0);
-        } else if (cameraOffsetY !== targetOffset) {
-             cameraOffsetY = targetOffset;
-             camera.position.set(20, 14 + cameraOffsetY, 20);
-             camera.lookAt(0, cameraOffsetY, 0);
+    function spawnExplosionParticles(pos) {
+        if (!textures.particle) return;
+
+        const particleCount = 30;
+        const material = new THREE.SpriteMaterial({ 
+            map: textures.particle, 
+            color: 0xffffff,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
+
+        for (let i = 0; i < particleCount; i++) {
+            const sprite = new THREE.Sprite(material);
+            sprite.position.copy(pos);
+            // Add some randomness to start position
+            sprite.position.x += (Math.random() - 0.5) * 0.5;
+            sprite.position.y += (Math.random() - 0.5) * 0.5;
+            sprite.position.z += (Math.random() - 0.5) * 0.5;
+            
+            // Random velocity
+            const speed = 0.1 + Math.random() * 0.3;
+            sprite.userData.velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * speed,
+                (Math.random() - 0.5) * speed,
+                (Math.random() - 0.5) * speed
+            );
+            
+            sprite.userData.life = 1.0;
+            const size = 0.3 + Math.random() * 0.4;
+            sprite.scale.set(size, size, size);
+            
+            scene.add(sprite);
+            particles.push(sprite);
         }
+    }
 
-        composer.render();
+    function updateParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.position.add(p.userData.velocity);
+            p.userData.velocity.y -= 0.005; // Slight gravity
+            p.userData.velocity.multiplyScalar(0.95); // Drag
+            p.userData.life -= 0.02;
+            
+            p.material.opacity = Math.max(0, p.userData.life);
+            
+            if (p.userData.life <= 0) {
+                scene.remove(p);
+                particles.splice(i, 1);
+            }
+        }
+    }
+
+    // --- Animation Loop ---
+    let lastTime = 0;
+    const fpsInterval = 1000 / 60;
+
+    function animate(currentTime) {
+        requestAnimationFrame(animate);
+
+        if (!currentTime) currentTime = performance.now();
+        const elapsed = currentTime - lastTime;
+
+        if (elapsed > fpsInterval) {
+            lastTime = currentTime - (elapsed % fpsInterval);
+
+            processMining();
+            updateDrops();
+            updateSaplings();
+            updateTNT();
+            updateParticles();
+            checkCollection();
+
+            // Camera offset logic
+            const targetOffset = extraBlocks.length > 0 ? 3.5 : 0;
+            if (Math.abs(cameraOffsetY - targetOffset) > 0.01) {
+                cameraOffsetY += (targetOffset - cameraOffsetY) * 0.05;
+                camera.position.set(20, 14 + cameraOffsetY, 20);
+                camera.lookAt(0, cameraOffsetY, 0);
+            } else if (cameraOffsetY !== targetOffset) {
+                 cameraOffsetY = targetOffset;
+                 camera.position.set(20, 14 + cameraOffsetY, 20);
+                 camera.lookAt(0, cameraOffsetY, 0);
+            }
+
+            composer.render();
+        }
     }
 
     // Handle resize
@@ -1976,21 +2053,67 @@ document.addEventListener('DOMContentLoaded', () => {
         // Physics
         for (let i = tntProjectiles.length - 1; i >= 0; i--) {
             const tnt = tntProjectiles[i];
-            tnt.position.y -= 0.2; // Fall speed
-            tnt.rotation.x += 0.05;
-            tnt.rotation.z += 0.05;
+            
+            // Initialize fuse if not present (for existing TNTs)
+            if (tnt.userData.fuse === undefined) tnt.userData.fuse = 120;
+            if (tnt.userData.landed === undefined) tnt.userData.landed = false;
 
-            // Check collision
-            // Simple check: if y < something and hits a block
-            const gx = Math.round(tnt.position.x / BLOCK_SIZE + (GRID_SIZE/2 - 0.5));
-            const gz = Math.round(tnt.position.z / BLOCK_SIZE + (GRID_SIZE/2 - 0.5));
-            const gy = Math.round(tnt.position.y / BLOCK_SIZE);
+            // Flashing effect
+            tnt.userData.flashTimer += 1;
+            // Flash faster as fuse runs out
+            const flashInterval = tnt.userData.fuse < 60 ? 5 : 10;
+            
+            if (tnt.userData.flashTimer % flashInterval === 0) {
+                tnt.userData.isFlashing = !tnt.userData.isFlashing;
+                if (tnt.userData.isFlashing) {
+                    if (!tnt.userData.whiteMaterial) {
+                         tnt.userData.whiteMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                    }
+                    tnt.material = tnt.userData.whiteMaterial;
+                } else {
+                    tnt.material = tnt.userData.originalMaterials;
+                }
+            }
 
-            // Check if we hit a block
-            const block = getBlockAt(gx, gy, gz);
-            if (block || gy < -depth - 1) { // Hit block or fell too far
-                explodeTNT(tnt);
-                tntProjectiles.splice(i, 1);
+            if (!tnt.userData.landed) {
+                tnt.position.y -= 0.1; // Fall speed
+
+                const gx = Math.round(tnt.position.x / BLOCK_SIZE + (GRID_SIZE/2 - 0.5));
+                const gz = Math.round(tnt.position.z / BLOCK_SIZE + (GRID_SIZE/2 - 0.5));
+                const gy = Math.round(tnt.position.y / BLOCK_SIZE);
+
+                // Check if we hit a block
+                const block = getBlockAt(gx, gy, gz);
+                
+                if (block) {
+                    // Land on top
+                    tnt.userData.landed = true;
+                    tnt.position.y = block.position.y + BLOCK_SIZE;
+                    // Snap to grid
+                    tnt.position.x = (gx - (GRID_SIZE/2 - 0.5)) * BLOCK_SIZE;
+                    tnt.position.z = (gz - (GRID_SIZE/2 - 0.5)) * BLOCK_SIZE;
+                } else if (gy < -depth - 5) { 
+                    // Fell too far
+                    tntProjectiles.splice(i, 1);
+                    scene.remove(tnt);
+                }
+            } else {
+                // Landed logic
+                // Check if block below still exists
+                const gx = Math.round(tnt.position.x / BLOCK_SIZE + (GRID_SIZE/2 - 0.5));
+                const gz = Math.round(tnt.position.z / BLOCK_SIZE + (GRID_SIZE/2 - 0.5));
+                const gyBelow = Math.round((tnt.position.y - BLOCK_SIZE) / BLOCK_SIZE);
+                
+                const blockBelow = getBlockAt(gx, gyBelow, gz);
+                if (!blockBelow && tnt.position.y > -depth - 1) {
+                    tnt.userData.landed = false; // Start falling again
+                }
+                
+                tnt.userData.fuse--;
+                if (tnt.userData.fuse <= 0) {
+                    explodeTNT(tnt);
+                    tntProjectiles.splice(i, 1);
+                }
             }
         }
     }
@@ -2000,8 +2123,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const gz = Math.floor(Math.random() * GRID_SIZE);
         
         const geometry = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-        const material = new THREE.MeshLambertMaterial({ color: 0xff0000 }); // Red block for now
-        const tnt = new THREE.Mesh(geometry, material);
+        
+        const materials = [
+            new THREE.MeshLambertMaterial({ map: textures.tnt_side }), // px
+            new THREE.MeshLambertMaterial({ map: textures.tnt_side }), // nx
+            new THREE.MeshLambertMaterial({ map: textures.tnt_top }),  // py (top)
+            new THREE.MeshLambertMaterial({ map: textures.tnt_bottom }), // ny (bottom)
+            new THREE.MeshLambertMaterial({ map: textures.tnt_side }), // pz
+            new THREE.MeshLambertMaterial({ map: textures.tnt_side })  // nz
+        ];
+        
+        const tnt = new THREE.Mesh(geometry, materials);
         
         tnt.position.set(
             (gx - (GRID_SIZE/2 - 0.5)) * BLOCK_SIZE,
@@ -2009,11 +2141,20 @@ document.addEventListener('DOMContentLoaded', () => {
             (gz - (GRID_SIZE/2 - 0.5)) * BLOCK_SIZE
         );
         
+        tnt.userData = {
+            flashTimer: 0,
+            isFlashing: false,
+            originalMaterials: materials,
+            fuse: 120, // 2 seconds at 60fps
+            landed: false
+        };
+
         scene.add(tnt);
         tntProjectiles.push(tnt);
     }
 
     function explodeTNT(tnt) {
+        spawnExplosionParticles(tnt.position);
         scene.remove(tnt);
         
         // Explosion effect (simple)
