@@ -1886,12 +1886,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fullscreen
     window.toggleFullscreen = function() {
         const elem = document.querySelector('.mining-container');
-        if (!document.fullscreenElement) {
-            elem.requestFullscreen().catch(err => {
-                console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
+        const doc = document;
+        
+        const isNativeFullscreen = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+        const isPseudoFullscreen = elem.classList.contains('pseudo-fullscreen');
+
+        if (!isNativeFullscreen && !isPseudoFullscreen) {
+            // Enter Fullscreen
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => {
+                    console.log("Native fullscreen failed, using fallback.");
+                    elem.classList.add('pseudo-fullscreen');
+                });
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            } else {
+                // No API support (e.g. iOS Safari)
+                elem.classList.add('pseudo-fullscreen');
+            }
         } else {
-            document.exitFullscreen();
+            // Exit Fullscreen
+            if (isNativeFullscreen) {
+                if (doc.exitFullscreen) {
+                    doc.exitFullscreen();
+                } else if (doc.webkitExitFullscreen) {
+                    doc.webkitExitFullscreen();
+                } else if (doc.mozCancelFullScreen) {
+                    doc.mozCancelFullScreen();
+                } else if (doc.msExitFullscreen) {
+                    doc.msExitFullscreen();
+                }
+            }
+            // Always remove pseudo class
+            elem.classList.remove('pseudo-fullscreen');
         }
     };
 

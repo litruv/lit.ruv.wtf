@@ -294,6 +294,25 @@ METADATA:{
         width: 100vw;
         height: 100vh;
     }
+
+    /* Fallback for iOS/Mobile */
+    .mining-container.pseudo-fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        max-width: none;
+        aspect-ratio: auto;
+        border: none;
+        background: #87CEEB;
+        z-index: 9999;
+        margin: 0;
+    }
+    .mining-container.pseudo-fullscreen #game-canvas {
+        width: 100vw;
+        height: 100vh;
+    }
 </style>
 <!-- END_STYLES -->
 
