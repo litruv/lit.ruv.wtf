@@ -184,9 +184,16 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    .crt-border-overlay {
+        border-width: 40px;
+        border-image-width: 40px;
+    }
+    
     .container {
-        width: 98vw;
-        height: 95vh;
+        top: 40px;
+        left: 40px;
+        right: 40px;
+        bottom: 50px;
         border-radius: 4px;
     }
     
@@ -215,6 +222,18 @@ body {
 }
 
 @media (max-width: 480px) {
+    .crt-border-overlay {
+        border-width: 25px;
+        border-image-width: 25px;
+    }
+    
+    .container {
+        top: 25px;
+        left: 25px;
+        right: 25px;
+        bottom: 35px;
+    }
+    
     .terminal-title {
         letter-spacing: 1px;
         font-size: 10px;
@@ -234,10 +253,14 @@ body {
     .header-link {
         padding: 2px 4px;
     }
-}
     
     .status-right {
         display: none;
+    }
+    
+    /* Prevent iOS auto-zoom on input focus */
+    .terminal-inline-input {
+        font-size: 16px;
     }
 }
 
