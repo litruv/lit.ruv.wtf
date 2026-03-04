@@ -1,0 +1,29 @@
+{
+  "name": "lit.ruv.wtf",
+  "version": "1.0.0",
+  "description": "Interactive terminal interface for lit.ruv.wtf - A retro-styled command line experience with chat, documentation, and more.",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "start-alt": "python -m SimpleHTTPServer 8000"
+  },
+  "keywords": [
+    "terminal",
+    "xterm",
+    "retro",
+    "cli",
+    "web-terminal",
+    "matrix",
+    "chat",
+    "interactive"
+  ],
+  "author": "Max Litruv Boonzaayer",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/litruv/lit.ruv.wtf"
+  },
+  "homepage": "https://lit.ruv.wtf"
+}
