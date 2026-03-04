@@ -1,16 +1,25 @@
 // Version
 const VERSION = '1.0.0';
 
+// Create inline input element
+const inlineInput = document.createElement('input');
+inlineInput.type = 'text';
+inlineInput.className = 'terminal-inline-input';
+inlineInput.autocomplete = 'off';
+inlineInput.autocorrect = 'on';
+inlineInput.autocapitalize = 'off';
+inlineInput.spellcheck = false;
+
 // Initialize xterm.js terminal
 const term = new Terminal({
-    cursorBlink: true,
-    cursorStyle: 'block',
+    cursorBlink: false,
+    cursorStyle: 'bar',
     fontFamily: '"Courier New", Courier, monospace',
     fontSize: 14,
     theme: {
         background: '#001800',
         foreground: '#00ff00',
-        cursor: '#00ff00',
+        cursor: 'transparent',
         cursorAccent: '#001800',
         selection: 'rgba(0, 255, 0, 0.3)',
         black: '#000000',
@@ -31,7 +40,8 @@ const term = new Terminal({
         brightWhite: '#ffffff'
     },
     allowTransparency: true,
-    scrollback: 1000
+    scrollback: 1000,
+    disableStdin: true
 });
 
 // Add addons
@@ -211,7 +221,8 @@ async function enterChatMode() {
     // Add separator and initial prompt
     term.writeln('');
     term.writeln('─'.repeat(term.cols || 60));
-    term.write(`\x1b[1;32m>\x1b[0m `);
+    term.write('\x1b[1;32m>\x1b[0m ');
+    showInlineInput();
 }
 
 // Exit chat mode
@@ -224,7 +235,8 @@ function exitChatMode() {
     chatMode.displayNames = {}; // Clear display name cache
     term.clear();
     term.writeln('  Exited chat mode.\r\n');
-    term.write(prompt);
+    term.write(promptColored);
+    showInlineInput();
 }
 
 // Sync messages from Matrix
@@ -889,238 +901,212 @@ function getWelcomeBanner() {
     }
 }
 
-// Prompt
-const prompt = '\r\n\x1b[1;32muser@lit.ruv.wtf\x1b[0m $ ';
+// Prompt (plain version for display, we handle colors separately)
+const promptText = 'user@lit.ruv.wtf $ ';
+const promptColored = '\r\n\x1b[1;32muser@lit.ruv.wtf\x1b[0m $ ';
 
-// Initialize terminal
-function init() {
-    term.writeln(getWelcomeBanner());
-    term.write(prompt);
+/**
+ * Position the inline input at the cursor location
+ */
+function positionInlineInput() {
+    const terminalEl = document.getElementById('terminal');
+    const xtermEl = terminalEl.querySelector('.xterm-screen');
     
-    // Handle input
-    term.onData(data => {
-        handleInput(data);
-    });
+    if (!xtermEl) return;
+    
+    // Get terminal dimensions
+    const charWidth = term._core._renderService.dimensions.css.cell.width;
+    const charHeight = term._core._renderService.dimensions.css.cell.height;
+    
+    // Get cursor position (rows from bottom for scrollback)
+    const cursorY = term.buffer.active.cursorY;
+    const cursorX = term.buffer.active.cursorX;
+    
+    // Position input
+    inlineInput.style.left = (cursorX * charWidth) + 'px';
+    inlineInput.style.top = (cursorY * charHeight) + 'px';
+    inlineInput.style.height = charHeight + 'px';
+    inlineInput.style.fontSize = term.options.fontSize + 'px';
+    inlineInput.style.lineHeight = charHeight + 'px';
 }
 
-// Handle terminal input
-async function handleInput(data) {
-    const code = data.charCodeAt(0);
+/**
+ * Show the inline input and position it
+ */
+function showInlineInput() {
+    const terminalEl = document.getElementById('terminal');
+    const xtermEl = terminalEl.querySelector('.xterm-screen');
     
-    // Chat mode input handling
+    if (!xtermEl.contains(inlineInput)) {
+        xtermEl.appendChild(inlineInput);
+    }
+    
+    inlineInput.style.display = 'block';
+    positionInlineInput();
+    inlineInput.focus();
+}
+
+/**
+ * Hide the inline input
+ */
+function hideInlineInput() {
+    inlineInput.style.display = 'none';
+    inlineInput.value = '';
+}
+
+/**
+ * Submit current input
+ */
+async function submitInlineInput() {
+    const cmd = inlineInput.value.trim();
+    const rawValue = inlineInput.value;
+    inlineInput.value = '';
+    
+    // Handle chat mode
     if (chatMode.active) {
-        if (code === 13) { // Enter
-            const msg = chatMode.inputLine.trim();
-            chatMode.inputLine = '';
-            
-            // Check for quit command
-            if (msg === '/quit' || msg === '/exit') {
-                exitChatMode();
-                return;
-            }
-            
-            // Check for help command
-            if (msg === '/help') {
-                // Insert help above separator
-                term.write('\x1b[1A\x1b[2K\r'); // Move up 1 line, clear
-                term.writeln('\x1b[33mChat Commands:\x1b[0m');
-                term.writeln('  /help        - Show this help message');
-                term.writeln('  /nick [name] - Change your display name');
-                term.writeln('  /quit        - Exit chat mode');
-                term.writeln('─'.repeat(term.cols || 60));
-                term.write(`\x1b[1;32m>\x1b[0m `);
-                return;
-            }
-            
-            // Check for nick command
-            if (msg.startsWith('/nick ')) {
-                const newNick = msg.substring(6).trim();
-                term.write('\x1b[1A\x1b[2K\r'); // Move up 1 line, clear
-                if (!newNick) {
-                    term.writeln('\x1b[31mError: /nick [name]\x1b[0m');
-                } else {
-                    try {
-                        // Check if nickname is already taken
-                        const isTaken = await isDisplayNameTaken(newNick);
-                        if (isTaken) {
-                            term.writeln('\x1b[31mError: Nickname already in use\x1b[0m');
+        if (cmd === '/quit' || cmd === '/exit') {
+            hideInlineInput();
+            exitChatMode();
+            return;
+        }
+        
+        // Write what user typed
+        term.write(rawValue + '\r\n');
+        
+        if (cmd === '/help') {
+            term.writeln('\x1b[33mChat Commands:\x1b[0m');
+            term.writeln('  /help        - Show this help message');
+            term.writeln('  /nick [name] - Change your display name');
+            term.writeln('  /quit        - Exit chat mode');
+            term.writeln('─'.repeat(term.cols || 60));
+            term.write('\x1b[1;32m>\x1b[0m ');
+            positionInlineInput();
+            return;
+        }
+        
+        if (cmd.startsWith('/nick ')) {
+            const newNick = cmd.substring(6).trim();
+            if (!newNick) {
+                term.writeln('\x1b[31mError: /nick [name]\x1b[0m');
+            } else {
+                try {
+                    const isTaken = await isDisplayNameTaken(newNick);
+                    if (isTaken) {
+                        term.writeln('\x1b[31mError: Nickname already in use\x1b[0m');
+                    } else {
+                        const encodedUserId = encodeURIComponent(window.matrixSession.userId);
+                        const putResponse = await matrixApi(`/profile/${encodedUserId}/displayname`, 'PUT', {
+                            displayname: newNick
+                        });
+                        
+                        if (putResponse && putResponse.errcode) {
+                            term.writeln(`\x1b[31mError: ${putResponse.error || 'Nickname rejected by server'}\x1b[0m`);
                         } else {
-                            // Attempt to change nickname
-                            const encodedUserId = encodeURIComponent(window.matrixSession.userId);
-                            const putResponse = await matrixApi(`/profile/${encodedUserId}/displayname`, 'PUT', {
-                                displayname: newNick
-                            });
+                            const verifyData = await matrixApi(`/profile/${encodedUserId}/displayname`, 'GET');
+                            const actualName = verifyData && verifyData.displayname;
                             
-                            // Check if PUT request returned an error
-                            if (putResponse && putResponse.errcode) {
-                                term.writeln(`\x1b[31mError: ${putResponse.error || 'Nickname rejected by server'}\x1b[0m`);
+                            if (actualName === newNick) {
+                                chatMode.displayNames[window.matrixSession.userId] = newNick;
+                                term.writeln(`\x1b[32mNickname changed to: ${newNick}\x1b[0m`);
                             } else {
-                                // Verify the change was accepted by fetching it back
-                                const verifyData = await matrixApi(`/profile/${encodedUserId}/displayname`, 'GET');
-                                const actualName = verifyData && verifyData.displayname;
-                                
-                                if (actualName === newNick) {
-                                    // Success - update local cache
-                                    chatMode.displayNames[window.matrixSession.userId] = newNick;
-                                    term.writeln(`\x1b[32mNickname changed to: ${newNick}\x1b[0m`);
-                                } else {
-                                    // Backend silently changed or rejected it
-                                    if (actualName) {
-                                        term.writeln(`\x1b[31mError: Server changed nickname to: ${actualName}\x1b[0m`);
-                                    } else {
-                                        term.writeln(`\x1b[31mError: Nickname rejected by server (invalid format)\x1b[0m`);
-                                    }
-                                }
+                                term.writeln(`\x1b[31mError: Nickname rejected by server\x1b[0m`);
                             }
                         }
-                    } catch (error) {
-                        term.writeln(`\x1b[31mError: Failed to change nickname - ${error.message}\x1b[0m`);
                     }
+                } catch (error) {
+                    term.writeln(`\x1b[31mError: Failed to change nickname\x1b[0m`);
                 }
-                term.writeln('─'.repeat(term.cols || 60));
-                term.write(`\x1b[1;32m>\x1b[0m `);
-                return;
             }
-            
-            // Send message
-            if (msg && !msg.startsWith('/')) {
-                await sendChatMessage(msg);
-            } else if (msg.startsWith('/')) {
-                term.write('\x1b[1A\x1b[2K\r'); // Move up 1 line, clear
-                term.writeln(`\x1b[31mUnknown command: ${msg.split(' ')[0]}. Type /help\x1b[0m`);
-                term.writeln('─'.repeat(term.cols || 60));
-                term.write(`\x1b[1;32m>\x1b[0m `);
-            } else {
-                // Empty input, just redraw prompt
-                renderChatPrompt();
-            }
-        } else if (code === 127) { // Backspace
-            if (chatMode.inputLine.length > 0) {
-                chatMode.inputLine = chatMode.inputLine.slice(0, -1);
-                term.write('\b \b'); // Move back, write space, move back again
-            }
-        } else if (code === 4) { // Ctrl+D
-            exitChatMode();
-        } else if (code >= 32 && code < 127) { // Printable characters
-            chatMode.inputLine += data;
-            term.write(data); // Just write the character directly
+            term.writeln('─'.repeat(term.cols || 60));
+            term.write('\x1b[1;32m>\x1b[0m ');
+            positionInlineInput();
+            return;
+        }
+        
+        if (cmd && !cmd.startsWith('/')) {
+            await sendChatMessage(cmd);
+            positionInlineInput();
+        } else if (cmd.startsWith('/')) {
+            term.writeln(`\x1b[31mUnknown command: ${cmd.split(' ')[0]}. Type /help\x1b[0m`);
+            term.writeln('─'.repeat(term.cols || 60));
+            term.write('\x1b[1;32m>\x1b[0m ');
+            positionInlineInput();
+        } else {
+            term.write('\x1b[1;32m>\x1b[0m ');
+            positionInlineInput();
         }
         return;
     }
     
-    // Normal mode input handling
-    // Handle special keys
-    if (code === 13) { // Enter
-        term.write('\r\n');
-        await executeCommand(currentLine.trim());
-        currentLine = '';
-        cursorPosition = 0;
-        // Only show prompt if not in chat mode (chat command enters chat mode)
-        if (!chatMode.active) {
-            term.write(prompt);
-        }
-    } else if (code === 127) { // Backspace
-        if (cursorPosition > 0) {
-            currentLine = currentLine.slice(0, cursorPosition - 1) + currentLine.slice(cursorPosition);
-            cursorPosition--;
-            term.write('\b \b');
-            // Redraw rest of line if needed
-            if (cursorPosition < currentLine.length) {
-                const remaining = currentLine.slice(cursorPosition);
-                term.write(remaining + ' ');
-                for (let i = 0; i <= remaining.length; i++) {
-                    term.write('\b');
+    // Normal command mode
+    term.write(rawValue + '\r\n');
+    
+    if (cmd) {
+        await executeCommand(cmd);
+    }
+    
+    // Show prompt if not in chat mode
+    if (!chatMode.active) {
+        term.write(promptColored);
+        showInlineInput();
+    }
+    
+    term.scrollToBottom();
+}
+
+// Initialize terminal
+function init() {
+    term.writeln(getWelcomeBanner());
+    term.write(promptColored);
+    
+    // Add inline input after a short delay to ensure terminal is rendered
+    setTimeout(() => {
+        showInlineInput();
+    }, 100);
+    
+    // Handle inline input events
+    inlineInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            submitInlineInput();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (commandHistory.length > 0) {
+                if (historyIndex === -1 || historyIndex >= commandHistory.length) {
+                    historyIndex = commandHistory.length - 1;
+                } else if (historyIndex > 0) {
+                    historyIndex--;
                 }
+                inlineInput.value = commandHistory[historyIndex] || '';
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIndex < commandHistory.length - 1) {
+                historyIndex++;
+                inlineInput.value = commandHistory[historyIndex] || '';
+            } else {
+                historyIndex = commandHistory.length;
+                inlineInput.value = '';
             }
         }
-    } else if (code === 27) { // Escape sequences (arrows)
-        if (data === '\x1b[A') { // Up arrow
-            navigateHistory(-1);
-        } else if (data === '\x1b[B') { // Down arrow
-            navigateHistory(1);
-        } else if (data === '\x1b[C') { // Right arrow
-            if (cursorPosition < currentLine.length) {
-                cursorPosition++;
-                term.write('\x1b[C');
-            }
-        } else if (data === '\x1b[D') { // Left arrow
-            if (cursorPosition > 0) {
-                cursorPosition--;
-                term.write('\x1b[D');
-            }
-        } else if (data === '\x1b[H') { // Home
-            while (cursorPosition > 0) {
-                cursorPosition--;
-                term.write('\x1b[D');
-            }
-        } else if (data === '\x1b[F') { // End
-            while (cursorPosition < currentLine.length) {
-                cursorPosition++;
-                term.write('\x1b[C');
-            }
-        }
-    } else if (code === 3) { // Ctrl+C
-        term.write('^C\r\n');
-        currentLine = '';
-        cursorPosition = 0;
-        term.write(prompt);
-    } else if (code === 12) { // Ctrl+L
-        term.clear();
-        term.write(prompt + currentLine);
-        const backspaces = currentLine.length - cursorPosition;
-        for (let i = 0; i < backspaces; i++) {
-            term.write('\b');
-        }
-    } else if (code >= 32 && code < 127) { // Printable characters
-        currentLine = currentLine.slice(0, cursorPosition) + data + currentLine.slice(cursorPosition);
-        cursorPosition++;
-        term.write(data);
-        // Redraw rest of line if in middle
-        if (cursorPosition < currentLine.length) {
-            const remaining = currentLine.slice(cursorPosition);
-            term.write(remaining);
-            for (let i = 0; i < remaining.length; i++) {
-                term.write('\b');
-            }
-        }
-    }
-}
-
-// Navigate command history
-function navigateHistory(direction) {
-    if (commandHistory.length === 0) return;
+    });
     
-    historyIndex += direction;
+    // Click on terminal focuses input
+    document.getElementById('terminal').addEventListener('click', () => {
+        if (inlineInput.style.display !== 'none') {
+            inlineInput.focus();
+        }
+    });
     
-    if (historyIndex < 0) {
-        historyIndex = -1;
-        clearCurrentLine();
-        currentLine = '';
-        cursorPosition = 0;
-    } else if (historyIndex >= commandHistory.length) {
-        historyIndex = commandHistory.length - 1;
-    } else {
-        clearCurrentLine();
-        currentLine = commandHistory[historyIndex];
-        cursorPosition = currentLine.length;
-        term.write(currentLine);
-    }
-}
-
-// Clear current line
-function clearCurrentLine() {
-    // Move to start of input
-    for (let i = 0; i < cursorPosition; i++) {
-        term.write('\b');
-    }
-    // Clear line
-    for (let i = 0; i < currentLine.length; i++) {
-        term.write(' ');
-    }
-    // Move back to start
-    for (let i = 0; i < currentLine.length; i++) {
-        term.write('\b');
-    }
+    // Reposition on resize
+    window.addEventListener('resize', () => {
+        setTimeout(positionInlineInput, 50);
+    });
+    
+    // Handle scroll to keep input positioned
+    term.onScroll(() => {
+        positionInlineInput();
+    });
 }
 
 // Execute command

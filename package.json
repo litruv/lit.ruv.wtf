@@ -19,8 +19,9 @@
   ],
   "author": "Max Litruv Boonzaayer",
   "license": "MIT",
-  "dependencies": {},
-  "devDependencies": {},
+  "dependencies": {
+    "jimp": "^1.6.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/litruv/lit.ruv.wtf"

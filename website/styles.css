@@ -10,16 +10,31 @@ body {
     color: #0f0;
     overflow: hidden;
     height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: relative;
+}
+
+.crt-border-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 80px solid transparent;
+    border-image-source: url('screenborder.png');
+    border-image-slice: 200 95 fill;
+    border-image-width: 80px;
+    border-image-repeat: stretch;
+    pointer-events: none;
+    z-index: 9999;
 }
 
 .container {
-    width: 95vw;
-    max-width: 1400px;
-    height: 90vh;
-    background: #001800;
+    position: absolute;
+    top: 80px;
+    left: 80px;
+    right: 80px;
+    bottom:100px;
+    background: transparent;
     border: 3px solid #0f0;
     border-radius: 8px;
     box-shadow: 
@@ -28,10 +43,11 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    z-index: 1;
 }
 
 .terminal-header {
-    background: #002200;
+    background: transparent;
     border-bottom: 2px solid #0f0;
     padding: 8px 16px;
     display: flex;
@@ -99,8 +115,30 @@ body {
     cursor: text;
 }
 
+/* Inline terminal input */
+.terminal-inline-input {
+    position: absolute;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #0f0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: inherit;
+    padding: 0;
+    margin: 0;
+    caret-color: #0f0;
+    text-shadow: 0 0 3px #0f0;
+    z-index: 10;
+    min-width: 50%;
+    max-width: 80%;
+}
+
+.terminal-inline-input::placeholder {
+    color: rgba(0, 255, 0, 0.3);
+}
+
 .status-bar {
-    background: #002200;
+    background: transparent;
     border-top: 2px solid #0f0;
     padding: 6px 16px;
     display: flex;
@@ -117,7 +155,7 @@ body {
     opacity: 0.8;
 }
 
-/* CRT screen effect */
+/* CRT scanlines effect */
 .container::before {
     content: " ";
     display: block;
