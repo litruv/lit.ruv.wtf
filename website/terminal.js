@@ -273,6 +273,7 @@ async function enterChatMode() {
     term.writeln('─'.repeat(term.cols || 60));
     term.write('\x1b[1;32m>\x1b[0m ');
     showInlineInput();
+    updateQuickCommands('chat');
 }
 
 // Exit chat mode
@@ -287,7 +288,56 @@ function exitChatMode() {
     term.writeln('  Exited chat mode.\r\n');
     term.write(promptColored);
     showInlineInput();
+    updateQuickCommands('terminal');
 }
+
+/**
+ * Update quick command buttons based on context
+ * @param {string} mode - 'terminal' or 'chat'
+ */
+function updateQuickCommands(mode) {
+    const container = document.querySelector('.quick-commands');
+    const statusLeft = document.querySelector('.status-left');
+    if (!container) return;
+    
+    if (mode === 'chat') {
+        if (statusLeft) statusLeft.textContent = 'Chat Mode';
+        container.innerHTML = `
+            <button class="quick-cmd" onclick="runChatCommand('/help')" title="Show chat help">/help</button>
+            <button class="quick-cmd" onclick="runChatCommand('/nick')" title="Change nickname">/nick</button>
+            <button class="quick-cmd" onclick="runChatCommand('/quit')" title="Exit chat">/quit</button>
+        `;
+    } else {
+        if (statusLeft) statusLeft.textContent = 'Ready';
+        container.innerHTML = `
+            <button class="quick-cmd" onclick="runQuickCommand('help')" title="Show all commands">help</button>
+            <button class="quick-cmd" onclick="runQuickCommand('about')" title="About this terminal">about</button>
+            <button class="quick-cmd" onclick="runQuickCommand('chat')" title="Join chat room">chat</button>
+            <button class="quick-cmd" onclick="runQuickCommand('clear')" title="Clear screen">clear</button>
+        `;
+    }
+}
+
+/**
+ * Run a chat command from button click
+ * @param {string} command - The chat command to run
+ */
+function runChatCommand(command) {
+    if (!chatMode.active) return;
+    
+    if (command === '/nick') {
+        // For /nick, just fill in the command prefix
+        inlineInput.value = '/nick ';
+        inlineInput.focus();
+        return;
+    }
+    
+    // Execute the command
+    inlineInput.value = command;
+    submitInlineInput();
+}
+
+window.runChatCommand = runChatCommand;
 
 // Sync messages from Matrix
 async function syncChatMessages(onlyNew = false) {
@@ -396,6 +446,9 @@ async function sendChatMessage(message) {
         chatMode.inputLine = '';
         renderChatPrompt();
         
+        // Reposition input after render
+        setTimeout(() => positionInlineInput(), 10);
+        
         // Immediately sync to show our message
         setTimeout(() => syncChatMessages(true), 500);
     } catch (error) {
@@ -404,6 +457,7 @@ async function sendChatMessage(message) {
         term.writeln(`\x1b[31mError: ${error.message}\x1b[0m`);
         term.writeln('─'.repeat(term.cols || 60));
         term.write(`\x1b[1;32m>\x1b[0m `);
+        setTimeout(() => positionInlineInput(), 10);
     }
 }
 
@@ -1043,7 +1097,7 @@ async function submitInlineInput() {
             term.writeln('  /quit        - Exit chat mode');
             term.writeln('─'.repeat(term.cols || 60));
             term.write('\x1b[1;32m>\x1b[0m ');
-            positionInlineInput();
+            setTimeout(() => positionInlineInput(), 10);
             return;
         }
         
@@ -1082,21 +1136,21 @@ async function submitInlineInput() {
             }
             term.writeln('─'.repeat(term.cols || 60));
             term.write('\x1b[1;32m>\x1b[0m ');
-            positionInlineInput();
+            setTimeout(() => positionInlineInput(), 10);
             return;
         }
         
         if (cmd && !cmd.startsWith('/')) {
             await sendChatMessage(cmd);
-            positionInlineInput();
+            setTimeout(() => positionInlineInput(), 10);
         } else if (cmd.startsWith('/')) {
             term.writeln(`\x1b[31mUnknown command: ${cmd.split(' ')[0]}. Type /help\x1b[0m`);
             term.writeln('─'.repeat(term.cols || 60));
             term.write('\x1b[1;32m>\x1b[0m ');
-            positionInlineInput();
+            setTimeout(() => positionInlineInput(), 10);
         } else {
             term.write('\x1b[1;32m>\x1b[0m ');
-            positionInlineInput();
+            setTimeout(() => positionInlineInput(), 10);
         }
         return;
     }
