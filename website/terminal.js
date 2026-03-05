@@ -125,6 +125,40 @@ window.addEventListener('resize', () => {
     adjustFontSize();
 });
 
+// Mobile keyboard detection using Visual Viewport API
+let initialViewportHeight = window.innerHeight;
+
+/**
+ * Detect if mobile keyboard is open based on viewport height reduction
+ */
+function checkKeyboardState() {
+    if (window.visualViewport) {
+        const viewportHeight = window.visualViewport.height;
+        const heightReduction = initialViewportHeight - viewportHeight;
+        // If viewport shrank by more than 150px, keyboard is likely open
+        if (heightReduction > 150) {
+            document.body.classList.add('keyboard-open');
+        } else {
+            document.body.classList.remove('keyboard-open');
+        }
+    }
+}
+
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+        checkKeyboardState();
+        adjustFontSize();
+        setTimeout(positionInlineInput, 50);
+    });
+}
+
+// Update initial height on orientation change
+window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+        initialViewportHeight = window.innerHeight;
+    }, 300);
+});
+
 // Update system time
 function updateTime() {
     const now = new Date();
@@ -969,10 +1003,6 @@ const welcomeBannerFull = [
     ' ██║     ██║   ██║   ██╔══██╗██║   ██║╚██╗ ██╔╝  ██║███╗██║   ██║   ██╔══╝  ',
     ' ███████╗██║   ██║██╗██║  ██║╚██████╔╝ ╚████╔╝██╗╚███╔███╔╝   ██║   ██║     ',
     ' ╚══════╝╚═╝   ╚═╝╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═══╝ ╚═╝ ╚══╝╚══╝    ╚═╝   ╚═╝     ',
-    '',
-    ' ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    ' ░░  TERMINAL v' + VERSION + '  ·  EST 2024  ·  LITRUV  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░',
-    ' ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
     '',
     '  Type "help" for available commands.',
     '  Use ↑/↓ arrows to navigate command history.',

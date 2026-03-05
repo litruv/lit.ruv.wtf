@@ -439,6 +439,56 @@ body {
     }
 }
 
+/* Very skinny screens - no border at all */
+@media (max-width: 350px) {
+    .crt-border-overlay {
+        display: none;
+    }
+    
+    .container,
+    .boot-screen {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 0;
+        border: none;
+    }
+    
+    .terminal-header {
+        border-bottom: 1px solid #0f0;
+    }
+    
+    .status-bar {
+        border-top: 1px solid #0f0;
+    }
+}
+
+/* Keyboard open on mobile - detected via JS */
+body.keyboard-open .crt-border-overlay {
+    display: none;
+}
+
+body.keyboard-open .container,
+body.keyboard-open .boot-screen {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+    border: none;
+}
+
+body.keyboard-open .terminal-header {
+    border-bottom: 1px solid #0f0;
+    padding: 3px 8px;
+}
+
+body.keyboard-open .status-bar {
+    border-top: 1px solid #0f0;
+    padding: 3px 8px;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
     width: 8px;
