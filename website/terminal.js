@@ -13,14 +13,15 @@ inlineInput.spellcheck = false;
 // Initialize xterm.js terminal
 const term = new Terminal({
     cursorBlink: false,
-    cursorStyle: 'bar',
+    cursorStyle: 'underline',
+    cursorInactiveStyle: 'none',
     fontFamily: '"Courier New", Courier, monospace',
     fontSize: 14,
     theme: {
         background: '#001800',
         foreground: '#00ff00',
         cursor: 'transparent',
-        cursorAccent: '#001800',
+        cursorAccent: 'transparent',
         selection: 'rgba(0, 255, 0, 0.3)',
         black: '#000000',
         red: '#ff0000',
@@ -54,6 +55,55 @@ term.loadAddon(webLinksAddon);
 // Open terminal
 term.open(document.getElementById('terminal'));
 fitAddon.fit();
+
+// Register custom link provider for clickable commands
+term.registerLinkProvider({
+    provideLinks: (bufferLineNumber, callback) => {
+        const line = term.buffer.active.getLine(bufferLineNumber - 1);
+        if (!line) {
+            callback(undefined);
+            return;
+        }
+        
+        const lineText = line.translateToString();
+        const links = [];
+        
+        // Find all command names that match our known commands
+        const commandNames = ['help', 'about', 'clear', 'echo', 'date', 'whoami', 'history', 'color', 'banner', 'bluesky', 'chat', 'github', 'contact', 'privacy'];
+        
+        commandNames.forEach(cmd => {
+            let startIndex = 0;
+            while (true) {
+                const index = lineText.indexOf(cmd, startIndex);
+                if (index === -1) break;
+                
+                // Check if it's a standalone command word (surrounded by spaces, brackets, or at start/end)
+                const charBefore = index > 0 ? lineText[index - 1] : ' ';
+                const charAfter = index + cmd.length < lineText.length ? lineText[index + cmd.length] : ' ';
+                
+                const validBefore = /[\s\[\]]/.test(charBefore);
+                const validAfter = /[\s\[\]\-]/.test(charAfter);
+                
+                if (validBefore && validAfter) {
+                    links.push({
+                        range: {
+                            start: { x: index + 1, y: bufferLineNumber },
+                            end: { x: index + cmd.length + 1, y: bufferLineNumber }
+                        },
+                        text: cmd,
+                        activate: () => {
+                            runQuickCommand(cmd);
+                        }
+                    });
+                }
+                
+                startIndex = index + 1;
+            }
+        });
+        
+        callback(links.length > 0 ? links : undefined);
+    }
+});
 
 // Adjust font size based on screen width
 function adjustFontSize() {
@@ -362,31 +412,30 @@ const commands = {
     help: {
         description: 'Display available commands',
         execute: () => {
-            return [
-                '',
-                '╔════════════════════════════════════════════════════════════╗',
-                '║                    AVAILABLE COMMANDS                      ║',
-                '╚════════════════════════════════════════════════════════════╝',
-                '',
-                '  help      - Display this help message',
-                '  about     - Information about this terminal',
-                '  clear     - Clear the terminal screen',
-                '  echo      - Echo back your message (usage: echo [message])',
-                '  date      - Display current date and time',
-                '  whoami    - Display current user information',
-                '  history   - Show command history',
-                '  color     - Change terminal color scheme',
-                '  banner    - Display welcome banner',
-                '  bluesky   - Fetch recent posts from Bluesky',
-                '  chat      - Enter interactive chat (type /quit to exit)',
-                '  github    - Visit GitHub repository',
-                '  contact   - Display contact information',
-                '  privacy   - Display privacy policy',
-                '',
-                'Navigate: Use ↑/↓ arrows for command history',
-                'Mouse:    Click to position cursor, scroll to view history',
-                ''
-            ].join('\r\n');
+            term.writeln('');
+            term.writeln('╔════════════════════════════════════════════════════════════╗');
+            term.writeln('║                    AVAILABLE COMMANDS                      ║');
+            term.writeln('╚════════════════════════════════════════════════════════════╝');
+            term.writeln('');
+            writeClickable('  [command=help]      - Display this help message');
+            writeClickable('  [command=about]     - Information about this terminal');
+            writeClickable('  [command=clear]     - Clear the terminal screen');
+            term.writeln('  echo      - Echo back your message (usage: echo [message])');
+            writeClickable('  [command=date]      - Display current date and time');
+            writeClickable('  [command=whoami]    - Display current user information');
+            writeClickable('  [command=history]   - Show command history');
+            writeClickable('  [command=color]     - Change terminal color scheme');
+            writeClickable('  [command=banner]    - Display welcome banner');
+            writeClickable('  [command=bluesky]   - Fetch recent posts from Bluesky');
+            writeClickable('  [command=chat]      - Enter interactive chat (type /quit to exit)');
+            writeClickable('  [command=github]    - Visit GitHub repository');
+            writeClickable('  [command=contact]   - Display contact information');
+            writeClickable('  [command=privacy]   - Display privacy policy');
+            term.writeln('');
+            term.writeln('Navigate: Use ↑/↓ arrows for command history');
+            term.writeln('Mouse:    Click commands to run them');
+            term.writeln('');
+            return null;
         }
     },
     about: {
@@ -505,7 +554,22 @@ const commands = {
     banner: {
         description: 'Display welcome banner',
         execute: () => {
-            return getWelcomeBanner();
+            const cols = term.cols;
+            if (cols >= 62) {
+                term.writeln(welcomeBannerFull.split('\r\n').slice(0, -3).join('\r\n'));
+                writeClickable('  Type [command=help] for available commands.');
+                term.writeln('  Use ↑/↓ arrows to navigate command history.');
+                term.writeln('');
+            } else if (cols >= 40) {
+                term.writeln(welcomeBannerCompact.split('\r\n').slice(0, -2).join('\r\n'));
+                writeClickable('  Welcome! Type [command=help] for commands.');
+                term.writeln('');
+            } else {
+                term.writeln(welcomeBannerMinimal.split('\r\n').slice(0, -2).join('\r\n'));
+                writeClickable('  Type [command=help]');
+                term.writeln('');
+            }
+            return null;
         }
     },
     github: {
@@ -842,25 +906,33 @@ const commands = {
     }
 };
 
-// Welcome banner - full size (62 chars wide)
+// Welcome banner - full size (62 chars wide) - NFO style
 const welcomeBannerFull = [
     '',
-    '╔════════════════════════════════════════════════════════════╗',
-    '║                                                            ║',
-    '║         ██╗     ██╗████████╗    ██████╗ ██╗   ██╗██╗   ██╗ ║',
-    '║         ██║     ██║╚══██╔══╝    ██╔══██╗██║   ██║██║   ██║ ║',
-    '║         ██║     ██║   ██║       ██████╔╝██║   ██║██║   ██║ ║',
-    '║         ██║     ██║   ██║   ██╗ ██╔══██╗██║   ██║╚██╗ ██╔╝ ║',
-    '║         ███████╗██║   ██║   ╚═╝ ██║  ██║╚██████╔╝ ╚████╔╝  ║',
-    '║         ╚══════╝╚═╝   ╚═╝       ╚═╝  ╚═╝ ╚═════╝   ╚═══╝   ║',
-    '║                          ██╗    ██╗████████╗███████╗       ║',
-    '║                          ██║    ██║╚══██╔══╝██╔════╝       ║',
-    '║                          ██║ █╗ ██║   ██║   █████╗         ║',
-    '║                          ██║███╗██║   ██║   ██╔══╝         ║',
-    '║                          ╚███╔███╔╝   ██║   ██║            ║',
-    '║                           ╚══╝╚══╝    ╚═╝   ╚═╝            ║',
-    '║                                                            ║',
-    '╚════════════════════════════════════════════════════════════╝',
+    '            ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄',
+    '          ▄█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█▄',
+    '         ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██',
+    '        ██░                                          ░██',
+    '       ██░   ██╗     ██╗████████╗  ██████╗ ██╗   ██╗  ░██',
+    '      ██░    ██║     ██║╚══██╔══╝  ██╔══██╗██║   ██║   ░██',
+    '     ██░     ██║     ██║   ██║     ██████╔╝██║   ██║    ░██',
+    '     ██░     ██║     ██║   ██║     ██╔══██╗██║   ██║    ░██',
+    '     ██░     ███████╗██║   ██║  ██╗██║  ██║╚██████╔╝    ░██',
+    '     ██░     ╚══════╝╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝     ░██',
+    '     ██░ ─────────────────────────────────────────────  ░██',
+    '     ██░              ██╗    ██╗████████╗███████╗       ░██',
+    '     ██░              ██║    ██║╚══██╔══╝██╔════╝       ░██',
+    '     ██░              ██║ █╗ ██║   ██║   █████╗         ░██',
+    '      ██░             ██║███╗██║   ██║   ██╔══╝        ░██',
+    '       ██░            ╚███╔███╔╝   ██║   ██║          ░██',
+    '        ██░            ╚══╝╚══╝    ╚═╝   ╚═╝         ░██',
+    '         ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██',
+    '          ▀█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█▀',
+    '            ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀',
+    '',
+    '       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
+    '       ░░  TERMINAL v' + VERSION + '  ·  EST 2024  ·  LITRUV  ░░',
+    '       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
     '',
     '  Type "help" for available commands.',
     '  Use ↑/↓ arrows to navigate command history.',
@@ -870,9 +942,13 @@ const welcomeBannerFull = [
 // Welcome banner - compact (40 chars wide)
 const welcomeBannerCompact = [
     '',
-    '╔══════════════════════════════════════╗',
-    `║     LIT.RUV.WTF TERMINAL v${VERSION}       ║`,
-    '╚══════════════════════════════════════╝',
+    '     ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄',
+    '   ▄█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█▄',
+    '  ██░  LIT.RUV.WTF TERMINAL       ░██',
+    '  ██░  ═══════════════════════    ░██',
+    '  ██░  v' + VERSION + ' · Est 2024 · LitRuv  ░██',
+    '   ▀█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█▀',
+    '     ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀',
     '',
     '  Welcome! Type "help" for commands.',
     ''
@@ -881,9 +957,10 @@ const welcomeBannerCompact = [
 // Welcome banner - minimal (25 chars wide)
 const welcomeBannerMinimal = [
     '',
-    ' ═══════════════════════',
-    '  LIT.RUV.WTF TERMINAL',
-    ' ═══════════════════════',
+    '  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄',
+    ' █░ LIT.RUV.WTF     ░█',
+    ' █░ TERMINAL v' + VERSION + ' ░█',
+    '  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀',
     '',
     '  Type "help"',
     ''
@@ -918,11 +995,11 @@ function positionInlineInput() {
     const charWidth = term._core._renderService.dimensions.css.cell.width;
     const charHeight = term._core._renderService.dimensions.css.cell.height;
     
-    // Get cursor position (rows from bottom for scrollback)
+    // Get cursor position
     const cursorY = term.buffer.active.cursorY;
     const cursorX = term.buffer.active.cursorX;
     
-    // Position input
+    // Position input at cursor (xterm-screen handles positioning)
     inlineInput.style.left = (cursorX * charWidth) + 'px';
     inlineInput.style.top = (cursorY * charHeight) + 'px';
     inlineInput.style.height = charHeight + 'px';
@@ -937,7 +1014,7 @@ function showInlineInput() {
     const terminalEl = document.getElementById('terminal');
     const xtermEl = terminalEl.querySelector('.xterm-screen');
     
-    if (!xtermEl.contains(inlineInput)) {
+    if (xtermEl && !xtermEl.contains(inlineInput)) {
         xtermEl.appendChild(inlineInput);
     }
     
@@ -1048,7 +1125,10 @@ async function submitInlineInput() {
     // Show prompt if not in chat mode
     if (!chatMode.active) {
         term.write(promptColored);
-        showInlineInput();
+        // Delay to ensure terminal has rendered before positioning
+        setTimeout(() => {
+            positionInlineInput();
+        }, 10);
     }
     
     term.scrollToBottom();
@@ -1056,7 +1136,23 @@ async function submitInlineInput() {
 
 // Initialize terminal
 function init() {
-    term.writeln(getWelcomeBanner());
+    // Display welcome banner with clickable commands
+    const cols = term.cols;
+    if (cols >= 62) {
+        term.writeln(welcomeBannerFull.split('\r\n').slice(0, -3).join('\r\n'));
+        writeClickable('  Type [command=help] for available commands.');
+        term.writeln('  Use ↑/↓ arrows to navigate command history.');
+        term.writeln('');
+    } else if (cols >= 40) {
+        term.writeln(welcomeBannerCompact.split('\r\n').slice(0, -2).join('\r\n'));
+        writeClickable('  Welcome! Type [command=help] for commands.');
+        term.writeln('');
+    } else {
+        term.writeln(welcomeBannerMinimal.split('\r\n').slice(0, -2).join('\r\n'));
+        writeClickable('  Type [command=help]');
+        term.writeln('');
+    }
+    
     term.write(promptColored);
     
     // Add inline input after a short delay to ensure terminal is rendered
@@ -1109,6 +1205,70 @@ function init() {
     });
 }
 
+/**
+ * Run a quick command from a button click
+ * @param {string} command - The command to execute
+ */
+async function runQuickCommand(command) {
+    if (!command) return;
+    
+    // Write command to terminal
+    term.writeln(`\x1b[1;32m${promptText}\x1b[0m ${command}`);
+    
+    // Execute the command
+    await executeCommand(command.trim());
+    
+    // Show prompt if not in chat mode
+    if (!chatMode.active) {
+        term.write(promptColored);
+        // Delay to ensure terminal has rendered before positioning
+        setTimeout(() => {
+            positionInlineInput();
+        }, 10);
+    }
+    
+    term.scrollToBottom();
+}
+
+// Make function available globally for onclick handlers
+window.runQuickCommand = runQuickCommand;
+
+/**
+ * Write text to terminal with clickable commands
+ * Parses [command=X] syntax to create clickable command links
+ * The link provider makes these clickable automatically
+ * @param {string} text - Text to write (can include [command=X] syntax)
+ * @param {boolean} newline - Whether to add newline after text
+ */
+function writeClickable(text, newline = true) {
+    // Parse for [command=X] syntax
+    const regex = /\[command=([^\]]+)\]/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = regex.exec(text)) !== null) {
+        // Write text before the match
+        if (match.index > lastIndex) {
+            term.write(text.substring(lastIndex, match.index));
+        }
+        
+        // Write command with underline styling (link provider makes it clickable)
+        const command = match[1];
+        term.write(`\x1b[4;32m${command}\x1b[0m`);
+        
+        lastIndex = regex.lastIndex;
+    }
+    
+    // Write remaining text
+    if (lastIndex < text.length) {
+        term.write(text.substring(lastIndex));
+    }
+    
+    if (newline) {
+        term.write('\r\n');
+    }
+}
+
 // Execute command
 async function executeCommand(input) {
     if (!input) return;
@@ -1130,9 +1290,13 @@ async function executeCommand(input) {
         }
     } else {
         term.writeln(`\r\n  Command not found: ${cmd}`);
-        term.writeln('  Type "help" for available commands.\r\n');
+        writeClickable('  Type [command=help] for available commands.\r\n');
     }
 }
 
-// Initialize when loaded
-init();
+// Initialize when loaded - wait for boot animation first
+if (window.runBootAnimation) {
+    runBootAnimation().then(init);
+} else {
+    init();
+}
