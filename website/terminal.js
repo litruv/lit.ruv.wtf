@@ -555,7 +555,7 @@ const commands = {
         description: 'Display welcome banner',
         execute: () => {
             const cols = term.cols;
-            if (cols >= 62) {
+            if (cols >= 78) {
                 term.writeln(welcomeBannerFull.split('\r\n').slice(0, -3).join('\r\n'));
                 writeClickable('  Type [command=help] for available commands.');
                 term.writeln('  Use ↑/↓ arrows to navigate command history.');
@@ -906,33 +906,19 @@ const commands = {
     }
 };
 
-// Welcome banner - full size (62 chars wide) - NFO style
+// Welcome banner - full size - NFO style
 const welcomeBannerFull = [
     '',
-    '            ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄',
-    '          ▄█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█▄',
-    '         ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██',
-    '        ██░                                          ░██',
-    '       ██░   ██╗     ██╗████████╗  ██████╗ ██╗   ██╗  ░██',
-    '      ██░    ██║     ██║╚══██╔══╝  ██╔══██╗██║   ██║   ░██',
-    '     ██░     ██║     ██║   ██║     ██████╔╝██║   ██║    ░██',
-    '     ██░     ██║     ██║   ██║     ██╔══██╗██║   ██║    ░██',
-    '     ██░     ███████╗██║   ██║  ██╗██║  ██║╚██████╔╝    ░██',
-    '     ██░     ╚══════╝╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝     ░██',
-    '     ██░ ─────────────────────────────────────────────  ░██',
-    '     ██░              ██╗    ██╗████████╗███████╗       ░██',
-    '     ██░              ██║    ██║╚══██╔══╝██╔════╝       ░██',
-    '     ██░              ██║ █╗ ██║   ██║   █████╗         ░██',
-    '      ██░             ██║███╗██║   ██║   ██╔══╝        ░██',
-    '       ██░            ╚███╔███╔╝   ██║   ██║          ░██',
-    '        ██░            ╚══╝╚══╝    ╚═╝   ╚═╝         ░██',
-    '         ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██',
-    '          ▀█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█▀',
-    '            ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀',
+    ' ██╗     ██╗████████╗██████╗ ██╗   ██╗██╗   ██╗  ██╗    ██╗████████╗███████╗',
+    ' ██║     ██║╚══██╔══╝██╔══██╗██║   ██║██║   ██║  ██║    ██║╚══██╔══╝██╔════╝',
+    ' ██║     ██║   ██║   ██████╔╝██║   ██║██║   ██║  ██║ █╗ ██║   ██║   █████╗  ',
+    ' ██║     ██║   ██║   ██╔══██╗██║   ██║╚██╗ ██╔╝  ██║███╗██║   ██║   ██╔══╝  ',
+    ' ███████╗██║   ██║██╗██║  ██║╚██████╔╝ ╚████╔╝██╗╚███╔███╔╝   ██║   ██║     ',
+    ' ╚══════╝╚═╝   ╚═╝╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═══╝ ╚═╝ ╚══╝╚══╝    ╚═╝   ╚═╝     ',
     '',
-    '       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
-    '       ░░  TERMINAL v' + VERSION + '  ·  EST 2024  ·  LITRUV  ░░',
-    '       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
+    ' ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
+    ' ░░  TERMINAL v' + VERSION + '  ·  EST 2024  ·  LITRUV  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░',
+    ' ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓',
     '',
     '  Type "help" for available commands.',
     '  Use ↑/↓ arrows to navigate command history.',
@@ -946,7 +932,7 @@ const welcomeBannerCompact = [
     '   ▄█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█▄',
     '  ██░  LIT.RUV.WTF TERMINAL       ░██',
     '  ██░  ═══════════════════════    ░██',
-    '  ██░  v' + VERSION + ' · Est 2024 · LitRuv  ░██',
+    '  ██░  v' + VERSION + ' ·           Litruv  ░██',
     '   ▀█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█▀',
     '     ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀',
     '',
@@ -969,7 +955,7 @@ const welcomeBannerMinimal = [
 // Get appropriate banner based on terminal width
 function getWelcomeBanner() {
     const cols = term.cols;
-    if (cols >= 62) {
+    if (cols >= 78) {
         return welcomeBannerFull;
     } else if (cols >= 40) {
         return welcomeBannerCompact;
@@ -1138,7 +1124,7 @@ async function submitInlineInput() {
 function init() {
     // Display welcome banner with clickable commands
     const cols = term.cols;
-    if (cols >= 62) {
+    if (cols >= 78) {
         term.writeln(welcomeBannerFull.split('\r\n').slice(0, -3).join('\r\n'));
         writeClickable('  Type [command=help] for available commands.');
         term.writeln('  Use ↑/↓ arrows to navigate command history.');
