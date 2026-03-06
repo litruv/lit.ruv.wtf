@@ -489,6 +489,29 @@ body.keyboard-open .status-bar {
     padding: 3px 8px;
 }
 
+/* Small viewport (under 1280x720) - detected via JS */
+body.small-viewport .crt-border-overlay {
+    display: none;
+}
+
+body.small-viewport .container,
+body.small-viewport .boot-screen {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+    border: none;
+}
+
+body.small-viewport .terminal-header {
+    border-bottom: 1px solid #0f0;
+}
+
+body.small-viewport .status-bar {
+    border-top: 1px solid #0f0;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
     width: 8px;

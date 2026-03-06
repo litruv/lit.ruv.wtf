@@ -1,3 +1,18 @@
+// Import commands
+import helpCmd from './scripts/commands/help.js';
+import aboutCmd from './scripts/commands/about.js';
+import clearCmd from './scripts/commands/clear.js';
+import echoCmd from './scripts/commands/echo.js';
+import dateCmd from './scripts/commands/date.js';
+import whoamiCmd from './scripts/commands/whoami.js';
+import historyCmd from './scripts/commands/history.js';
+import colorCmd from './scripts/commands/color.js';
+import bannerCmd from './scripts/commands/banner.js';
+import githubCmd from './scripts/commands/github.js';
+import contactCmd from './scripts/commands/contact.js';
+import privacyCmd from './scripts/commands/privacy.js';
+import blueskyCmd from './scripts/commands/bluesky.js';
+
 // Version
 const VERSION = '1.0.0';
 
@@ -108,7 +123,9 @@ term.registerLinkProvider({
 // Adjust font size based on screen width
 function adjustFontSize() {
     const width = window.innerWidth;
-    if (width < 480) {
+    if (width < 350) {
+        term.options.fontSize = 8;
+    } else if (width < 480) {
         term.options.fontSize = 10;
     } else if (width < 768) {
         term.options.fontSize = 12;
@@ -120,9 +137,24 @@ function adjustFontSize() {
 
 adjustFontSize();
 
+// Check viewport size for border display
+function checkViewportSize() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    
+    if (width < 1280 || height < 720) {
+        document.body.classList.add('small-viewport');
+    } else {
+        document.body.classList.remove('small-viewport');
+    }
+}
+
+checkViewportSize();
+
 // Make terminal responsive
 window.addEventListener('resize', () => {
     adjustFontSize();
+    checkViewportSize();
 });
 
 // Mobile keyboard detection using Visual Viewport API
@@ -147,6 +179,7 @@ function checkKeyboardState() {
 if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
         checkKeyboardState();
+        checkViewportSize();
         adjustFontSize();
         setTimeout(positionInlineInput, 50);
     });
@@ -156,6 +189,7 @@ if (window.visualViewport) {
 window.addEventListener('orientationchange', () => {
     setTimeout(() => {
         initialViewportHeight = window.innerHeight;
+        checkViewportSize();
     }, 300);
 });
 
@@ -306,7 +340,12 @@ async function enterChatMode() {
     term.writeln('');
     term.writeln('─'.repeat(term.cols || 60));
     term.write('\x1b[1;32m>\x1b[0m ');
-    showInlineInput();
+    
+    // Delay showing input to ensure terminal has rendered and cursor is positioned
+    setTimeout(() => {
+        showInlineInput();
+    }, 50);
+    
     updateQuickCommands('chat');
 }
 
@@ -452,6 +491,12 @@ function renderChatMessage(msg) {
     
     // Redraw prompt with current input
     term.write(`\x1b[1;32m>\x1b[0m ${chatMode.inputLine}`);
+    
+    // Scroll to bottom to show new message
+    term.scrollToBottom();
+    
+    // Reposition the inline input after terminal updates
+    setTimeout(() => positionInlineInput(), 10);
 }
 
 // Render chat input prompt (efficiently)
@@ -498,295 +543,56 @@ async function sendChatMessage(message) {
 // Available commands
 const commands = {
     help: {
-        description: 'Display available commands',
-        execute: () => {
-            term.writeln('');
-            term.writeln('╔════════════════════════════════════════════════════════════╗');
-            term.writeln('║                    AVAILABLE COMMANDS                      ║');
-            term.writeln('╚════════════════════════════════════════════════════════════╝');
-            term.writeln('');
-            writeClickable('  [command=help]      - Display this help message');
-            writeClickable('  [command=about]     - Information about this terminal');
-            writeClickable('  [command=clear]     - Clear the terminal screen');
-            term.writeln('  echo      - Echo back your message (usage: echo [message])');
-            writeClickable('  [command=date]      - Display current date and time');
-            writeClickable('  [command=whoami]    - Display current user information');
-            writeClickable('  [command=history]   - Show command history');
-            writeClickable('  [command=color]     - Change terminal color scheme');
-            writeClickable('  [command=banner]    - Display welcome banner');
-            writeClickable('  [command=bluesky]   - Fetch recent posts from Bluesky');
-            writeClickable('  [command=chat]      - Enter interactive chat (type /quit to exit)');
-            writeClickable('  [command=github]    - Visit GitHub repository');
-            writeClickable('  [command=contact]   - Display contact information');
-            writeClickable('  [command=privacy]   - Display privacy policy');
-            term.writeln('');
-            term.writeln('Navigate: Use ↑/↓ arrows for command history');
-            term.writeln('Mouse:    Click commands to run them');
-            term.writeln('');
-            return null;
-        }
+        description: helpCmd.description,
+        execute: (args) => helpCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     about: {
-        description: 'About this terminal',
-        execute: () => {
-            return [
-                '',
-                '╔════════════════════════════════════════════════════════════╗',
-                '║                   LIT.RUV.WTF TERMINAL                     ║',
-                '╚════════════════════════════════════════════════════════════╝',
-                '',
-                '  A classic terminal interface built with xterm.js',
-                '  Features: Keyboard navigation, Mouse support, CRT effects',
-                '  Version: ' + VERSION,
-                '  Built: ' + new Date().getFullYear(),
-                '',
-                '  Technologies:',
-                '    • xterm.js - Terminal emulator',
-                '    • JavaScript - Terminal logic',
-                '    • CSS3 - Classic CRT styling',
-                ''
-            ].join('\r\n');
-        }
+        description: aboutCmd.description,
+        execute: (args) => aboutCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     clear: {
-        description: 'Clear terminal screen',
-        execute: () => {
-            term.clear();
-            return null;
-        }
+        description: clearCmd.description,
+        execute: (args) => clearCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     echo: {
-        description: 'Echo back message',
-        execute: (args) => {
-            return args.join(' ') || '';
-        }
+        description: echoCmd.description,
+        execute: (args) => echoCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     date: {
-        description: 'Display current date and time',
-        execute: () => {
-            const now = new Date();
-            return [
-                '',
-                '  ' + now.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                }),
-                '  ' + now.toLocaleTimeString('en-US'),
-                ''
-            ].join('\r\n');
-        }
+        description: dateCmd.description,
+        execute: (args) => dateCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     whoami: {
-        description: 'Display user information',
-        execute: () => {
-            return [
-                '',
-                '  User: visitor@lit.ruv.wtf',
-                '  Session: ' + Date.now(),
-                '  Terminal: xterm.js',
-                ''
-            ].join('\r\n');
-        }
+        description: whoamiCmd.description,
+        execute: (args) => whoamiCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     history: {
-        description: 'Show command history',
-        execute: () => {
-            if (commandHistory.length === 0) {
-                return '\r\n  No command history yet.\r\n';
-            }
-            let output = ['\r\n  Command History:', '  ───────────────'];
-            commandHistory.forEach((cmd, idx) => {
-                output.push(`  ${(idx + 1).toString().padStart(3, ' ')}  ${cmd}`);
-            });
-            output.push('');
-            return output.join('\r\n');
-        }
+        description: historyCmd.description,
+        execute: (args) => historyCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     color: {
-        description: 'Change color scheme',
-        execute: (args) => {
-            const scheme = args[0] || '';
-            const schemes = {
-                green: { bg: '#001800', fg: '#00ff00', border: '#0f0' },
-                amber: { bg: '#1a0f00', fg: '#ffb000', border: '#ffb000' },
-                blue: { bg: '#000818', fg: '#00a0ff', border: '#00a0ff' },
-                white: { bg: '#0a0a0a', fg: '#e0e0e0', border: '#999' }
-            };
-            
-            if (!scheme || !schemes[scheme]) {
-                return [
-                    '',
-                    '  Available color schemes:',
-                    '    • green  - Classic green terminal',
-                    '    • amber  - Amber monochrome',
-                    '    • blue   - IBM blue',
-                    '    • white  - White phosphor',
-                    '',
-                    '  Usage: color [scheme]',
-                    ''
-                ].join('\r\n');
-            }
-            
-            const colors = schemes[scheme];
-            term.options.theme.background = colors.bg;
-            term.options.theme.foreground = colors.fg;
-            document.querySelector('.container').style.borderColor = colors.border;
-            document.querySelector('.container').style.background = colors.bg;
-            document.body.style.color = colors.fg;
-            
-            return `\r\n  Color scheme changed to: ${scheme}\r\n`;
-        }
+        description: colorCmd.description,
+        execute: (args) => colorCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     banner: {
-        description: 'Display welcome banner',
-        execute: () => {
-            const cols = term.cols;
-            if (cols >= 78) {
-                term.writeln(welcomeBannerFull.split('\r\n').slice(0, -3).join('\r\n'));
-                writeClickable('  Type [command=help] for available commands.');
-                term.writeln('  Use ↑/↓ arrows to navigate command history.');
-                term.writeln('');
-            } else if (cols >= 40) {
-                term.writeln(welcomeBannerCompact.split('\r\n').slice(0, -2).join('\r\n'));
-                writeClickable('  Welcome! Type [command=help] for commands.');
-                term.writeln('');
-            } else {
-                term.writeln(welcomeBannerMinimal.split('\r\n').slice(0, -2).join('\r\n'));
-                writeClickable('  Type [command=help]');
-                term.writeln('');
-            }
-            return null;
-        }
+        description: bannerCmd.description,
+        execute: (args) => bannerCmd.execute(term, writeClickable, VERSION, args, commandHistory, welcomeBannerFull, welcomeBannerCompact, welcomeBannerMinimal)
     },
     github: {
-        description: 'Open GitHub repository',
-        execute: () => {
-            return '\r\n  Opening GitHub...\r\n  (This would open your repository URL)\r\n';
-        }
+        description: githubCmd.description,
+        execute: (args) => githubCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     contact: {
-        description: 'Contact information',
-        execute: () => {
-            return [
-                '',
-                '  Contact Information:',
-                '  ────────────────────',
-                '  Email: contact@lit.ruv.wtf',
-                '  Web:   https://lit.ruv.wtf',
-                ''
-            ].join('\r\n');
-        }
+        description: contactCmd.description,
+        execute: (args) => contactCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     privacy: {
-        description: 'Privacy policy',
-        execute: () => {
-            return [
-                '',
-                '╔════════════════════════════════════════════════════════════╗',
-                '║                      PRIVACY POLICY                        ║',
-                '╚════════════════════════════════════════════════════════════╝',
-                '',
-                '  Data Collection:',
-                '  ────────────────',
-                '  • This terminal uses localStorage to save your chat session',
-                '  • Chat messages are stored on our Matrix homeserver',
-                '  • No cookies or tracking scripts are used',
-                '  • No analytics or third-party tracking',
-                '',
-                '  Matrix Chat:',
-                '  ────────────',
-                '  • Chat credentials stored locally in your browser',
-                '  • Messages sent through Matrix protocol (b.ruv.wtf)',
-                '  • Use "chat disconnect" to clear stored credentials',
-                '',
-                '  Your Rights:',
-                '  ────────────',
-                '  • Clear localStorage anytime via browser settings',
-                '  • Request data deletion: contact@lit.ruv.wtf',
-                '  • All code is open source and auditable',
-                '',
-                '  Updates: Privacy policy last updated March 2026',
-                ''
-            ].join('\r\n');
-        }
+        description: privacyCmd.description,
+        execute: (args) => privacyCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     bluesky: {
-        description: 'Fetch recent posts from Bluesky',
-        execute: async (args) => {
-            const actor = 'lit.mates.dev';
-            const limit = args[0] ? parseInt(args[0]) : 5;
-            
-            try {
-                term.writeln('\r\n  Fetching posts from Bluesky...\r\n');
-                
-                const response = await fetch(
-                    `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${actor}&limit=${limit}`
-                );
-                
-                if (!response.ok) {
-                    return '  Error: Unable to fetch Bluesky posts';
-                }
-                
-                const data = await response.json();
-                
-                if (!data.feed || data.feed.length === 0) {
-                    return '  No posts found.';
-                }
-                
-                let output = ['  ╔════════════════════════════════════════════════════╗'];
-                output.push('  ║          BLUESKY POSTS - @lit.mates.dev            ║');
-                output.push('  ╚════════════════════════════════════════════════════╝');
-                output.push('');
-                
-                // Reverse to show oldest first, latest at bottom
-                const reversedFeed = [...data.feed].reverse();
-                
-                reversedFeed.forEach((item, idx) => {
-                    const post = item.post;
-                    const text = post.record.text;
-                    const createdAt = new Date(post.record.createdAt);
-                    const date = createdAt.toLocaleDateString();
-                    const time = createdAt.toLocaleTimeString('en-US', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    });
-                    
-                    // Extract post ID from URI (at://did:plc:xxx/app.bsky.feed.post/{postId})
-                    const postId = post.uri.split('/').pop();
-                    const postUrl = `https://bsky.app/profile/${actor}/post/${postId}`;
-                    
-                    output.push(`  [${idx + 1}] ${date} ${time}`);
-                    output.push(`  ${postUrl}`);
-                    output.push('  ────────────────────────────────────────');
-                    
-                    // Wrap text to max 50 chars
-                    const words = text.split(' ');
-                    let line = '  ';
-                    words.forEach(word => {
-                        if (line.length + word.length + 1 > 52) {
-                            output.push(line);
-                            line = '  ' + word;
-                        } else {
-                            line += (line.length > 2 ? ' ' : '') + word;
-                        }
-                    });
-                    if (line.length > 2) output.push(line);
-                    
-                    output.push('');
-                    output.push(`  ♡ ${post.likeCount || 0}  ↻ ${post.repostCount || 0}  💬 ${post.replyCount || 0}`);
-                    output.push('');
-                });
-                
-                output.push(`  Usage: bluesky [count] (default: 5, max: 20)`);
-                output.push('');
-                
-                return output.join('\r\n');
-            } catch (error) {
-                return '  Error: Failed to connect to Bluesky API';
-            }
-        }
+        description: blueskyCmd.description,
+        execute: async (args) => await blueskyCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     chat: {
         description: 'Connect to chat room',
@@ -1039,7 +845,12 @@ const welcomeBannerMinimal = [
 // Get appropriate banner based on terminal width
 function getWelcomeBanner() {
     const cols = term.cols;
-    if (cols >= 78) {
+    const width = window.innerWidth;
+    
+    // Use minimal mode for very narrow screens
+    if (width < 350 || cols < 30) {
+        return welcomeBannerMinimal;
+    } else if (cols >= 78) {
         return welcomeBannerFull;
     } else if (cols >= 40) {
         return welcomeBannerCompact;
@@ -1117,10 +928,10 @@ async function submitInlineInput() {
             return;
         }
         
-        // Write what user typed
-        term.write(rawValue + '\r\n');
-        
         if (cmd === '/help') {
+            // Move cursor up to separator, clear it and the prompt
+            term.write('\x1b[1A\x1b[2K\r');
+            
             term.writeln('\x1b[33mChat Commands:\x1b[0m');
             term.writeln('  /help        - Show this help message');
             term.writeln('  /nick [name] - Change your display name');
@@ -1133,6 +944,10 @@ async function submitInlineInput() {
         
         if (cmd.startsWith('/nick ')) {
             const newNick = cmd.substring(6).trim();
+            
+            // Move cursor up to separator, clear it
+            term.write('\x1b[1A\x1b[2K\r');
+            
             if (!newNick) {
                 term.writeln('\x1b[31mError: /nick [name]\x1b[0m');
             } else {
@@ -1171,15 +986,18 @@ async function submitInlineInput() {
         }
         
         if (cmd && !cmd.startsWith('/')) {
+            // Don't write the message here - let sync handle it
             await sendChatMessage(cmd);
-            setTimeout(() => positionInlineInput(), 10);
+            return;
         } else if (cmd.startsWith('/')) {
+            // Move cursor up to separator, clear it
+            term.write('\x1b[1A\x1b[2K\r');
             term.writeln(`\x1b[31mUnknown command: ${cmd.split(' ')[0]}. Type /help\x1b[0m`);
             term.writeln('─'.repeat(term.cols || 60));
             term.write('\x1b[1;32m>\x1b[0m ');
             setTimeout(() => positionInlineInput(), 10);
         } else {
-            term.write('\x1b[1;32m>\x1b[0m ');
+            // Empty message, just reposition the prompt
             setTimeout(() => positionInlineInput(), 10);
         }
         return;
