@@ -25,6 +25,124 @@ inlineInput.autocorrect = 'on';
 inlineInput.autocapitalize = 'off';
 inlineInput.spellcheck = false;
 
+const mentionSuggestions = document.createElement('div');
+mentionSuggestions.className = 'mention-suggestions';
+mentionSuggestions.style.display = 'none';
+
+const TERMINAL_SOUND_FILES = {
+    startup: 'sounds/poweron.mp3',
+    commandLaunch: 'sounds/floppyreadshort.wav',
+    typing: [
+        'sounds/ui_hacking_charsingle_01.wav',
+        'sounds/ui_hacking_charsingle_02.wav',
+        'sounds/ui_hacking_charsingle_03.wav',
+        'sounds/ui_hacking_charsingle_04.wav',
+        'sounds/ui_hacking_charsingle_05.wav',
+        'sounds/ui_hacking_charsingle_06.wav'
+    ],
+    enter: [
+        'sounds/ui_hacking_charenter_01.wav',
+        'sounds/ui_hacking_charenter_02.wav',
+        'sounds/ui_hacking_charenter_03.wav'
+    ],
+    scroll: 'sounds/ui_hacking_charscroll.wav'
+};
+
+const terminalSoundState = {
+    startupPlayed: false,
+    startupUnlockBound: false
+};
+
+/**
+ * Select a random item from an array.
+ * @param {string[]} values - Candidate values
+ * @returns {string} Randomly selected value
+ */
+function pickRandomValue(values) {
+    return values[Math.floor(Math.random() * values.length)];
+}
+
+/**
+ * Play a single sound file at the provided volume.
+ * @param {string} filePath - Relative sound file path
+ * @param {number} volume - Playback volume between 0 and 1
+ * @returns {Promise<boolean>} True when playback starts
+ */
+async function playSoundFile(filePath, volume) {
+    try {
+        const sound = new Audio(filePath);
+        sound.preload = 'auto';
+        sound.volume = volume;
+        await sound.play();
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
+ * Attempt startup sound playback and defer until user interaction if blocked.
+ * @returns {Promise<void>}
+ */
+async function attemptStartupSoundPlayback() {
+    if (terminalSoundState.startupPlayed) {
+        return;
+    }
+
+    const didPlay = await playSoundFile(TERMINAL_SOUND_FILES.startup, 0.5);
+    if (didPlay) {
+        terminalSoundState.startupPlayed = true;
+        terminalSoundState.startupUnlockBound = false;
+        return;
+    }
+
+    if (terminalSoundState.startupUnlockBound) {
+        return;
+    }
+
+    terminalSoundState.startupUnlockBound = true;
+    const unlockAndPlay = async () => {
+        if (terminalSoundState.startupPlayed) {
+            return;
+        }
+
+        const unlocked = await playSoundFile(TERMINAL_SOUND_FILES.startup, 0.5);
+        if (unlocked) {
+            terminalSoundState.startupPlayed = true;
+        }
+    };
+
+    document.addEventListener('pointerdown', unlockAndPlay, { once: true });
+    document.addEventListener('keydown', unlockAndPlay, { once: true });
+}
+
+/**
+ * Play keypress sound effects for terminal typing/navigation.
+ * @param {KeyboardEvent} event - Keyboard event
+ * @returns {void}
+ */
+function playTerminalKeySound(event) {
+    const key = event.key;
+    if (event.ctrlKey || event.altKey || event.metaKey) {
+        return;
+    }
+
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
+        void playSoundFile(TERMINAL_SOUND_FILES.scroll, 0.22);
+        return;
+    }
+
+    if (key === 'Enter') {
+        void playSoundFile(pickRandomValue(TERMINAL_SOUND_FILES.enter), 0.26);
+        return;
+    }
+
+    const isTypingKey = key.length === 1 || key === 'Backspace' || key === 'Delete';
+    if (isTypingKey) {
+        void playSoundFile(pickRandomValue(TERMINAL_SOUND_FILES.typing), 0.2);
+    }
+}
+
 // Initialize xterm.js terminal
 const term = new Terminal({
     cursorBlink: false,
@@ -220,7 +338,15 @@ let chatMode = {
     lastSync: null,
     pollInterval: null,
     inputLine: '',
-    displayNames: {} // Cache for display names
+    displayNames: {}, // Cache for display names
+    mentionDirectory: [],
+    mentionLoadedAt: 0,
+    mentionAutocomplete: {
+        tokenStart: -1,
+        tokenEnd: -1,
+        matches: [],
+        index: 0
+    }
 };
 
 const MATRIX_PUBLIC_READ_TOKEN = 'syt_Z2VuZXJhbGNoYXQtcmVhZG9ubHk_sikLltUtfbHlztnanEVm_2icJ1o';
@@ -501,6 +627,334 @@ async function shouldShowNicknameHint() {
     }
 }
 
+/**
+ * Sync mention directory for autocomplete and mention rendering.
+ * @param {boolean} force - When true, bypass cache time
+ * @returns {Promise<void>}
+ */
+async function syncMentionDirectory(force = false) {
+    if (!window.matrixSession || !window.matrixSession.roomId) {
+        return;
+    }
+
+    const now = Date.now();
+    if (!force && chatMode.mentionDirectory.length > 0 && (now - chatMode.mentionLoadedAt) < 30000) {
+        return;
+    }
+
+    try {
+        const members = await matrixApi(`/rooms/${window.matrixSession.roomId}/joined_members`, 'GET');
+        if (!members || !members.joined) {
+            return;
+        }
+
+        const directory = [];
+        Object.entries(members.joined).forEach(([userId, member]) => {
+            const fallbackName = userId.split(':')[0].substring(1);
+            const displayName = member && member.display_name ? member.display_name : fallbackName;
+            chatMode.displayNames[userId] = displayName;
+            directory.push({ userId, displayName });
+        });
+
+        chatMode.mentionDirectory = directory;
+        chatMode.mentionLoadedAt = now;
+    } catch (error) {
+        // Ignore mention directory refresh failures.
+    }
+}
+
+/**
+ * Get mention autocomplete matches for query.
+ * @param {string} query - Partial display name text without @
+ * @returns {Array<{userId: string, displayName: string}>} Sorted matches
+ */
+function getMentionMatches(query) {
+    const queryLower = query.toLowerCase();
+    const matches = chatMode.mentionDirectory.filter((entry) => {
+        const display = entry.displayName.toLowerCase();
+        const localPart = entry.userId.split(':')[0].substring(1).toLowerCase();
+        return display.startsWith(queryLower) || localPart.startsWith(queryLower);
+    });
+
+    matches.sort((left, right) => left.displayName.localeCompare(right.displayName));
+    return matches;
+}
+
+/**
+ * Escape text for HTML output.
+ * @param {string} value - Raw text
+ * @returns {string} HTML-escaped text
+ */
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * Extract current mention token context from the input cursor.
+ * @returns {{atIndex: number, cursorPosition: number, tokenText: string} | null} Token info or null
+ */
+function getMentionTokenContext() {
+    const cursorPosition = inlineInput.selectionStart;
+    const fullValue = inlineInput.value;
+    const textBeforeCursor = fullValue.slice(0, cursorPosition);
+    const tokenStart = textBeforeCursor.search(/(?:^|\s)@[^\s]*$/);
+
+    if (tokenStart === -1) {
+        return null;
+    }
+
+    const atIndex = textBeforeCursor.indexOf('@', tokenStart);
+    if (atIndex === -1) {
+        return null;
+    }
+
+    const tokenText = textBeforeCursor.slice(atIndex + 1);
+    if (!tokenText || tokenText.includes(':')) {
+        return null;
+    }
+
+    return { atIndex, cursorPosition, tokenText };
+}
+
+/**
+ * Render mention suggestions above the inline input.
+ * @returns {void}
+ */
+function renderMentionSuggestions() {
+    const { matches, index } = chatMode.mentionAutocomplete;
+    if (!chatMode.active || matches.length === 0) {
+        mentionSuggestions.style.display = 'none';
+        return;
+    }
+
+    const limitedMatches = matches.slice(0, 5);
+    mentionSuggestions.innerHTML = limitedMatches.map((entry, entryIndex) => {
+        const selectedClass = index >= 0 && entryIndex === (index % limitedMatches.length) ? ' selected' : '';
+        return `<span class="mention-suggestion${selectedClass}">@${escapeHtml(entry.displayName)}</span>`;
+    }).join('');
+    mentionSuggestions.style.display = 'block';
+    positionInlineInput();
+}
+
+/**
+ * Check whether mention suggestions are currently visible.
+ * @returns {boolean} True when suggestion strip is active
+ */
+function hasVisibleMentionSuggestions() {
+    return chatMode.active
+        && mentionSuggestions.style.display !== 'none'
+        && chatMode.mentionAutocomplete.matches.length > 0;
+}
+
+/**
+ * Hide mention suggestion UI and clear state.
+ * @returns {void}
+ */
+function resetMentionAutocomplete() {
+    chatMode.mentionAutocomplete = {
+        tokenStart: -1,
+        tokenEnd: -1,
+        matches: [],
+        index: 0
+    };
+    mentionSuggestions.style.display = 'none';
+    mentionSuggestions.innerHTML = '';
+}
+
+/**
+ * Refresh mention suggestions based on current cursor token.
+ * @returns {Promise<void>}
+ */
+async function refreshMentionSuggestionsFromInput() {
+    if (!chatMode.active) {
+        resetMentionAutocomplete();
+        return;
+    }
+
+    const context = getMentionTokenContext();
+    if (!context) {
+        resetMentionAutocomplete();
+        return;
+    }
+
+    await syncMentionDirectory();
+    const matches = getMentionMatches(context.tokenText);
+    if (matches.length === 0) {
+        resetMentionAutocomplete();
+        return;
+    }
+
+    chatMode.mentionAutocomplete = {
+        tokenStart: context.atIndex,
+        tokenEnd: context.cursorPosition,
+        matches,
+        index: -1
+    };
+    renderMentionSuggestions();
+}
+
+/**
+ * Replace selected mention token in input with selected display name.
+ * @param {{userId: string, displayName: string}} selectedEntry - Selected mention entry
+ * @returns {void}
+ */
+function applyMentionReplacement(selectedEntry) {
+    const rangeStart = chatMode.mentionAutocomplete.tokenStart;
+    const rangeEnd = chatMode.mentionAutocomplete.tokenEnd;
+    if (rangeStart < 0 || rangeEnd < 0) {
+        return;
+    }
+
+    const fullValue = inlineInput.value;
+    const valueBeforeMention = fullValue.slice(0, rangeStart);
+    const valueAfterMention = fullValue.slice(rangeEnd);
+    const mentionText = `@${selectedEntry.displayName}`;
+    const hasTrailingSpace = valueAfterMention.startsWith(' ');
+    const nextValue = `${valueBeforeMention}${mentionText}${hasTrailingSpace ? '' : ' '}${valueAfterMention}`;
+    const nextCursor = valueBeforeMention.length + mentionText.length + (hasTrailingSpace ? 0 : 1);
+
+    inlineInput.value = nextValue;
+    inlineInput.setSelectionRange(nextCursor, nextCursor);
+    chatMode.inputLine = nextValue;
+    chatMode.mentionAutocomplete.tokenEnd = nextCursor;
+}
+
+/**
+ * Commit the currently selected mention suggestion into input text.
+ * @returns {boolean} True when a suggestion was applied
+ */
+function commitSelectedMentionSuggestion() {
+    if (!hasVisibleMentionSuggestions()) {
+        return false;
+    }
+
+    if (chatMode.mentionAutocomplete.index < 0) {
+        chatMode.mentionAutocomplete.index = 0;
+    }
+
+    const selectedEntry = chatMode.mentionAutocomplete.matches[chatMode.mentionAutocomplete.index];
+    applyMentionReplacement(selectedEntry);
+    resetMentionAutocomplete();
+    return true;
+}
+
+/**
+ * Resolve typed @displayname mentions to Matrix user IDs before sending.
+ * @param {string} message - Outgoing message text
+ * @returns {string} Message with mentions converted to @user:server
+ */
+function transformOutgoingMentions(message) {
+    if (!message || !chatMode.mentionDirectory.length) {
+        return message;
+    }
+
+    return message.replace(/(^|\s)@([^\s:]+)\b/g, (fullMatch, leadingWhitespace, mentionValue) => {
+        const matchedEntry = chatMode.mentionDirectory.find((entry) => {
+            return entry.displayName.toLowerCase() === mentionValue.toLowerCase();
+        });
+
+        if (!matchedEntry) {
+            return fullMatch;
+        }
+
+        return `${leadingWhitespace}${matchedEntry.userId}`;
+    });
+}
+
+/**
+ * Build Matrix message content with mention metadata and formatted HTML.
+ * @param {string} message - Outgoing raw message
+ * @returns {{msgtype: string, body: string, "m.mentions"?: {user_ids: string[]}, format?: string, formatted_body?: string}} Matrix content payload
+ */
+function buildMentionMessageContent(message) {
+    const resolvedBody = transformOutgoingMentions(message);
+    const mentionRegex = /@([A-Za-z0-9._\-=\/]+:[A-Za-z0-9.-]+)/g;
+    const mentionUserIds = [];
+    let mentionMatch;
+
+    while ((mentionMatch = mentionRegex.exec(resolvedBody)) !== null) {
+        const userId = `@${mentionMatch[1]}`;
+        if (!mentionUserIds.includes(userId)) {
+            mentionUserIds.push(userId);
+        }
+    }
+
+    if (mentionUserIds.length === 0) {
+        return {
+            msgtype: 'm.text',
+            body: resolvedBody
+        };
+    }
+
+    const formattedBody = escapeHtml(resolvedBody).replace(mentionRegex, (matchedValue, userBody) => {
+        const userId = `@${userBody}`;
+        const knownDisplayName = chatMode.displayNames[userId];
+        const fallbackDisplayName = userId.split(':')[0].substring(1);
+        const displayName = knownDisplayName || fallbackDisplayName;
+        const matrixToUrl = `https://matrix.to/#/${userId}`;
+        return `<a href="${matrixToUrl}">@${escapeHtml(displayName)}</a>`;
+    });
+
+    return {
+        msgtype: 'm.text',
+        body: resolvedBody,
+        'm.mentions': {
+            user_ids: mentionUserIds
+        },
+        format: 'org.matrix.custom.html',
+        formatted_body: formattedBody
+    };
+}
+
+/**
+ * Render Matrix user mentions as highlighted @displayname values.
+ * @param {string} text - Chat message body
+ * @returns {string} Formatted message text for terminal output
+ */
+function formatChatTextWithMentions(text) {
+    if (!text) {
+        return '';
+    }
+
+    return text.replace(/@([A-Za-z0-9._\-=\/]+:[A-Za-z0-9.-]+)/g, (matchValue, userBody) => {
+        const userId = `@${userBody}`;
+        const knownDisplayName = chatMode.displayNames[userId];
+        const fallbackDisplayName = userId.split(':')[0].substring(1);
+        const displayName = knownDisplayName || fallbackDisplayName;
+        return `\x1b[1;96m@${displayName}\x1b[0m`;
+    });
+}
+
+/**
+ * Cycle mention suggestions and apply selected display name.
+ * @returns {Promise<void>}
+ */
+async function applyMentionAutocomplete() {
+    if (!chatMode.active) {
+        return;
+    }
+
+    if (chatMode.mentionAutocomplete.matches.length === 0) {
+        await refreshMentionSuggestionsFromInput();
+        if (chatMode.mentionAutocomplete.matches.length === 0) {
+            return;
+        }
+        chatMode.mentionAutocomplete.index = 0;
+    } else {
+        chatMode.mentionAutocomplete.index = (chatMode.mentionAutocomplete.index + 1)
+            % chatMode.mentionAutocomplete.matches.length;
+    }
+
+    const selectedEntry = chatMode.mentionAutocomplete.matches[chatMode.mentionAutocomplete.index];
+    applyMentionReplacement(selectedEntry);
+    renderMentionSuggestions();
+}
+
 // Enter chat mode
 async function enterChatMode() {
     if (!window.matrixSession || !window.matrixSession.roomId) {
@@ -512,6 +966,14 @@ async function enterChatMode() {
     chatMode.messages = [];
     chatMode.lastSync = null;
     chatMode.inputLine = '';
+    chatMode.mentionAutocomplete = {
+        tokenStart: -1,
+        tokenEnd: -1,
+        matches: [],
+        index: 0
+    };
+    resetMentionAutocomplete();
+    await syncMentionDirectory(true);
     
     term.clear();
     term.writeln('╔════════════════════════════════════════════════════════════╗');
@@ -558,6 +1020,9 @@ function exitChatMode() {
         chatMode.pollInterval = null;
     }
     chatMode.displayNames = {}; // Clear display name cache
+    chatMode.mentionDirectory = [];
+    chatMode.mentionLoadedAt = 0;
+    resetMentionAutocomplete();
     term.clear();
     term.writeln('  Exited chat mode.\r\n');
     term.write(promptColored);
@@ -602,6 +1067,8 @@ function runChatCommand(command) {
     if (command === '/nick') {
         // For /nick, just fill in the command prefix
         inlineInput.value = '/nick ';
+        chatMode.inputLine = inlineInput.value;
+        resetMentionAutocomplete();
         inlineInput.focus();
         return;
     }
@@ -666,7 +1133,7 @@ async function syncChatMessages(onlyNew = false) {
                 const recent = chatMode.messages.slice(-20);
                 recent.forEach(msg => {
                     const color = getUserColor(msg.sender);
-                    term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${msg.text}`);
+                    term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
                 });
             }
         }
@@ -685,7 +1152,7 @@ function renderChatMessage(msg) {
     term.write('\x1b[1A\x1b[2K\r'); // Move up to separator, clear it
     
     // Write the new message
-    term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${msg.text}`);
+    term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
     
     // Redraw separator
     term.writeln('─'.repeat(term.cols || 60));
@@ -712,18 +1179,18 @@ async function sendChatMessage(message) {
     if (!message.trim()) return;
     
     try {
+        await syncMentionDirectory();
+        const content = buildMentionMessageContent(message);
         const txnId = Date.now();
         await matrixApi(
             `/rooms/${window.matrixSession.roomId}/send/m.room.message/${txnId}`,
             'PUT',
-            {
-                msgtype: 'm.text',
-                body: message
-            }
+            content
         );
         
         // Clear the input
         chatMode.inputLine = '';
+        resetMentionAutocomplete();
         renderChatPrompt();
         
         // Reposition input after render
@@ -1101,6 +1568,13 @@ function positionInlineInput() {
     inlineInput.style.height = charHeight + 'px';
     inlineInput.style.fontSize = term.options.fontSize + 'px';
     inlineInput.style.lineHeight = charHeight + 'px';
+
+    if (mentionSuggestions.style.display !== 'none') {
+        mentionSuggestions.style.left = inlineInput.style.left;
+        mentionSuggestions.style.top = ((cursorY * charHeight) - charHeight - 6) + 'px';
+        mentionSuggestions.style.fontSize = term.options.fontSize + 'px';
+        mentionSuggestions.style.lineHeight = charHeight + 'px';
+    }
 }
 
 /**
@@ -1112,6 +1586,10 @@ function showInlineInput() {
     
     if (xtermEl && !xtermEl.contains(inlineInput)) {
         xtermEl.appendChild(inlineInput);
+    }
+
+    if (xtermEl && !xtermEl.contains(mentionSuggestions)) {
+        xtermEl.appendChild(mentionSuggestions);
     }
     
     inlineInput.style.display = 'block';
@@ -1125,6 +1603,7 @@ function showInlineInput() {
 function hideInlineInput() {
     inlineInput.style.display = 'none';
     inlineInput.value = '';
+    mentionSuggestions.style.display = 'none';
 }
 
 /**
@@ -1134,9 +1613,11 @@ async function submitInlineInput() {
     const cmd = inlineInput.value.trim();
     const rawValue = inlineInput.value;
     inlineInput.value = '';
+    resetMentionAutocomplete();
     
     // Handle chat mode
     if (chatMode.active) {
+        chatMode.inputLine = rawValue;
         if (cmd === '/quit' || cmd === '/exit') {
             hideInlineInput();
             exitChatMode();
@@ -1257,6 +1738,7 @@ async function init() {
     }
 
     await writeStartupChatMotd();
+    await attemptStartupSoundPlayback();
     
     term.write(promptColored);
     
@@ -1266,10 +1748,23 @@ async function init() {
     }, 100);
     
     // Handle inline input events
-    inlineInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+    inlineInput.addEventListener('keydown', async (e) => {
+        playTerminalKeySound(e);
+        if (e.key === 'Escape' && hasVisibleMentionSuggestions()) {
+            e.preventDefault();
+            resetMentionAutocomplete();
+        } else if (e.key === ' ' && hasVisibleMentionSuggestions()) {
+            e.preventDefault();
+            commitSelectedMentionSuggestion();
+        } else if (e.key === 'Enter' && hasVisibleMentionSuggestions()) {
+            e.preventDefault();
+            commitSelectedMentionSuggestion();
+        } else if (e.key === 'Enter') {
             e.preventDefault();
             submitInlineInput();
+        } else if (e.key === 'Tab' && chatMode.active) {
+            e.preventDefault();
+            await applyMentionAutocomplete();
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             if (commandHistory.length > 0) {
@@ -1289,6 +1784,13 @@ async function init() {
                 historyIndex = commandHistory.length;
                 inlineInput.value = '';
             }
+        }
+    });
+
+    inlineInput.addEventListener('input', async () => {
+        if (chatMode.active) {
+            chatMode.inputLine = inlineInput.value;
+            await refreshMentionSuggestionsFromInput();
         }
     });
     
@@ -1377,6 +1879,8 @@ function writeClickable(text, newline = true) {
 // Execute command
 async function executeCommand(input) {
     if (!input) return;
+
+    void playSoundFile(TERMINAL_SOUND_FILES.commandLaunch, 0.28);
     
     // Add to history
     commandHistory.push(input);

@@ -22,12 +22,63 @@ const BIOS_LINES = [
     { text: 'Starting LIT.RUV.WTF Terminal...', class: 'highlight', delay: 400 }
 ];
 
+const BOOT_STARTUP_SOUND_PATH = 'sounds/551405__nakkivene66__old-pc-startup-idle-shutdown.wav';
+
+let bootStartupSoundPlayed = false;
+let bootStartupSoundUnlockBound = false;
+
+/**
+ * Play the boot startup sound as early as possible.
+ * Falls back to first user interaction when autoplay is blocked.
+ * @returns {Promise<void>}
+ */
+async function playBootStartupSound() {
+    if (bootStartupSoundPlayed) {
+        return;
+    }
+
+    try {
+        const startupSound = new Audio(BOOT_STARTUP_SOUND_PATH);
+        startupSound.preload = 'auto';
+        startupSound.volume = 0.55;
+        await startupSound.play();
+        bootStartupSoundPlayed = true;
+        bootStartupSoundUnlockBound = false;
+        return;
+    } catch (error) {
+        if (bootStartupSoundUnlockBound) {
+            return;
+        }
+
+        bootStartupSoundUnlockBound = true;
+        const unlockAndPlay = async () => {
+            if (bootStartupSoundPlayed) {
+                return;
+            }
+
+            try {
+                const deferredSound = new Audio(BOOT_STARTUP_SOUND_PATH);
+                deferredSound.preload = 'auto';
+                deferredSound.volume = 0.55;
+                await deferredSound.play();
+                bootStartupSoundPlayed = true;
+            } catch (retryError) {
+                // Keep boot sequence running even if sound cannot play.
+            }
+        };
+
+        document.addEventListener('pointerdown', unlockAndPlay, { once: true });
+        document.addEventListener('keydown', unlockAndPlay, { once: true });
+    }
+}
+
 /**
  * Run the BIOS boot animation
  * @returns {Promise} Resolves when animation is complete
  */
 function runBootAnimation() {
     return new Promise((resolve) => {
+        void playBootStartupSound();
         const bootScreen = document.getElementById('bootScreen');
         const biosText = document.getElementById('biosText');
         const pageFade = document.getElementById('pageFade');

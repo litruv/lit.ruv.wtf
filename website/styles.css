@@ -214,6 +214,32 @@ body {
     color: rgba(0, 255, 0, 0.3);
 }
 
+.mention-suggestions {
+    position: absolute;
+    z-index: 11;
+    display: flex;
+    gap: 6px;
+    max-width: 85%;
+    padding: 1px 4px;
+    border: 1px solid rgba(0, 255, 0, 0.45);
+    background: rgba(0, 24, 0, 0.92);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.mention-suggestion {
+    color: #66ff66;
+    opacity: 0.9;
+}
+
+.mention-suggestion.selected {
+    color: #001800;
+    background: #66ff66;
+    padding: 0 2px;
+}
+
 .status-bar {
     background: transparent;
     border-top: 2px solid #0f0;
