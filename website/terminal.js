@@ -223,10 +223,12 @@ let chatMode = {
     displayNames: {} // Cache for display names
 };
 
+const MATRIX_PUBLIC_READ_TOKEN = 'syt_Z2VuZXJhbGNoYXQtcmVhZG9ubHk_sikLltUtfbHlztnanEVm_2icJ1o';
+
 // Matrix API helper
 const matrixApi = async (endpoint, method = 'GET', body = null) => {
     if (!window.matrixSession) return null;
-    const homeserver = 'https://b.ruv.wtf';
+    const homeserver = 'https://chat.ruv.wtf';
     const url = `${homeserver}/_matrix/client/r0${endpoint}`;
     const headers = {
         'Content-Type': 'application/json'
@@ -242,6 +244,154 @@ const matrixApi = async (endpoint, method = 'GET', body = null) => {
     const response = await fetch(url, options);
     return response.json();
 };
+
+/**
+ * Fetch the latest public chat message using the read-only public token.
+ * @param {string} homeserver - Matrix homeserver URL
+ * @param {string} roomAlias - Room alias (e.g. #generalchat:example.org)
+ * @returns {Promise<{time: string, sender: string, text: string, timestamp: number} | null>} Last message summary or null
+ */
+async function fetchPublicLastMessage(homeserver, roomAlias) {
+    const resolvedAlias = encodeURIComponent(roomAlias);
+    const authHeaders = {
+        Authorization: `Bearer ${MATRIX_PUBLIC_READ_TOKEN}`
+    };
+
+    const roomResponse = await fetch(`${homeserver}/_matrix/client/r0/directory/room/${resolvedAlias}`, {
+        headers: authHeaders
+    });
+    if (!roomResponse.ok) {
+        return null;
+    }
+
+    const roomData = await roomResponse.json();
+    if (!roomData || !roomData.room_id) {
+        return null;
+    }
+
+    const resolvedRoomId = encodeURIComponent(roomData.room_id);
+    const messagesResponse = await fetch(`${homeserver}/_matrix/client/r0/rooms/${resolvedRoomId}/messages?dir=b&limit=30`, {
+        headers: authHeaders
+    });
+    if (!messagesResponse.ok) {
+        return null;
+    }
+
+    const messagesData = await messagesResponse.json();
+    if (!messagesData || !Array.isArray(messagesData.chunk)) {
+        return null;
+    }
+
+    const lastTextEvent = messagesData.chunk.find((event) => {
+        return event && event.type === 'm.room.message' && event.content && event.content.msgtype === 'm.text';
+    });
+
+    if (!lastTextEvent) {
+        return null;
+    }
+
+    const timestamp = typeof lastTextEvent.origin_server_ts === 'number'
+        ? new Date(lastTextEvent.origin_server_ts)
+        : new Date();
+    const time = timestamp.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    const sender = typeof lastTextEvent.sender === 'string'
+        ? lastTextEvent.sender.split(':')[0].replace(/^@/, '')
+        : 'unknown';
+    const text = lastTextEvent.content.body || '';
+    const timestampMs = typeof lastTextEvent.origin_server_ts === 'number'
+        ? lastTextEvent.origin_server_ts
+        : Date.now();
+
+    return { time, sender, text, timestamp: timestampMs };
+}
+
+/**
+ * Fetch Matrix presence for a user using the read-only public token.
+ * @param {string} homeserver - Matrix homeserver URL
+ * @param {string} userId - Full Matrix user ID
+ * @returns {Promise<string | null>} Presence state (online/offline/unavailable) or null when unavailable
+ */
+async function fetchPublicPresence(homeserver, userId) {
+    const authHeaders = {
+        Authorization: `Bearer ${MATRIX_PUBLIC_READ_TOKEN}`
+    };
+    const encodedUserId = encodeURIComponent(userId);
+    const response = await fetch(`${homeserver}/_matrix/client/r0/presence/${encodedUserId}/status`, {
+        headers: authHeaders
+    });
+
+    if (!response.ok) {
+        return null;
+    }
+
+    const data = await response.json();
+    return data && typeof data.presence === 'string' ? data.presence : null;
+}
+
+/**
+ * Format a unix-millisecond timestamp as relative age text.
+ * @param {number} timestampMs - Epoch timestamp in milliseconds
+ * @returns {string} Relative time label
+ */
+function formatTimeAgo(timestampMs) {
+    if (typeof timestampMs !== 'number') {
+        return 'unknown';
+    }
+
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timestampMs) / 1000));
+    if (elapsedSeconds < 60) {
+        return 'just now';
+    }
+
+    if (elapsedSeconds < 3600) {
+        return `${Math.floor(elapsedSeconds / 60)}m ago`;
+    }
+
+    if (elapsedSeconds < 86400) {
+        return `${Math.floor(elapsedSeconds / 3600)}h ago`;
+    }
+
+    return `${Math.floor(elapsedSeconds / 86400)}d ago`;
+}
+
+/**
+ * Write a startup MOTD line with the latest public chat message.
+ * Uses a short timeout so startup stays responsive.
+ * @returns {Promise<void>}
+ */
+async function writeStartupChatMotd() {
+    try {
+        const result = await Promise.race([
+            (async () => {
+                const [latest, litruvPresence] = await Promise.all([
+                    fetchPublicLastMessage('https://chat.ruv.wtf', '#generalchat:b.ruv.wtf'),
+                    fetchPublicPresence('https://chat.ruv.wtf', '@litruv:b.ruv.wtf')
+                ]);
+                return { latest, litruvPresence };
+            })(),
+            new Promise((resolve) => setTimeout(() => resolve({ latest: null, litruvPresence: null }), 2500))
+        ]);
+
+        if (!result.latest && !result.litruvPresence) {
+            return;
+        }
+
+        const lastMessageAge = result.latest
+            ? formatTimeAgo(result.latest.timestamp)
+            : 'unknown';
+        const onlineText = result.litruvPresence === 'online'
+            ? 'online'
+            : 'offline';
+
+        term.writeln(`  #generalchat · last message ${lastMessageAge} · @litruv:b.ruv.wtf ${onlineText}`);
+        term.writeln('');
+    } catch (error) {
+        // Ignore MOTD fetch issues to avoid blocking terminal startup.
+    }
+}
 
 // Get display name for a user (with caching)
 async function getDisplayName(userId) {
@@ -310,6 +460,47 @@ async function isDisplayNameTaken(newName) {
     }
 }
 
+/**
+ * Determine if a Matrix display name appears unchanged/default.
+ * @param {string} displayName - Current display name
+ * @returns {boolean} True when name looks like an auto-generated default
+ */
+function isDefaultDisplayName(displayName) {
+    if (!displayName) {
+        return true;
+    }
+
+    const trimmedName = displayName.trim();
+    if (!trimmedName) {
+        return true;
+    }
+
+    const uuidV4Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidV4Pattern.test(trimmedName);
+}
+
+/**
+ * Check whether to show a nickname setup hint for the current user.
+ * @returns {Promise<boolean>} True when the user should be prompted to change nickname
+ */
+async function shouldShowNicknameHint() {
+    if (!window.matrixSession || !window.matrixSession.userId) {
+        return false;
+    }
+
+    try {
+        const encodedUserId = encodeURIComponent(window.matrixSession.userId);
+        const profileData = await matrixApi(`/profile/${encodedUserId}/displayname`, 'GET');
+        const displayName = profileData && typeof profileData.displayname === 'string'
+            ? profileData.displayname
+            : '';
+
+        return isDefaultDisplayName(displayName);
+    } catch (error) {
+        return false;
+    }
+}
+
 // Enter chat mode
 async function enterChatMode() {
     if (!window.matrixSession || !window.matrixSession.roomId) {
@@ -330,6 +521,16 @@ async function enterChatMode() {
     
     // Fetch initial messages
     await syncChatMessages();
+
+    // Show nickname setup hint in message history when display name is still default
+    const showNicknameHint = await shouldShowNicknameHint();
+    if (showNicknameHint) {
+        const hintTime = new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        term.writeln(`\x1b[90m[${hintTime}]\x1b[0m \x1b[93mSystem:\x1b[0m You are using a default name. Use /nick [name] to change it.`);
+    }
     
     // Start polling for new messages
     chatMode.pollInterval = setInterval(async () => {
@@ -597,7 +798,7 @@ const commands = {
     chat: {
         description: 'Connect to chat room',
         execute: async (args) => {
-            const homeserver = 'https://b.ruv.wtf';
+            const homeserver = 'https://chat.ruv.wtf';
             const roomAlias = '#generalchat:b.ruv.wtf';
             
             // Generate UUID
@@ -614,9 +815,23 @@ const commands = {
             let password = null;
             let subcommand = args[0];
             let subcommandArgs = args.slice(1);
+
+            // Fetch the latest message without logging in
+            if (subcommand === 'last') {
+                try {
+                    const latest = await fetchPublicLastMessage(homeserver, roomAlias);
+                    if (!latest) {
+                        return '\r\n  Could not read latest message without login (room may not be public).\r\n';
+                    }
+
+                    return `\r\n  #generalchat latest:\r\n  [${latest.time}] ${latest.sender}: ${latest.text}\r\n`;
+                } catch (error) {
+                    return '\r\n  Error: Failed to fetch latest message without login.\r\n';
+                }
+            }
             
             // If first arg is not a known subcommand and second arg exists, treat as credentials
-            if (args[0] && args[1] && args[0] !== 'send' && args[0] !== 'disconnect' && isNaN(parseInt(args[0]))) {
+            if (args[0] && args[1] && args[0] !== 'send' && args[0] !== 'disconnect' && args[0] !== 'last' && isNaN(parseInt(args[0]))) {
                 username = args[0];
                 password = args[1];
                 subcommand = args[2];
@@ -681,7 +896,7 @@ const commands = {
                         localStorage.setItem('matrix_username', username);
                         localStorage.setItem('matrix_password', password);
                         
-                        term.writeln(`  Registered as: @${username}:b.ruv.wtf\r\n`);
+                        term.writeln(`  Registered as: ${regData.user_id}\r\n`);
                     } else if (regData.errcode === 'M_USER_IN_USE') {
                         // Username exists, try to login
                         term.writeln('  Username exists, logging in...\r\n');
@@ -1023,7 +1238,7 @@ async function submitInlineInput() {
 }
 
 // Initialize terminal
-function init() {
+async function init() {
     // Display welcome banner with clickable commands
     const cols = term.cols;
     if (cols >= 78) {
@@ -1040,6 +1255,8 @@ function init() {
         writeClickable('  Type [command=help]');
         term.writeln('');
     }
+
+    await writeStartupChatMotd();
     
     term.write(promptColored);
     
