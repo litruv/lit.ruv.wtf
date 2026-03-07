@@ -759,11 +759,10 @@ async function writeStartupChatMotd() {
 
         if (lastMessageAge) {
             term.writeln(`  #generalchat · last message ${lastMessageAge} · @litruv:b.ruv.wtf ${onlineText}`);
-            term.writeln(`  Run 'chat' to join in on the conversation`);
         } else {
             term.writeln(`  #generalchat · @litruv:b.ruv.wtf ${onlineText}`);
-            term.writeln(`  Run 'chat' to join in on the conversation`);
         }
+        writeClickable(`  Run [command=chat] to join in on the conversation`);
         term.writeln('');
     } catch (error) {
         // Ignore MOTD fetch issues to avoid blocking terminal startup.
