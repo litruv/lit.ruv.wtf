@@ -22,7 +22,9 @@ const BIOS_LINES = [
     { text: 'Starting LIT.RUV.WTF Terminal...', class: 'highlight', delay: 400 }
 ];
 
-const BOOT_STARTUP_SOUND_PATH = 'sounds/551405__nakkivene66__old-pc-startup-idle-shutdown.wav';
+const BOOT_STARTUP_SOUND_PATH = window.location.hostname.endsWith('neocities.org') 
+    ? 'https://lit.ruv.wtf/sounds/551405__nakkivene66__old-pc-startup-idle-shutdown.wav'
+    : 'sounds/551405__nakkivene66__old-pc-startup-idle-shutdown.wav';
 
 let bootStartupSoundPlayed = false;
 let bootStartupSoundUnlockBound = false;

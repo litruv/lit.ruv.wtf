@@ -29,7 +29,24 @@ const mentionSuggestions = document.createElement('div');
 mentionSuggestions.className = 'mention-suggestions';
 mentionSuggestions.style.display = 'none';
 
-const TERMINAL_SOUND_FILES = {
+const TERMINAL_SOUND_FILES = window.location.hostname.endsWith('neocities.org') ? {
+    startup: 'https://lit.ruv.wtf/sounds/poweron.mp3',
+    commandLaunch: 'https://lit.ruv.wtf/sounds/floppyreadshort.wav',
+    typing: [
+        'https://lit.ruv.wtf/sounds/ui_hacking_charsingle_01.wav',
+        'https://lit.ruv.wtf/sounds/ui_hacking_charsingle_02.wav',
+        'https://lit.ruv.wtf/sounds/ui_hacking_charsingle_03.wav',
+        'https://lit.ruv.wtf/sounds/ui_hacking_charsingle_04.wav',
+        'https://lit.ruv.wtf/sounds/ui_hacking_charsingle_05.wav',
+        'https://lit.ruv.wtf/sounds/ui_hacking_charsingle_06.wav'
+    ],
+    enter: [
+        'https://lit.ruv.wtf/sounds/ui_hacking_charenter_01.wav',
+        'https://lit.ruv.wtf/sounds/ui_hacking_charenter_02.wav',
+        'https://lit.ruv.wtf/sounds/ui_hacking_charenter_03.wav'
+    ],
+    scroll: 'https://lit.ruv.wtf/sounds/ui_hacking_charscroll.wav'
+} : {
     startup: 'sounds/poweron.mp3',
     commandLaunch: 'sounds/floppyreadshort.wav',
     typing: [

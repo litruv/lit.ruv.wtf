@@ -18,7 +18,7 @@ const ALLOWED_ORIGINS = [
  */
 const MATRIX_CONFIG = {
     homeserver: 'https://chat.ruv.wtf',
-    publicReadToken: 'syt_bGl0cnV2X3B1YmxpY19yZWFk_eFrYVXSXPbLiqREQnFsU_2Nc6ZE'
+    publicReadToken: 'syt_Z2VuZXJhbGNoYXQtcmVhZG9ubHk_sikLltUtfbHlztnanEVm_2icJ1o'
 };
 
 /**
