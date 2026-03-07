@@ -50,7 +50,8 @@ const TERMINAL_SOUND_FILES = {
 
 const terminalSoundState = {
     startupPlayed: false,
-    startupUnlockBound: false
+    startupUnlockBound: false,
+    disabled: false
 };
 
 /**
@@ -69,6 +70,10 @@ function pickRandomValue(values) {
  * @returns {Promise<boolean>} True when playback starts
  */
 async function playSoundFile(filePath, volume) {
+    if (terminalSoundState.disabled) {
+        return false;
+    }
+
     try {
         const sound = new Audio(filePath);
         sound.preload = 'auto';
@@ -76,6 +81,9 @@ async function playSoundFile(filePath, volume) {
         await sound.play();
         return true;
     } catch (error) {
+        if (!error || error.name !== 'NotAllowedError') {
+            terminalSoundState.disabled = true;
+        }
         return false;
     }
 }
@@ -350,10 +358,141 @@ let chatMode = {
 };
 
 const MATRIX_PUBLIC_READ_TOKEN = 'syt_Z2VuZXJhbGNoYXQtcmVhZG9ubHk_sikLltUtfbHlztnanEVm_2icJ1o';
+const IS_NEOCITIES_HOST = window.location.hostname.endsWith('neocities.org');
+const MATRIX_BRIDGE_URL = 'https://lit.ruv.wtf/matrix-bridge.html';
+
+/**
+ * Matrix Bridge - Iframe-based communication for CSP-restricted hosts
+ */
+const matrixBridge = {
+    iframe: null,
+    ready: false,
+    pendingRequests: new Map(),
+    requestCounter: 0
+};
+
+/**
+ * Initialize the Matrix iframe bridge
+ * @returns {Promise<boolean>} True if bridge loaded successfully
+ */
+async function initMatrixBridge() {
+    if (matrixBridge.iframe) {
+        return matrixBridge.ready;
+    }
+
+    return new Promise((resolve) => {
+        const iframe = document.createElement('iframe');
+        iframe.src = MATRIX_BRIDGE_URL;
+        iframe.style.display = 'none';
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        
+        const timeout = setTimeout(() => {
+            console.error('[Matrix Bridge] Failed to load iframe bridge');
+            matrixBridge.ready = false;
+            resolve(false);
+        }, 10000);
+
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'matrix:bridge:ready') {
+                clearTimeout(timeout);
+                matrixBridge.ready = true;
+                console.log('[Matrix Bridge] Iframe bridge ready');
+                resolve(true);
+            }
+        });
+
+        document.body.appendChild(iframe);
+        matrixBridge.iframe = iframe;
+    });
+}
+
+/**
+ * Send a request to the Matrix bridge via postMessage
+ * @param {string} type - Request type (e.g. 'matrix:auth', 'matrix:sendMessage')
+ * @param {object} payload - Request payload
+ * @returns {Promise<any>} Response from bridge
+ */
+function matrixBridgeRequest(type, payload) {
+    return new Promise((resolve, reject) => {
+        if (!matrixBridge.iframe || !matrixBridge.ready) {
+            reject(new Error('Matrix bridge not initialized'));
+            return;
+        }
+
+        const requestId = `req_${++matrixBridge.requestCounter}`;
+        const timeout = setTimeout(() => {
+            matrixBridge.pendingRequests.delete(requestId);
+            reject(new Error('Matrix bridge request timeout'));
+        }, 30000);
+
+        matrixBridge.pendingRequests.set(requestId, { resolve, reject, timeout });
+
+        matrixBridge.iframe.contentWindow.postMessage({
+            type,
+            requestId,
+            payload
+        }, MATRIX_BRIDGE_URL);
+    });
+}
+
+/**
+ * Handle responses from the Matrix bridge
+ */
+window.addEventListener('message', (event) => {
+    if (event.origin !== new URL(MATRIX_BRIDGE_URL).origin) {
+        return;
+    }
+
+    const { type, requestId, payload } = event.data;
+    
+    if (!type || !requestId || !type.includes(':response')) {
+        return;
+    }
+
+    const pending = matrixBridge.pendingRequests.get(requestId);
+    if (pending) {
+        clearTimeout(pending.timeout);
+        matrixBridge.pendingRequests.delete(requestId);
+        pending.resolve(payload);
+    }
+});
 
 // Matrix API helper
 const matrixApi = async (endpoint, method = 'GET', body = null) => {
     if (!window.matrixSession) return null;
+    
+    // Use iframe bridge on Neocities
+    if (IS_NEOCITIES_HOST) {
+        if (!matrixBridge.ready) {
+            const initialized = await initMatrixBridge();
+            if (!initialized) {
+                return {
+                    errcode: 'M_BRIDGE_UNAVAILABLE',
+                    error: 'Matrix bridge failed to initialize'
+                };
+            }
+        }
+
+        try {
+            const result = await matrixBridgeRequest('matrix:api', {
+                endpoint,
+                method,
+                body,
+                accessToken: window.matrixSession.accessToken
+            });
+            return result;
+        } catch (error) {
+            return {
+                errcode: 'M_BRIDGE_ERROR',
+                error: error.message
+            };
+        }
+    }
+
+    // Direct API call for non-CSP-restricted hosts
     const homeserver = 'https://chat.ruv.wtf';
     const url = `${homeserver}/_matrix/client/r0${endpoint}`;
     const headers = {
@@ -378,24 +517,91 @@ const matrixApi = async (endpoint, method = 'GET', body = null) => {
  * @returns {Promise<{time: string, sender: string, text: string, timestamp: number} | null>} Last message summary or null
  */
 async function fetchPublicLastMessage(homeserver, roomAlias) {
+    // Use iframe bridge on Neocities
+    if (IS_NEOCITIES_HOST) {
+        if (!matrixBridge.ready) {
+            await initMatrixBridge();
+        }
+        
+        if (!matrixBridge.ready) {
+            return null;
+        }
+
+        try {
+            // Resolve room alias first
+            let roomId = null;
+            try {
+                const resolveResult = await matrixBridgeRequest('matrix:resolveAlias', { roomAlias });
+                if (resolveResult && !resolveResult.error && resolveResult.room_id) {
+                    roomId = resolveResult.room_id;
+                }
+            } catch (error) {
+                // Continue with fallback
+            }
+
+            if (!roomId) {
+                roomId = '!RkOwQGTlDJwZbNxGeS:b.ruv.wtf';
+            }
+
+            // Fetch last message
+            const result = await matrixBridgeRequest('matrix:fetchLastMessage', { roomId });
+            if (!result || result.error || !Array.isArray(result.chunk)) {
+                return null;
+            }
+
+            const lastTextEvent = result.chunk.find((event) => {
+                return event && event.type === 'm.room.message' && event.content && event.content.msgtype === 'm.text';
+            });
+
+            if (!lastTextEvent) {
+                return null;
+            }
+
+            const timestamp = typeof lastTextEvent.origin_server_ts === 'number'
+                ? new Date(lastTextEvent.origin_server_ts)
+                : new Date();
+            const time = timestamp.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const sender = typeof lastTextEvent.sender === 'string'
+                ? lastTextEvent.sender.split(':')[0].replace(/^@/, '')
+                : 'unknown';
+            const text = lastTextEvent.content.body || '';
+            const timestampMs = typeof lastTextEvent.origin_server_ts === 'number'
+                ? lastTextEvent.origin_server_ts
+                : Date.now();
+
+            return { time, sender, text, timestamp: timestampMs };
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // Direct API call for non-CSP-restricted hosts
     const resolvedAlias = encodeURIComponent(roomAlias);
     const authHeaders = {
         Authorization: `Bearer ${MATRIX_PUBLIC_READ_TOKEN}`
     };
 
-    const roomResponse = await fetch(`${homeserver}/_matrix/client/r0/directory/room/${resolvedAlias}`, {
-        headers: authHeaders
-    });
-    if (!roomResponse.ok) {
-        return null;
+    let roomId = null;
+    try {
+        const roomResponse = await fetch(`${homeserver}/_matrix/client/r0/directory/room/${resolvedAlias}`, {
+            headers: authHeaders
+        });
+        if (roomResponse.ok) {
+            const roomData = await roomResponse.json();
+            roomId = roomData && roomData.room_id ? roomData.room_id : null;
+        }
+    } catch (error) {
+        roomId = null;
     }
 
-    const roomData = await roomResponse.json();
-    if (!roomData || !roomData.room_id) {
-        return null;
+    if (!roomId) {
+        roomId = '!RkOwQGTlDJwZbNxGeS:b.ruv.wtf';
     }
 
-    const resolvedRoomId = encodeURIComponent(roomData.room_id);
+    const resolvedRoomId = encodeURIComponent(roomId);
     const messagesResponse = await fetch(`${homeserver}/_matrix/client/r0/rooms/${resolvedRoomId}/messages?dir=b&limit=30`, {
         headers: authHeaders
     });
@@ -441,6 +647,28 @@ async function fetchPublicLastMessage(homeserver, roomAlias) {
  * @returns {Promise<string | null>} Presence state (online/offline/unavailable) or null when unavailable
  */
 async function fetchPublicPresence(homeserver, userId) {
+    // Use iframe bridge on Neocities
+    if (IS_NEOCITIES_HOST) {
+        if (!matrixBridge.ready) {
+            await initMatrixBridge();
+        }
+        
+        if (!matrixBridge.ready) {
+            return null;
+        }
+
+        try {
+            const result = await matrixBridgeRequest('matrix:fetchPresence', { userId });
+            if (result && !result.error && typeof result.presence === 'string') {
+                return result.presence;
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // Direct API call for non-CSP-restricted hosts
     const authHeaders = {
         Authorization: `Bearer ${MATRIX_PUBLIC_READ_TOKEN}`
     };
@@ -507,12 +735,16 @@ async function writeStartupChatMotd() {
 
         const lastMessageAge = result.latest
             ? formatTimeAgo(result.latest.timestamp)
-            : 'unknown';
+            : null;
         const onlineText = result.litruvPresence === 'online'
             ? 'online'
             : 'offline';
 
-        term.writeln(`  #generalchat · last message ${lastMessageAge} · @litruv:b.ruv.wtf ${onlineText}`);
+        if (lastMessageAge) {
+            term.writeln(`  #generalchat · last message ${lastMessageAge} · @litruv:b.ruv.wtf ${onlineText}`);
+        } else {
+            term.writeln(`  #generalchat · @litruv:b.ruv.wtf ${onlineText}`);
+        }
         term.writeln('');
     } catch (error) {
         // Ignore MOTD fetch issues to avoid blocking terminal startup.
@@ -1024,6 +1256,15 @@ async function enterChatMode() {
     // Fetch initial messages
     await syncChatMessages();
 
+    // Show channel presence checker for litruv account
+    const presenceTime = new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    const litruvPresence = await fetchPublicPresence('https://chat.ruv.wtf', '@litruv:b.ruv.wtf');
+    const litruvOnlineText = litruvPresence === 'online' ? 'online' : 'offline';
+    term.writeln(`\x1b[90m[${presenceTime}]\x1b[0m \x1b[93mSystem:\x1b[0m @litruv:b.ruv.wtf is ${litruvOnlineText}`);
+
     // Show nickname setup hint in message history when display name is still default
     const showNicknameHint = await shouldShowNicknameHint();
     if (showNicknameHint) {
@@ -1064,8 +1305,8 @@ function exitChatMode() {
     chatMode.mentionLoadedAt = 0;
     resetMentionAutocomplete();
     term.clear();
-    term.writeln('  Exited chat mode.\r\n');
-    term.write(promptColored);
+    term.writeln('  Exited chat mode.');
+    writePrompt();
     showInlineInput();
     updateQuickCommands('terminal');
 }
@@ -1635,7 +1876,15 @@ function getWelcomeBanner() {
 
 // Prompt (plain version for display, we handle colors separately)
 const promptText = 'user@lit.ruv.wtf $ ';
-const promptColored = '\r\n\x1b[1;32muser@lit.ruv.wtf\x1b[0m $ ';
+const promptColored = '\x1b[1;32muser@lit.ruv.wtf\x1b[0m $ ';
+
+/**
+ * Write the shell prompt at the current cursor position.
+ * @returns {void}
+ */
+function writePrompt() {
+    term.write(promptColored);
+}
 
 /**
  * Position the inline input at the cursor location
@@ -1800,7 +2049,7 @@ async function submitInlineInput() {
     
     // Show prompt if not in chat mode
     if (!chatMode.active) {
-        term.write(promptColored);
+        writePrompt();
         // Delay to ensure terminal has rendered before positioning
         setTimeout(() => {
             positionInlineInput();
@@ -1832,7 +2081,7 @@ async function init() {
     await writeStartupChatMotd();
     await attemptStartupSoundPlayback();
     
-    term.write(promptColored);
+    writePrompt();
     
     // Add inline input after a short delay to ensure terminal is rendered
     setTimeout(() => {
@@ -1919,7 +2168,7 @@ async function runQuickCommand(command) {
     
     // Show prompt if not in chat mode
     if (!chatMode.active) {
-        term.write(promptColored);
+        writePrompt();
         // Delay to ensure terminal has rendered before positioning
         setTimeout(() => {
             positionInlineInput();
