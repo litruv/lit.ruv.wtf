@@ -867,31 +867,34 @@ function transformOutgoingMentions(message) {
 }
 
 /**
- * Build Matrix message content with mention metadata and formatted HTML.
+ * Build a plain Matrix text payload with canonical mention IDs.
  * @param {string} message - Outgoing raw message
- * @returns {{msgtype: string, body: string, "m.mentions"?: {user_ids: string[]}, format?: string, formatted_body?: string}} Matrix content payload
+ * @returns {{msgtype: string, body: string}} Matrix content payload
  */
-function buildMentionMessageContent(message) {
-    const resolvedBody = transformOutgoingMentions(message);
+function buildPlainMentionMessageContent(message) {
+    return {
+        msgtype: 'm.text',
+        body: transformOutgoingMentions(message)
+    };
+}
+
+/**
+ * Check whether canonical Matrix mentions exist in text.
+ * @param {string} text - Message text
+ * @returns {boolean} True when one or more @user:server mentions are present
+ */
+function hasCanonicalMentions(text) {
+    return /@([A-Za-z0-9._\-=\/]+:[A-Za-z0-9.-]+)/.test(text);
+}
+
+/**
+ * Build formatted HTML body with matrix.to links for mentions.
+ * @param {string} resolvedBody - Message body with canonical mention IDs
+ * @returns {string} HTML formatted body
+ */
+function buildFormattedMentionBody(resolvedBody) {
     const mentionRegex = /@([A-Za-z0-9._\-=\/]+:[A-Za-z0-9.-]+)/g;
-    const mentionUserIds = [];
-    let mentionMatch;
-
-    while ((mentionMatch = mentionRegex.exec(resolvedBody)) !== null) {
-        const userId = `@${mentionMatch[1]}`;
-        if (!mentionUserIds.includes(userId)) {
-            mentionUserIds.push(userId);
-        }
-    }
-
-    if (mentionUserIds.length === 0) {
-        return {
-            msgtype: 'm.text',
-            body: resolvedBody
-        };
-    }
-
-    const formattedBody = escapeHtml(resolvedBody).replace(mentionRegex, (matchedValue, userBody) => {
+    return escapeHtml(resolvedBody).replace(mentionRegex, (matchedValue, userBody) => {
         const userId = `@${userBody}`;
         const knownDisplayName = chatMode.displayNames[userId];
         const fallbackDisplayName = userId.split(':')[0].substring(1);
@@ -899,15 +902,52 @@ function buildMentionMessageContent(message) {
         const matrixToUrl = `https://matrix.to/#/${userId}`;
         return `<a href="${matrixToUrl}">@${escapeHtml(displayName)}</a>`;
     });
+}
+
+/**
+ * Build rich mention payload without m.mentions for compatibility fallback.
+ * @param {string} message - Outgoing raw message
+ * @returns {{msgtype: string, body: string, format?: string, formatted_body?: string}} Matrix content payload
+ */
+function buildRichMentionFallbackContent(message) {
+    const resolvedBody = transformOutgoingMentions(message);
+    if (!hasCanonicalMentions(resolvedBody)) {
+        return {
+            msgtype: 'm.text',
+            body: resolvedBody
+        };
+    }
 
     return {
         msgtype: 'm.text',
         body: resolvedBody,
-        'm.mentions': {
-            user_ids: mentionUserIds
-        },
         format: 'org.matrix.custom.html',
-        formatted_body: formattedBody
+        formatted_body: buildFormattedMentionBody(resolvedBody)
+    };
+}
+
+/**
+ * Build Matrix message content with mention metadata and formatted HTML.
+ * @param {string} message - Outgoing raw message
+ * @returns {{msgtype: string, body: string, "m.mentions"?: object, format?: string, formatted_body?: string}} Matrix content payload
+ */
+function buildMentionMessageContent(message) {
+    const resolvedBody = transformOutgoingMentions(message);
+    const hasMentions = hasCanonicalMentions(resolvedBody);
+
+    if (!hasMentions) {
+        return {
+            msgtype: 'm.text',
+            body: resolvedBody
+        };
+    }
+
+    return {
+        msgtype: 'm.text',
+        body: resolvedBody,
+        'm.mentions': {},
+        format: 'org.matrix.custom.html',
+        formatted_body: buildFormattedMentionBody(resolvedBody)
     };
 }
 
@@ -1181,12 +1221,35 @@ async function sendChatMessage(message) {
     try {
         await syncMentionDirectory();
         const content = buildMentionMessageContent(message);
-        const txnId = Date.now();
-        await matrixApi(
+        const hasMentions = hasCanonicalMentions(content.body);
+        const txnId = Date.now().toString();
+        let sendResult = await matrixApi(
             `/rooms/${window.matrixSession.roomId}/send/m.room.message/${txnId}`,
             'PUT',
             content
         );
+
+        if (sendResult && sendResult.errcode && hasMentions) {
+            const richFallbackContent = buildRichMentionFallbackContent(message);
+            sendResult = await matrixApi(
+                `/rooms/${window.matrixSession.roomId}/send/m.room.message/${txnId}-richfallback`,
+                'PUT',
+                richFallbackContent
+            );
+        }
+
+        if (sendResult && sendResult.errcode && !hasMentions) {
+            const fallbackContent = buildPlainMentionMessageContent(message);
+            sendResult = await matrixApi(
+                `/rooms/${window.matrixSession.roomId}/send/m.room.message/${txnId}-fallback`,
+                'PUT',
+                fallbackContent
+            );
+        }
+
+        if (sendResult && sendResult.errcode) {
+            throw new Error(sendResult.error || sendResult.errcode || 'Failed to send message');
+        }
         
         // Clear the input
         chatMode.inputLine = '';
@@ -1485,12 +1548,41 @@ const commands = {
 // Welcome banner - full size - NFO style
 const welcomeBannerFull = [
     '',
-    ' ██╗     ██╗████████╗██████╗ ██╗   ██╗██╗   ██╗  ██╗    ██╗████████╗███████╗',
-    ' ██║     ██║╚══██╔══╝██╔══██╗██║   ██║██║   ██║  ██║    ██║╚══██╔══╝██╔════╝',
-    ' ██║     ██║   ██║   ██████╔╝██║   ██║██║   ██║  ██║ █╗ ██║   ██║   █████╗  ',
-    ' ██║     ██║   ██║   ██╔══██╗██║   ██║╚██╗ ██╔╝  ██║███╗██║   ██║   ██╔══╝  ',
-    ' ███████╗██║   ██║██╗██║  ██║╚██████╔╝ ╚████╔╝██╗╚███╔███╔╝   ██║   ██║     ',
-    ' ╚══════╝╚═╝   ╚═╝╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═══╝ ╚═╝ ╚══╝╚══╝    ╚═╝   ╚═╝     ',
+    '            ........                                              ',
+    '        ...++++++++...                        .........          ',
+    '      ...++++++++++++....................  ...+++++++....        ',
+    '     ...++++++----++++...+++++++++++++++....+++++++++++...       ',
+    '     ..+++++######--++++++++++++++++++++++++++++-----+++..       ',
+    '     ..+++++#######-++++++++++++++++++++++++++++######++..       ',
+    '     ..-++++#######++++++++++++++++++++++++++++++#####+...       ',
+    '      ..-+++++##+++++++++++++++++++++++++++++++++++##+...        ',
+    '       ...+++++++++++++++++++++++++++++++++++++++++++...         ',
+    '         ...++++++++++++++++----------+++++++-----++++..         ',
+    '        ...+++++++++++++++---.....----+####+---..---++-..        ',
+    '       ...+++++++++++++++++++.......-#########....+++++...       ',
+    '      ...++++++++++++++++++++++++++############+----++++..       ',
+    '      ..++++++++++++++++++++++++++###############----+++..       ',
+    '     ..++++++++++++++++++++++++++########........----+++-..      ',
+    '     ..+++++++++++++++++++++++++########..........#------..      ',
+    '    ..+++++++++++++++++++++++++##########........##------..      ',
+    '    ..++++++-++++++++++++++++++############....-###------..      ',
+    '    ..++++++--+++++++++++++++++#############+.#####---.--..      ',
+    '    ..+++++++--+++++++++++++++++#########.......##----....       ',
+    '    ..++++++++--+-+++++++++++++++#####+##########----.....       ',
+    '    ..+.+++++++----++--++++++++++++############-----...          ',
+    '    .....+++++++-----+----+++++++++----------------..            ',
+    '    .....++++++++---------------------------------..             ',
+    '       ..-+++++++++------------------------------..              ',
+    '        ..+++++++++++---------------------------..               ',
+    '         ..++++++++++++------------------------..                ',
+    '          ..+++++++++--------------------------..                ',
+    '           ...+++.-----------------------------..                ',
+    '            ....-...---------------------------..                ',
+    '              .......---------------------------..               ',
+    '                 .  ....----.-------------------..               ',
+    '                      .....-.....----------------..              ',
+    '                          ..... .....-------------..             ',
+    '                               LIT.RUV.WTF TERMINAL v' + VERSION + '            ',
     '',
     '  Type "help" for available commands.',
     '  Use ↑/↓ arrows to navigate command history.',
