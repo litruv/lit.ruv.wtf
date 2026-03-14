@@ -4,6 +4,42 @@
  */
 
 /**
+ * SAM (Software Automatic Mouth) speech synthesizer instance
+ * Uses "Little Robot" voice preset for retro game feel
+ * @type {object|null}
+ */
+let sam = null;
+
+/**
+ * Initialize SAM speech synthesizer with robot voice
+ * @returns {object|null} SAM instance or null if unavailable
+ */
+function initSam() {
+    if (sam) return sam;
+    if (typeof SamJs !== 'undefined') {
+        // Little Robot preset: speed=92, pitch=60, mouth=190, throat=190
+        sam = new SamJs({ speed: 92, pitch: 60, mouth: 190, throat: 190 });
+    }
+    return sam;
+}
+
+/**
+ * Speak text using SAM
+ * @param {string} text - Text to speak
+ * @returns {void}
+ */
+function samSpeak(text) {
+    const samInstance = initSam();
+    if (samInstance) {
+        try {
+            samInstance.speak(text);
+        } catch (_err) {
+            // Silently fail if speech doesn't work
+        }
+    }
+}
+
+/**
  * Play a click/select sound
  * @returns {void}
  */
@@ -746,8 +782,10 @@ export function processGameInput(term, input) {
         term.writeln('');
         if (matched) {
             gameMode.matchesCleared++;
+            samSpeak('match');
             
             if (game.isComplete()) {
+                samSpeak('you win');
                 term.writeln('  \x1b[32m╔════════════════════════════════════╗\x1b[0m');
                 term.writeln('  \x1b[32m║     CONGRATULATIONS! YOU WON!      ║\x1b[0m');
                 term.writeln('  \x1b[32m╚════════════════════════════════════╝\x1b[0m');
@@ -760,6 +798,7 @@ export function processGameInput(term, input) {
             }
             renderBoard(term, game, null, `\x1b[32mMatch! ${v1}+${v2}\x1b[0m`);
         } else {
+            samSpeak('no');
             if (v1 !== v2 && v1 + v2 !== 10) {
                 renderBoard(term, game, null, `\x1b[31m${v1} and ${v2} don't match\x1b[0m`);
             } else {
@@ -809,6 +848,7 @@ export function startGame(term) {
     term.writeln('  \x1b[90mCommands: add, hint, new, quit\x1b[0m');
     term.writeln('');
 
+    samSpeak('Number Match');
     renderBoard(term, gameMode.game, null, '');
 }
 
@@ -839,6 +879,7 @@ export function handleTileClick(coord) {
     if (gameMode.selectedIndex === null) {
         gameMode.selectedIndex = clickedIndex;
         playClickSound();
+        samSpeak(String(tiles[clickedIndex]));
         updateBoardInPlace(term, game, clickedIndex, `\x1b[33mSelected ${coord}. Click another to match.\x1b[0m`);
         return;
     }
@@ -863,10 +904,12 @@ export function handleTileClick(coord) {
     if (matched) {
         gameMode.matchesCleared++;
         playMatchSound();
+        samSpeak('match');
 
         if (game.isComplete()) {
             // Game won - need to redraw fresh for victory screen
             playMatchSound();
+            samSpeak('you win');
             term.write(`\x1b[${gameMode.boardLines}A`);
             for (let i = 0; i < gameMode.boardLines; i++) {
                 term.writeln('\x1b[2K');
@@ -885,6 +928,7 @@ export function handleTileClick(coord) {
         updateBoardInPlace(term, game, null, `\x1b[32mMatch! ${v1}+${v2}\x1b[0m`);
     } else {
         playErrorSound();
+        samSpeak('no');
         if (v1 !== v2 && v1 + v2 !== 10) {
             updateBoardInPlace(term, game, null, `\x1b[31m${v1} and ${v2} don't match or sum to 10\x1b[0m`);
         } else {
