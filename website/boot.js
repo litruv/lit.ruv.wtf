@@ -91,10 +91,35 @@ function runBootAnimation() {
             return;
         }
 
+        let skipped = false;
+        const timeouts = [];
+
+        // Skip animation on space key press
+        const skipHandler = (event) => {
+            if (event.code === 'Space' && !skipped) {
+                event.preventDefault();
+                skipped = true;
+                
+                // Clear all pending timeouts
+                timeouts.forEach(timeout => clearTimeout(timeout));
+                
+                // Complete the boot screen immediately
+                bootScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    bootScreen.style.display = 'none';
+                    if (pageFade) pageFade.style.display = 'none';
+                    document.removeEventListener('keydown', skipHandler);
+                    resolve();
+                }, 100);
+            }
+        };
+
+        document.addEventListener('keydown', skipHandler);
+
         // Start fade in from black after brief delay
-        setTimeout(() => {
-            if (pageFade) pageFade.classList.add('fade-out');
-        }, 200);
+        timeouts.push(setTimeout(() => {
+            if (pageFade && !skipped) pageFade.classList.add('fade-out');
+        }, 200));
 
         let lineIndex = 0;
         let totalDelay = 800; // Start after fade begins
@@ -104,7 +129,9 @@ function runBootAnimation() {
             const delay = totalDelay;
             totalDelay += line.delay || baseDelay;
 
-            setTimeout(() => {
+            timeouts.push(setTimeout(() => {
+                if (skipped) return;
+                
                 const span = document.createElement('span');
                 if (line.class) {
                     span.className = line.class;
@@ -115,18 +142,21 @@ function runBootAnimation() {
                 if (!line.inline) {
                     biosText.appendChild(document.createTextNode('\n'));
                 }
-            }, delay);
+            }, delay));
         });
 
         // Fade out and remove boot screen
-        setTimeout(() => {
+        timeouts.push(setTimeout(() => {
+            if (skipped) return;
+            
             bootScreen.classList.add('fade-out');
-            setTimeout(() => {
+            timeouts.push(setTimeout(() => {
                 bootScreen.style.display = 'none';
                 if (pageFade) pageFade.style.display = 'none';
+                document.removeEventListener('keydown', skipHandler);
                 resolve();
-            }, 500);
-        }, totalDelay + 300);
+            }, 500));
+        }, totalDelay + 300));
     });
 }
 
