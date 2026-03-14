@@ -20,6 +20,7 @@ export default {
         writeClickable('  [command=banner]    - Display welcome banner');
         writeClickable('  [command=bluesky]   - Fetch recent posts from Bluesky');
         writeClickable('  [command=chat]      - Enter interactive chat (type /quit to exit)');
+        writeClickable('  [command=numbermatch] - Play number matching puzzle game');
         writeClickable('  [command=github]    - Visit GitHub repository');
         writeClickable('  [command=contact]   - Display contact information');
         writeClickable('  [command=privacy]   - Display privacy policy');
