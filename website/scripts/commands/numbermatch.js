@@ -5,20 +5,20 @@
 
 /**
  * SAM (Software Automatic Mouth) speech synthesizer instance
- * Uses "Little Robot" voice preset for retro game feel
+ * Uses default SAM voice preset for classic C64 feel
  * @type {object|null}
  */
 let sam = null;
 
 /**
- * Initialize SAM speech synthesizer with robot voice
+ * Initialize SAM speech synthesizer with SAM voice
  * @returns {object|null} SAM instance or null if unavailable
  */
 function initSam() {
     if (sam) return sam;
     if (typeof SamJs !== 'undefined') {
-        // Little Robot preset: speed=92, pitch=60, mouth=190, throat=190
-        sam = new SamJs({ speed: 92, pitch: 60, mouth: 190, throat: 190 });
+        // SAM preset: speed=72, pitch=64, mouth=128, throat=128
+        sam = new SamJs({ speed: 72, pitch: 64, mouth: 128, throat: 128 });
     }
     return sam;
 }
@@ -785,7 +785,7 @@ export function processGameInput(term, input) {
             samSpeak('match');
             
             if (game.isComplete()) {
-                samSpeak('you win');
+                samSpeak('Condrat ulationz');
                 term.writeln('  \x1b[32m╔════════════════════════════════════╗\x1b[0m');
                 term.writeln('  \x1b[32m║     CONGRATULATIONS! YOU WON!      ║\x1b[0m');
                 term.writeln('  \x1b[32m╚════════════════════════════════════╝\x1b[0m');
@@ -909,7 +909,7 @@ export function handleTileClick(coord) {
         if (game.isComplete()) {
             // Game won - need to redraw fresh for victory screen
             playMatchSound();
-            samSpeak('you win');
+            samSpeak('Condrat ulationz');
             term.write(`\x1b[${gameMode.boardLines}A`);
             for (let i = 0; i < gameMode.boardLines; i++) {
                 term.writeln('\x1b[2K');
