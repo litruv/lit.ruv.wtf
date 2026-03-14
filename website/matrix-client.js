@@ -929,6 +929,7 @@ export function updateQuickCommands(mode) {
         container.innerHTML = `
             <button class="quick-cmd" onclick="runChatCommand('/help')" title="Show chat help">/help</button>
             <button class="quick-cmd" onclick="runChatCommand('/nick')" title="Change nickname">/nick</button>
+            <button class="quick-cmd" onclick="runChatCommand('/samsay')" title="SAM speech">/samsay</button>
             <button class="quick-cmd" onclick="runChatCommand('/quit')" title="Exit chat">/quit</button>
         `;
     } else {
@@ -952,6 +953,15 @@ export function runChatCommand(command) {
     if (command === '/nick') {
         // For /nick, just fill in the command prefix
         inlineInput.value = '/nick ';
+        chatMode.inputLine = inlineInput.value;
+        resetMentionAutocomplete();
+        inlineInput.focus();
+        return;
+    }
+    
+    if (command === '/samsay') {
+        // For /samsay, just fill in the command prefix
+        inlineInput.value = '/samsay ';
         chatMode.inputLine = inlineInput.value;
         resetMentionAutocomplete();
         inlineInput.focus();
@@ -1017,6 +1027,14 @@ async function syncChatMessages(onlyNew = false) {
                 recent.forEach(msg => {
                     const color = getUserColor(msg.sender);
                     term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
+                    
+                    // If message starts with /samsay, speak it
+                    if (msg.text.startsWith('/samsay ')) {
+                        const samMessage = msg.text.substring(8).trim();
+                        if (samMessage && typeof window.samSpeak === 'function') {
+                            window.samSpeak(samMessage);
+                        }
+                    }
                 });
             }
         }
@@ -1036,6 +1054,14 @@ function renderChatMessage(msg) {
     
     // Write the new message
     term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
+    
+    // If message starts with /samsay, speak it
+    if (msg.text.startsWith('/samsay ')) {
+        const samMessage = msg.text.substring(8).trim();
+        if (samMessage && typeof window.samSpeak === 'function') {
+            window.samSpeak(samMessage);
+        }
+    }
     
     // Redraw separator
     term.writeln('─'.repeat(term.cols || 60));

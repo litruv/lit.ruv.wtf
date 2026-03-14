@@ -13,6 +13,7 @@ import contactCmd from './scripts/commands/contact.js';
 import privacyCmd from './scripts/commands/privacy.js';
 import blueskyCmd from './scripts/commands/bluesky.js';
 import numbermatchCmd, { gameMode, processGameInput, handleTileClick } from './scripts/commands/numbermatch.js';
+import samsayCmd from './scripts/commands/samsay.js';
 
 // Import Matrix client
 import {
@@ -35,6 +36,44 @@ import {
     renderChatPrompt,
     sendChatMessage
 } from './matrix-client.js';
+
+/**
+ * SAM (Software Automatic Mouth) speech synthesizer instance
+ * @type {object|null}
+ */
+let sam = null;
+
+/**
+ * Initialize SAM speech synthesizer with SAM voice
+ * @returns {object|null} SAM instance or null if unavailable
+ */
+function initSam() {
+    if (sam) return sam;
+    if (typeof SamJs !== 'undefined') {
+        // SAM preset: speed=72, pitch=64, mouth=128, throat=128
+        sam = new SamJs({ speed: 72, pitch: 64, mouth: 128, throat: 128 });
+    }
+    return sam;
+}
+
+/**
+ * Speak text using SAM
+ * @param {string} text - Text to speak
+ * @returns {void}
+ */
+function samSpeak(text) {
+    const samInstance = initSam();
+    if (samInstance) {
+        try {
+            samInstance.speak(text);
+        } catch (_err) {
+            // Silently fail if speech doesn't work
+        }
+    }
+}
+
+// Expose samSpeak globally for matrix-client
+window.samSpeak = samSpeak;
 
 // Version
 const VERSION = '1.0.0';
@@ -483,6 +522,10 @@ const commands = {
         description: numbermatchCmd.description,
         execute: (args) => numbermatchCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
+    samsay: {
+        description: samsayCmd.description,
+        execute: (args) => samsayCmd.execute(term, writeClickable, VERSION, args, commandHistory)
+    },
     chat: {
         description: 'Connect to chat room',
         execute: async (args) => {
@@ -829,7 +872,12 @@ function positionInlineInput() {
 
     if (mentionSuggestions.style.display !== 'none') {
         mentionSuggestions.style.left = inlineInput.style.left;
-        mentionSuggestions.style.top = ((cursorY * charHeight) - charHeight - 6) + 'px';
+        
+        // Get the actual height of the suggestions box
+        const suggestionsHeight = mentionSuggestions.offsetHeight || 0;
+        
+        // Position it above the cursor line
+        mentionSuggestions.style.top = ((cursorY * charHeight) - suggestionsHeight - 6) + 'px';
         mentionSuggestions.style.fontSize = term.options.fontSize + 'px';
         mentionSuggestions.style.lineHeight = charHeight + 'px';
     }
@@ -865,6 +913,192 @@ function hideInlineInput() {
 }
 
 /**
+ * Command autocomplete state
+ */
+const commandAutocomplete = {
+    matches: [],
+    index: -1,
+    tokenStart: 0,
+    tokenEnd: 0
+};
+
+/**
+ * Get command matches for autocomplete
+ * @param {string} query - Command prefix to match
+ * @param {boolean} isChatMode - Whether in chat mode
+ * @returns {Array<{name: string, description: string}>} Matching commands
+ */
+function getCommandMatches(query, isChatMode) {
+    const lowerQuery = query.toLowerCase();
+    
+    if (isChatMode) {
+        // Chat commands
+        const chatCommands = [
+            { name: '/help', description: 'Show chat commands' },
+            { name: '/nick', description: 'Change display name' },
+            { name: '/samsay', description: 'Send message with SAM speech' },
+            { name: '/quit', description: 'Exit chat mode' }
+        ];
+        return chatCommands.filter(cmd => cmd.name.startsWith(lowerQuery));
+    } else {
+        // Terminal commands
+        const terminalCommands = Object.keys(commands).map(name => ({
+            name,
+            description: commands[name].description || ''
+        }));
+        return terminalCommands.filter(cmd => cmd.name.toLowerCase().startsWith(lowerQuery));
+    }
+}
+
+/**
+ * Check if command suggestions are visible
+ * @returns {boolean} True if suggestions are visible
+ */
+function hasVisibleCommandSuggestions() {
+    return mentionSuggestions.style.display !== 'none'
+        && commandAutocomplete.matches.length > 0;
+}
+
+/**
+ * Reset command autocomplete state
+ * @returns {void}
+ */
+function resetCommandAutocomplete() {
+    commandAutocomplete.matches = [];
+    commandAutocomplete.index = -1;
+    commandAutocomplete.tokenStart = 0;
+    commandAutocomplete.tokenEnd = 0;
+    mentionSuggestions.style.display = 'none';
+    mentionSuggestions.innerHTML = '';
+}
+
+/**
+ * Render command suggestions
+ * @returns {void}
+ */
+function renderCommandSuggestions() {
+    const { matches, index } = commandAutocomplete;
+    
+    if (matches.length === 0) {
+        mentionSuggestions.style.display = 'none';
+        return;
+    }
+    
+    const limitedMatches = matches.slice(0, 5);
+    mentionSuggestions.innerHTML = limitedMatches.map((cmd, i) => {
+        const selected = i === index ? ' selected' : '';
+        return `<div class="mention-item${selected}">${cmd.name} <span style="opacity: 0.6">- ${cmd.description}</span></div>`;
+    }).join('');
+    
+    mentionSuggestions.style.display = 'block';
+    positionInlineInput();
+}
+
+/**
+ * Refresh command suggestions based on current input
+ * @returns {void}
+ */
+function refreshCommandSuggestions() {
+    const value = inlineInput.value;
+    const cursorPos = inlineInput.selectionStart;
+    
+    // Check if we're at the start with a "/" or just typing a command
+    const isChatMode = chatMode.active;
+    let query = '';
+    let tokenStart = 0;
+    let tokenEnd = cursorPos;
+    
+    if (isChatMode) {
+        // In chat mode, look for /command at start
+        if (value.startsWith('/')) {
+            const match = value.match(/^(\/\w*)/);
+            if (match && cursorPos <= match[1].length) {
+                query = match[1];
+                tokenStart = 0;
+                tokenEnd = match[1].length;
+            } else {
+                resetCommandAutocomplete();
+                return;
+            }
+        } else {
+            resetCommandAutocomplete();
+            return;
+        }
+    } else {
+        // In terminal mode, look for command at start (no slash)
+        if (cursorPos === value.length) {
+            const match = value.match(/^(\w*)/);
+            if (match && match[1].length > 0) {
+                query = match[1];
+                tokenStart = 0;
+                tokenEnd = match[1].length;
+            } else {
+                resetCommandAutocomplete();
+                return;
+            }
+        } else {
+            resetCommandAutocomplete();
+            return;
+        }
+    }
+    
+    const matches = getCommandMatches(query, isChatMode);
+    
+    if (matches.length === 0) {
+        resetCommandAutocomplete();
+        return;
+    }
+    
+    commandAutocomplete.matches = matches;
+    commandAutocomplete.index = -1;
+    commandAutocomplete.tokenStart = tokenStart;
+    commandAutocomplete.tokenEnd = tokenEnd;
+    
+    renderCommandSuggestions();
+}
+
+/**
+ * Apply the selected command autocomplete
+ * @returns {boolean} True if a command was applied
+ */
+function applyCommandAutocomplete() {
+    if (!hasVisibleCommandSuggestions()) {
+        return false;
+    }
+    
+    // Cycle through commands or select first
+    if (commandAutocomplete.index < commandAutocomplete.matches.length - 1) {
+        commandAutocomplete.index++;
+    } else {
+        commandAutocomplete.index = 0;
+    }
+    
+    const selected = commandAutocomplete.matches[commandAutocomplete.index];
+    const fullValue = inlineInput.value;
+    const valueAfter = fullValue.slice(commandAutocomplete.tokenEnd);
+    const isChatMode = chatMode.active;
+    
+    // For chat commands, include the slash; for terminal commands, don't
+    const commandText = selected.name;
+    const needsSpace = !valueAfter.startsWith(' ') && valueAfter.length > 0;
+    const newValue = commandText + (needsSpace ? ' ' : '') + valueAfter;
+    const newCursor = commandText.length + (needsSpace ? 1 : 0);
+    
+    inlineInput.value = newValue;
+    inlineInput.setSelectionRange(newCursor, newCursor);
+    
+    if (isChatMode) {
+        chatMode.inputLine = newValue;
+    }
+    
+    // Update token end for continued cycling
+    commandAutocomplete.tokenEnd = commandText.length;
+    
+    renderCommandSuggestions();
+    return true;
+}
+
+/**
  * Submit current input
  */
 async function submitInlineInput() {
@@ -887,9 +1121,10 @@ async function submitInlineInput() {
             term.write('\x1b[1A\x1b[2K\r');
             
             term.writeln('\x1b[33mChat Commands:\x1b[0m');
-            term.writeln('  /help        - Show this help message');
-            term.writeln('  /nick [name] - Change your display name');
-            term.writeln('  /quit        - Exit chat mode');
+            term.writeln('  /help          - Show this help message');
+            term.writeln('  /nick [name]   - Change your display name');
+            term.writeln('  /samsay [text] - Send message with SAM speech');
+            term.writeln('  /quit          - Exit chat mode');
             term.writeln('─'.repeat(term.cols || 60));
             term.write('\x1b[1;32m>\x1b[0m ');
             setTimeout(() => positionInlineInput(), 10);
@@ -936,6 +1171,24 @@ async function submitInlineInput() {
             term.writeln('─'.repeat(term.cols || 60));
             term.write('\x1b[1;32m>\x1b[0m ');
             setTimeout(() => positionInlineInput(), 10);
+            return;
+        }
+        
+        if (cmd.startsWith('/samsay ')) {
+            const message = cmd.substring(8).trim();
+            
+            if (!message) {
+                // Move cursor up to separator, clear it
+                term.write('\x1b[1A\x1b[2K\r');
+                term.writeln('\x1b[31mError: /samsay [text]\x1b[0m');
+                term.writeln('─'.repeat(term.cols || 60));
+                term.write('\x1b[1;32m>\x1b[0m ');
+                setTimeout(() => positionInlineInput(), 10);
+                return;
+            }
+            
+            // Send to chat (will play when message comes back)
+            await sendChatMessage(cmd);
             return;
         }
         
@@ -1084,24 +1337,62 @@ async function init() {
     // Handle inline input events
     inlineInput.addEventListener('keydown', async (e) => {
         playTerminalKeySound(e);
-        if (e.key === 'Escape' && hasVisibleMentionSuggestions()) {
+        
+        // Check if we have visible suggestions (mentions OR commands)
+        const hasMentions = hasVisibleMentionSuggestions();
+        const hasCommands = hasVisibleCommandSuggestions();
+        const hasSuggestions = hasMentions || hasCommands;
+        
+        if (e.key === 'Escape' && hasSuggestions) {
             e.preventDefault();
-            resetMentionAutocomplete();
-        } else if (e.key === ' ' && hasVisibleMentionSuggestions()) {
+            if (hasMentions) resetMentionAutocomplete();
+            if (hasCommands) resetCommandAutocomplete();
+        } else if (e.key === ' ' && hasSuggestions) {
             e.preventDefault();
-            commitSelectedMentionSuggestion();
-        } else if (e.key === 'Enter' && hasVisibleMentionSuggestions()) {
+            if (hasMentions) commitSelectedMentionSuggestion();
+            if (hasCommands) {
+                resetCommandAutocomplete();
+                inlineInput.value += ' ';
+                if (chatMode.active) chatMode.inputLine = inlineInput.value;
+            }
+        } else if (e.key === 'Enter' && hasSuggestions) {
             e.preventDefault();
-            commitSelectedMentionSuggestion();
+            if (hasMentions) {
+                commitSelectedMentionSuggestion();
+            } else if (hasCommands) {
+                // Just accept the current command and submit
+                resetCommandAutocomplete();
+                submitInlineInput();
+            }
         } else if (e.key === 'Enter') {
             e.preventDefault();
             submitInlineInput();
-        } else if (e.key === 'Tab' && chatMode.active) {
+        } else if (e.key === 'Tab') {
             e.preventDefault();
-            await applyMentionAutocomplete();
+            if (chatMode.active && hasMentions) {
+                await applyMentionAutocomplete();
+            } else if (hasCommands) {
+                applyCommandAutocomplete();
+            } else {
+                // Trigger command suggestions on Tab
+                refreshCommandSuggestions();
+                if (hasVisibleCommandSuggestions()) {
+                    applyCommandAutocomplete();
+                } else if (chatMode.active) {
+                    // Try mention autocomplete in chat
+                    await applyMentionAutocomplete();
+                }
+            }
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            if (commandHistory.length > 0) {
+            if (hasCommands) {
+                // Navigate command suggestions up
+                if (commandAutocomplete.index > 0) {
+                    commandAutocomplete.index--;
+                    renderCommandSuggestions();
+                }
+            } else if (commandHistory.length > 0) {
+                // Navigate command history
                 if (historyIndex === -1 || historyIndex >= commandHistory.length) {
                     historyIndex = commandHistory.length - 1;
                 } else if (historyIndex > 0) {
@@ -1111,7 +1402,13 @@ async function init() {
             }
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
-            if (historyIndex < commandHistory.length - 1) {
+            if (hasCommands) {
+                // Navigate command suggestions down
+                if (commandAutocomplete.index < commandAutocomplete.matches.length - 1) {
+                    commandAutocomplete.index++;
+                    renderCommandSuggestions();
+                }
+            } else if (historyIndex < commandHistory.length - 1) {
                 historyIndex++;
                 inlineInput.value = commandHistory[historyIndex] || '';
             } else {
@@ -1126,6 +1423,9 @@ async function init() {
             chatMode.inputLine = inlineInput.value;
             await refreshMentionSuggestionsFromInput();
         }
+        
+        // Refresh command suggestions if typing at the start
+        refreshCommandSuggestions();
     });
     
     // Click on terminal focuses input
