@@ -563,7 +563,7 @@ const commands = {
         description: 'Connect to chat room',
         execute: async (args) => {
             const homeserver = 'https://chat.ruv.wtf';
-            const roomAlias = '#publicchat:ruv.wtf';
+            const roomAlias = '#generalchat:ruv.wtf';
             
             // Generate UUID
             const generateUUID = () => {
@@ -1297,7 +1297,7 @@ async function writeStartupChatMotd() {
         const result = await Promise.race([
             (async () => {
                 const [latest, presence] = await Promise.all([
-                    fetchPublicLastMessage('#publicchat:ruv.wtf'),
+                    fetchPublicLastMessage('#generalchat:ruv.wtf'),
                     fetchPublicPresence('@litruv:b.ruv.wtf')
                 ]);
                 return { latest, presence };
