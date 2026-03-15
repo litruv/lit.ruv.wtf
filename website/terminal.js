@@ -34,6 +34,7 @@ import {
     exitChatMode,
     updateQuickCommands,
     runChatCommand,
+    runGameCommand,
     renderChatPrompt,
     sendChatMessage
 } from './matrix-client.js';
@@ -300,6 +301,7 @@ term.registerLinkProvider({
         
         // Find all command names that match our known commands
         const commandNames = ['help', 'about', 'clear', 'echo', 'date', 'whoami', 'history', 'color', 'banner', 'bluesky', 'chat', 'github', 'contact', 'privacy', 'numbermatch'];
+        const gameCommandNames = ['add', 'hint', 'new', 'quit'];
         
         // When in game mode, detect clickable tile numbers on board lines
         if (gameMode.active && lineText.includes('│')) {
@@ -365,6 +367,33 @@ term.registerLinkProvider({
                 startIndex = index + 1;
             }
         });
+
+        // When in game mode, register add/hint/new/quit as clickable words on the controls line
+        if (gameMode.active) {
+            gameCommandNames.forEach(cmd => {
+                let startIndex = 0;
+                while (true) {
+                    const index = lineText.indexOf(cmd, startIndex);
+                    if (index === -1) break;
+                    const charBefore = index > 0 ? lineText[index - 1] : ' ';
+                    const charAfter = index + cmd.length < lineText.length ? lineText[index + cmd.length] : ' ';
+                    if (/[\s\[]/.test(charBefore) && /[\s\]]/.test(charAfter)) {
+                        const capturedCmd = cmd;
+                        links.push({
+                            range: {
+                                start: { x: index + 1, y: bufferLineNumber },
+                                end: { x: index + cmd.length + 1, y: bufferLineNumber }
+                            },
+                            text: cmd,
+                            activate: () => {
+                                if (window.runGameCommand) window.runGameCommand(capturedCmd);
+                            }
+                        });
+                    }
+                    startIndex = index + 1;
+                }
+            });
+        }
         
         callback(links.length > 0 ? links : undefined);
     }
@@ -521,7 +550,10 @@ const commands = {
     },
     numbermatch: {
         description: numbermatchCmd.description,
-        execute: (args) => numbermatchCmd.execute(term, writeClickable, VERSION, args, commandHistory)
+        execute: (args) => {
+            numbermatchCmd.execute(term, writeClickable, VERSION, args, commandHistory);
+            updateQuickCommands('game');
+        }
     },
     samsay: {
         description: samsayCmd.description,
@@ -1228,6 +1260,7 @@ async function submitInlineInput() {
         term.write(rawValue + '\r\n');
         const continueGame = processGameInput(term, cmd);
         if (!continueGame) {
+            updateQuickCommands('terminal');
             writePrompt();
         }
         setTimeout(() => positionInlineInput(), 10);
@@ -1317,8 +1350,9 @@ async function init() {
         welcomeBannerMinimal
     });
     
-    // Expose chat command for onclick handlers
+    // Expose chat and game command handlers for onclick buttons
     window.runChatCommand = runChatCommand;
+    window.runGameCommand = runGameCommand;
     
     // Display welcome banner with clickable commands
     const cols = term.cols;

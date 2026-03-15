@@ -552,9 +552,9 @@ export const gameMode = {
  */
 function getBoardLineCount(game) {
     const rows = Math.ceil(game.getTiles().length / game.width);
-    // header + top border + rows + bottom border + empty + status + message
+    // header + top border + rows + blank lines between rows + bottom border + empty + status + message + controls
     // (prompt uses write not writeln, so doesn't add a line)
-    return 1 + 1 + rows + 1 + 1 + 1 + 1;
+    return 1 + 1 + rows + Math.max(0, rows - 1) + 1 + 1 + 1 + 1 + 1;
 }
 
 /**
@@ -603,6 +603,9 @@ function renderBoard(term, game, selectedIndex, message = '') {
         
         line += '│';
         term.writeln(line);
+        if (row < rows - 1) {
+            term.writeln(`    │${'   '.repeat(width)}│`);
+        }
     }
 
     // Bottom border
@@ -616,6 +619,9 @@ function renderBoard(term, game, selectedIndex, message = '') {
     // Message line (padded to clear previous)
     const msgText = message || '';
     term.writeln(`  ${msgText}`.padEnd(50));
+    
+    // Clickable controls line
+    term.writeln('  \x1b[90m[ \x1b[36madd\x1b[90m ]  [ \x1b[36mhint\x1b[90m ]  [ \x1b[36mnew\x1b[90m ]  [ \x1b[36mquit\x1b[90m ]\x1b[0m');
     
     // Prompt
     term.write('\x1b[33mgame>\x1b[0m ');

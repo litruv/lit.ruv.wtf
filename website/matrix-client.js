@@ -858,7 +858,7 @@ export function updateQuickCommands(mode) {
     const container = document.querySelector('.quick-commands');
     const statusLeft = document.querySelector('.status-left');
     if (!container) return;
-    
+
     if (mode === 'chat') {
         if (statusLeft) statusLeft.textContent = 'Chat Mode';
         container.innerHTML = `
@@ -867,6 +867,9 @@ export function updateQuickCommands(mode) {
             <button class="quick-cmd" onclick="runChatCommand('/samsay')" title="SAM speech">/samsay</button>
             <button class="quick-cmd" onclick="runChatCommand('/quit')" title="Exit chat">/quit</button>
         `;
+    } else if (mode === 'game') {
+        if (statusLeft) statusLeft.textContent = 'Number Match';
+        container.innerHTML = '';
     } else {
         if (statusLeft) statusLeft.textContent = 'Ready';
         container.innerHTML = `
@@ -876,6 +879,17 @@ export function updateQuickCommands(mode) {
             <button class="quick-cmd" onclick="runQuickCommand('clear')" title="Clear screen">clear</button>
         `;
     }
+}
+
+/**
+ * Run a game command from a button click
+ * @param {string} command - The game command to submit
+ * @returns {void}
+ */
+export function runGameCommand(command) {
+    if (!inlineInput || !submitInlineInput) return;
+    inlineInput.value = command;
+    submitInlineInput();
 }
 
 /**
