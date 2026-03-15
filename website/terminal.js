@@ -18,6 +18,7 @@ import samsayCmd from './scripts/commands/samsay.js';
 // Import Matrix client
 import {
     initMatrixClient,
+    updateClientSession,
     chatMode,
     matrixApi,
     fetchPublicLastMessage,
@@ -581,6 +582,14 @@ const commands = {
                 };
             }
             
+            // Sync session to mxClient if exists
+            if (window.matrixSession.accessToken && window.matrixSession.userId) {
+                updateClientSession({ 
+                    accessToken: window.matrixSession.accessToken, 
+                    userId: window.matrixSession.userId 
+                });
+            }
+            
             // Register/login user if not logged in
             if (!window.matrixSession.accessToken) {
                 try {
@@ -627,6 +636,8 @@ const commands = {
                         localStorage.setItem('matrix_username', username);
                         localStorage.setItem('matrix_password', password);
                         
+                        updateClientSession({ accessToken: regData.access_token, userId: regData.user_id });
+                        
                         term.writeln(`  Registered as: ${regData.user_id}\r\n`);
                     } else if (regData.errcode === 'M_USER_IN_USE') {
                         // Username exists, try to login
@@ -652,6 +663,8 @@ const commands = {
                             localStorage.setItem('matrix_device_id', loginData.device_id);
                             localStorage.setItem('matrix_username', username);
                             localStorage.setItem('matrix_password', password);
+                            
+                            updateClientSession({ accessToken: loginData.access_token, userId: loginData.user_id });
                             
                             term.writeln(`  Logged in as: ${loginData.user_id}\r\n`);
                         } else {

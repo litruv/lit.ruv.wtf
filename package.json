@@ -20,6 +20,7 @@
   "author": "Max Litruv Boonzaayer",
   "license": "MIT",
   "dependencies": {
+    "@litruv/mxjs-lite": "^1.0.1",
     "jimp": "^1.6.0"
   },
   "repository": {

@@ -253,13 +253,9 @@ class NumberMatchGame {
             }
         }
 
-        // Wrap-around horizontal (end of one row to start of next)
-        if (rowEnd === rowStart + 1 && colStart === this.width - 1 && colEnd === 0) {
-            // Adjacent via wrap
-            return true;
-        }
-        if (diff === 1 || diff === this.width) {
-            // Directly adjacent
+        // Wrap-around: scan reading order across row boundaries (right to end of row,
+        // down to next row, left-to-right until reaching the second tile)
+        if (rowStart !== rowEnd && this.isSegmentClear(start, end, 1)) {
             return true;
         }
 

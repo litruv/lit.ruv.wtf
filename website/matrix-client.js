@@ -1,14 +1,18 @@
 /**
- * Matrix Client - Generic Matrix protocol library
+ * Matrix Client - Using mxjs-lite library
  */
 
-// Configuration
-let config = {
-    homeserver: 'https://matrix.org',
-    bridgeUrl: null,
-    useBridge: false,
-    publicReadToken: null
-};
+import { MxjsClient } from './mxjs-lite.js';
+
+/**
+ * @type {MxjsClient|null}
+ */
+let mxClient = null;
+
+/**
+ * @type {string|null}
+ */
+let syncToken = null;
 
 // Dependencies that will be injected
 let term, inlineInput, mentionSuggestions, writeClickable, writePrompt, showInlineInput, positionInlineInput, submitInlineInput;
@@ -17,16 +21,17 @@ let term, inlineInput, mentionSuggestions, writeClickable, writePrompt, showInli
  * Initialize Matrix client with configuration and dependencies
  * @param {Object} userConfig - Configuration options
  * @param {string} userConfig.homeserver - Matrix homeserver URL
- * @param {string} [userConfig.bridgeUrl] - Bridge iframe URL for CSP-restricted hosts
- * @param {boolean} [userConfig.useBridge] - Whether to use iframe bridge
  * @param {string} [userConfig.publicReadToken] - Public read token for unauthenticated requests
  * @param {Object} deps - UI dependencies
  */
 export function initMatrixClient(userConfig, deps) {
-    // Merge config
-    config = { ...config, ...userConfig };
+    // Create new mxjs-lite client
+    mxClient = new MxjsClient({
+        homeserver: userConfig.homeserver || 'https://matrix.org',
+        publicReadToken: userConfig.publicReadToken || null
+    });
     
-    // Inject dependencies
+    // Inject UI dependencies
     if (deps) {
         term = deps.term;
         inlineInput = deps.inlineInput;
@@ -37,6 +42,138 @@ export function initMatrixClient(userConfig, deps) {
         positionInlineInput = deps.positionInlineInput;
         submitInlineInput = deps.submitInlineInput;
     }
+    
+    // Set up event handlers
+    setupEventHandlers();
+}
+
+/**
+ * Update mxClient with new session credentials
+ * @param {Object} session - Session data with accessToken and userId
+ */
+export function updateClientSession(session) {
+    if (!mxClient) return;
+    
+    mxClient.accessToken = session.accessToken;
+    mxClient.userId = session.userId;
+}
+
+/**
+ * Setup mxjs-lite event handlers
+ */
+function setupEventHandlers() {
+    if (!mxClient) return;
+    
+    mxClient.on('message', ({ roomId, event }) => {
+        if (!chatMode.active || roomId !== window.matrixSession?.roomId) return;
+        handleNewMessage(event);
+    });
+    
+    mxClient.on('edit', ({ roomId, edits, newBody, event }) => {
+        if (!chatMode.active || roomId !== window.matrixSession?.roomId) return;
+        handleMessageEdit(edits, newBody);
+    });
+    
+    mxClient.on('redaction', ({ roomId, redacts, event }) => {
+        if (!chatMode.active || roomId !== window.matrixSession?.roomId) return;
+        handleMessageRedaction(redacts);
+    });
+    
+    mxClient.on('typing', ({ roomId, userIds }) => {
+        // Can add typing indicators here if needed
+    });
+}
+
+/**
+ * Handle incoming message event
+ * @param {Object} event - Matrix message event
+ */
+function handleNewMessage(event) {
+    if (event.content?.msgtype !== 'm.text') return;
+    
+    const msgId = event.event_id;
+    const exists = chatMode.messages.find(m => m.id === msgId);
+    if (exists) return;
+    
+    const timestamp = new Date(event.origin_server_ts);
+    const time = timestamp.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    const userId = event.sender;
+    const displayName = chatMode.displayNames[userId] || mxClient.extractLocalpart(userId);
+    
+    const newMessage = {
+        id: msgId,
+        time: time,
+        sender: displayName,
+        userId: userId,
+        text: event.content.body
+    };
+    
+    chatMode.messages.push(newMessage);
+    
+    // Only keep last 100 messages in memory
+    if (chatMode.messages.length > 100) {
+        chatMode.messages = chatMode.messages.slice(-100);
+    }
+    
+    renderChatMessage(newMessage);
+}
+
+/**
+ * Handle message edit event
+ * @param {string} originalEventId - ID of the original message being edited
+ * @param {string} newBody - New message text
+ */
+function handleMessageEdit(originalEventId, newBody) {
+    const message = chatMode.messages.find(m => m.id === originalEventId);
+    if (!message) return;
+    
+    message.text = newBody + ' \x1b[90m(edited)\x1b[0m';
+    rerenderChatView();
+}
+
+/**
+ * Handle message redaction event
+ * @param {string} redactedEventId - ID of the message being redacted
+ */
+function handleMessageRedaction(redactedEventId) {
+    const messageIndex = chatMode.messages.findIndex(m => m.id === redactedEventId);
+    if (messageIndex === -1) return;
+    
+    // Remove the message from the array
+    chatMode.messages.splice(messageIndex, 1);
+    rerenderChatView();
+}
+
+/**
+ * Re-render the entire chat view
+ */
+function rerenderChatView() {
+    if (!chatMode.active) return;
+    
+    // Clear terminal and redraw header
+    term.clear();
+    term.writeln('╔════════════════════════════════════════════════════════════╗');
+    term.writeln('║              CHAT - #generalchat                           ║');
+    term.writeln('║              Type /help for commands                       ║');
+    term.writeln('╚════════════════════════════════════════════════════════════╝');
+    
+    // Render the last 20 messages
+    const recent = chatMode.messages.slice(-20);
+    recent.forEach(msg => {
+        const color = getUserColor(msg.sender);
+        term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
+    });
+    
+    // Render separator and prompt
+    term.writeln('');
+    term.writeln('─'.repeat(term.cols || 60));
+    term.write(`\x1b[1;32m>\x1b[0m ${chatMode.inputLine}`);
+    term.scrollToBottom();
+    setTimeout(() => positionInlineInput(), 10);
 }
 
 // Chat mode state
@@ -46,7 +183,7 @@ export const chatMode = {
     lastSync: null,
     pollInterval: null,
     inputLine: '',
-    displayNames: {}, // Cache for display names
+    displayNames: {},
     mentionDirectory: [],
     mentionLoadedAt: 0,
     mentionAutocomplete: {
@@ -58,155 +195,17 @@ export const chatMode = {
 };
 
 /**
- * Matrix Bridge - Iframe-based communication for CSP-restricted hosts
+ * Matrix API helper for backward compatibility
+ * @param {string} endpoint - API endpoint path
+ * @param {string} [method='GET'] - HTTP method
+ * @param {Object|null} [body=null] - Request body
+ * @returns {Promise<Object>} API response
  */
-const matrixBridge = {
-    iframe: null,
-    ready: false,
-    pendingRequests: new Map(),
-    requestCounter: 0
-};
-
-/**
- * Initialize the Matrix iframe bridge
- * @returns {Promise<boolean>} True if bridge loaded successfully
- */
-async function initMatrixBridge() {
-    if (!config.bridgeUrl) {
-        throw new Error('Bridge URL not configured');
-    }
-    
-    if (matrixBridge.iframe) {
-        return matrixBridge.ready;
-    }
-
-    return new Promise((resolve) => {
-        const iframe = document.createElement('iframe');
-        iframe.src = config.bridgeUrl;
-        iframe.style.display = 'none';
-        iframe.style.position = 'absolute';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = 'none';
-        
-        const timeout = setTimeout(() => {
-            console.error('[Matrix Bridge] Failed to load iframe bridge');
-            matrixBridge.ready = false;
-            resolve(false);
-        }, 10000);
-
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'matrix:bridge:ready') {
-                clearTimeout(timeout);
-                matrixBridge.ready = true;
-                console.log('[Matrix Bridge] Iframe bridge ready');
-                resolve(true);
-            }
-        });
-
-        document.body.appendChild(iframe);
-        matrixBridge.iframe = iframe;
-    });
-}
-
-/**
- * Send a request to the Matrix bridge via postMessage
- * @param {string} type - Request type (e.g. 'matrix:auth', 'matrix:sendMessage')
- * @param {object} payload - Request payload
- * @returns {Promise<any>} Response from bridge
- */
-function matrixBridgeRequest(type, payload) {
-    return new Promise((resolve, reject) => {
-        if (!matrixBridge.iframe || !matrixBridge.ready) {
-            reject(new Error('Matrix bridge not initialized'));
-            return;
-        }
-
-        const requestId = `req_${++matrixBridge.requestCounter}`;
-        const timeout = setTimeout(() => {
-            matrixBridge.pendingRequests.delete(requestId);
-            reject(new Error('Matrix bridge request timeout'));
-        }, 30000);
-
-        matrixBridge.pendingRequests.set(requestId, { resolve, reject, timeout });
-
-        matrixBridge.iframe.contentWindow.postMessage({
-            type,
-            requestId,
-            payload
-        }, config.bridgeUrl);
-    });
-}
-
-/**
- * Handle responses from the Matrix bridge
- */
-window.addEventListener('message', (event) => {
-    if (config.bridgeUrl && event.origin !== new URL(config.bridgeUrl).origin) {
-        return;
-    }
-
-    const { type, requestId, payload } = event.data;
-    
-    if (!type || !requestId || !type.includes(':response')) {
-        return;
-    }
-
-    const pending = matrixBridge.pendingRequests.get(requestId);
-    if (pending) {
-        clearTimeout(pending.timeout);
-        matrixBridge.pendingRequests.delete(requestId);
-        pending.resolve(payload);
-    }
-});
-
-// Matrix API helper
 export const matrixApi = async (endpoint, method = 'GET', body = null) => {
-    if (!window.matrixSession) return null;
+    if (!mxClient) return null;
     
-    // Use iframe bridge if configured
-    if (config.useBridge) {
-        if (!matrixBridge.ready) {
-            const initialized = await initMatrixBridge();
-            if (!initialized) {
-                return {
-                    errcode: 'M_BRIDGE_UNAVAILABLE',
-                    error: 'Matrix bridge failed to initialize'
-                };
-            }
-        }
-
-        try {
-            const result = await matrixBridgeRequest('matrix:api', {
-                endpoint,
-                method,
-                body,
-                accessToken: window.matrixSession.accessToken
-            });
-            return result;
-        } catch (error) {
-            return {
-                errcode: 'M_BRIDGE_ERROR',
-                error: error.message
-            };
-        }
-    }
-
-    // Direct API call
-    const url = `${config.homeserver}/_matrix/client/r0${endpoint}`;
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-    
-    if (window.matrixSession.accessToken) {
-        headers['Authorization'] = `Bearer ${window.matrixSession.accessToken}`;
-    }
-    
-    const options = { method, headers };
-    if (body) options.body = JSON.stringify(body);
-    
-    const response = await fetch(url, options);
-    return response.json();
+    const accessToken = window.matrixSession?.accessToken || null;
+    return await mxClient.api(endpoint, method, body, accessToken);
 };
 
 /**
@@ -215,76 +214,8 @@ export const matrixApi = async (endpoint, method = 'GET', body = null) => {
  * @returns {Promise<{sender: string, body: string, timestamp: number} | null>}
  */
 export async function fetchPublicLastMessage(roomAlias) {
-    if (!config.publicReadToken) {
-        console.warn('No public read token configured');
-        return null;
-    }
-    
-    try {
-        // Use iframe bridge if configured
-        if (config.useBridge) {
-            if (!matrixBridge.ready) {
-                await initMatrixBridge();
-            }
-            
-            const result = await matrixBridgeRequest('matrix:fetchLastMessage', { 
-                roomAlias,
-                publicToken: config.publicReadToken
-            });
-            
-            if (!result || result.error || !Array.isArray(result.chunk)) {
-                return null;
-            }
-            
-            const lastEvent = result.chunk.find(e => 
-                e && e.type === 'm.room.message' && e.content && e.content.body
-            );
-            
-            if (!lastEvent) return null;
-            
-            return {
-                sender: lastEvent.sender,
-                body: lastEvent.content.body,
-                timestamp: lastEvent.origin_server_ts || Date.now()
-            };
-        }
-        
-        // Direct API call
-        const resolvedAlias = encodeURIComponent(roomAlias);
-        const roomResponse = await fetch(
-            `${config.homeserver}/_matrix/client/r0/directory/room/${resolvedAlias}`,
-            { headers: { 'Authorization': `Bearer ${config.publicReadToken}` } }
-        );
-        
-        if (!roomResponse.ok) return null;
-        
-        const roomData = await roomResponse.json();
-        const roomId = roomData?.room_id;
-        if (!roomId) return null;
-        
-        const messagesResponse = await fetch(
-            `${config.homeserver}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=10`,
-            { headers: { 'Authorization': `Bearer ${config.publicReadToken}` } }
-        );
-        
-        if (!messagesResponse.ok) return null;
-        
-        const messagesData = await messagesResponse.json();
-        const lastEvent = messagesData.chunk?.find(e => 
-            e && e.type === 'm.room.message' && e.content && e.content.body
-        );
-        
-        if (!lastEvent) return null;
-        
-        return {
-            sender: lastEvent.sender,
-            body: lastEvent.content.body,
-            timestamp: lastEvent.origin_server_ts || Date.now()
-        };
-    } catch (error) {
-        console.error('Failed to fetch public last message:', error);
-        return null;
-    }
+    if (!mxClient) return null;
+    return await mxClient.fetchPublicLastMessage(roomAlias);
 }
 
 /**
@@ -293,49 +224,9 @@ export async function fetchPublicLastMessage(roomAlias) {
  * @returns {Promise<{presence: string, lastActive: number} | null>}
  */
 export async function fetchPublicPresence(userId) {
-    if (!config.publicReadToken) {
-        console.warn('No public read token configured');
-        return null;
-    }
-    
-    try {
-        // Use iframe bridge if configured
-        if (config.useBridge) {
-            if (!matrixBridge.ready) {
-                await initMatrixBridge();
-            }
-            
-            const result = await matrixBridgeRequest('matrix:fetchPresence', { 
-                userId,
-                publicToken: config.publicReadToken
-            });
-            
-            if (result && !result.error && result.presence) {
-                return {
-                    presence: result.presence,
-                    lastActive: result.last_active_ago || 0
-                };
-            }
-            return null;
-        }
-        
-        // Direct API call
-        const response = await fetch(
-            `${config.homeserver}/_matrix/client/r0/presence/${encodeURIComponent(userId)}/status`,
-            { headers: { 'Authorization': `Bearer ${config.publicReadToken}` } }
-        );
-        
-        if (!response.ok) return null;
-        
-        const data = await response.json();
-        return {
-            presence: data.presence,
-            lastActive: data.last_active_ago || 0
-        };
-    } catch (error) {
-        console.error('Failed to fetch presence:', error);
-        return null;
-    }
+    if (!mxClient) return null;
+    const result = await mxClient.fetchPublicPresence(userId);
+    return result ? { presence: result.presence, lastActive: result.lastActive } : null;
 }
 
 /**
@@ -364,29 +255,40 @@ export function formatTimeAgo(timestampMs) {
     return `${Math.floor(elapsedSeconds / 86400)}d ago`;
 }
 
-// Get display name for a user (with caching)
+/**
+ * Get display name for a user (with caching)
+ * @param {string} userId - Matrix user ID
+ * @returns {Promise<string>} Display name
+ */
 async function getDisplayName(userId) {
-    // Check cache first
     if (chatMode.displayNames[userId]) {
         return chatMode.displayNames[userId];
     }
     
+    if (!mxClient) {
+        const fallback = userId.split(':')[0].substring(1);
+        chatMode.displayNames[userId] = fallback;
+        return fallback;
+    }
+    
     try {
-        const data = await matrixApi(`/profile/${encodeURIComponent(userId)}/displayname`, 'GET');
-        const displayName = data.displayname || userId.split(':')[0].substring(1);
+        const profile = await mxClient.getProfile(userId);
+        const displayName = profile?.displayName || mxClient.extractLocalpart(userId);
         chatMode.displayNames[userId] = displayName;
         return displayName;
     } catch (error) {
-        // Fallback to username part
-        const fallback = userId.split(':')[0].substring(1);
+        const fallback = mxClient.extractLocalpart(userId);
         chatMode.displayNames[userId] = fallback;
         return fallback;
     }
 }
 
-// Get color for user based on their ID (consistent hashing)
+/**
+ * Get color for user based on their ID (consistent hashing)
+ * @param {string} username - Username string
+ * @returns {string} ANSI color code
+ */
 function getUserColor(username) {
-    // Color palette that works well on dark green background
     const colors = [
         '\x1b[91m',  // bright red
         '\x1b[92m',  // bright green
@@ -399,35 +301,37 @@ function getUserColor(username) {
         '\x1b[36m',  // cyan
     ];
     
-    // Simple hash function
     let hash = 0;
     for (let i = 0; i < username.length; i++) {
         hash = ((hash << 5) - hash) + username.charCodeAt(i);
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash & hash;
     }
     
     return colors[Math.abs(hash) % colors.length];
 }
 
-// Check if display name is already taken
+/**
+ * Check if display name is already taken
+ * @param {string} newName - Proposed display name
+ * @returns {Promise<boolean>} True if taken
+ */
 export async function isDisplayNameTaken(newName) {
+    if (!mxClient || !window.matrixSession?.roomId) return false;
+    
     try {
-        const members = await matrixApi(`/rooms/${window.matrixSession.roomId}/joined_members`, 'GET');
-        if (members && members.joined) {
-            for (const [userId, member] of Object.entries(members.joined)) {
-                // Skip our own user
-                if (userId === window.matrixSession.userId) continue;
-                
-                const displayName = member.display_name || userId.split(':')[0].substring(1);
-                if (displayName.toLowerCase() === newName.toLowerCase()) {
-                    return true;
-                }
+        const members = await mxClient.getRoomMembers(window.matrixSession.roomId);
+        if (!members) return false;
+        
+        for (const member of members) {
+            if (member.userId === window.matrixSession.userId) continue;
+            if (member.displayName.toLowerCase() === newName.toLowerCase()) {
+                return true;
             }
         }
         return false;
     } catch (error) {
         console.error('Error checking display names:', error);
-        return false; // Allow on error
+        return false;
     }
 }
 
@@ -437,15 +341,11 @@ export async function isDisplayNameTaken(newName) {
  * @returns {boolean} True when name looks like an auto-generated default
  */
 function isDefaultDisplayName(displayName) {
-    if (!displayName) {
-        return true;
-    }
-
+    if (!displayName) return true;
+    
     const trimmedName = displayName.trim();
-    if (!trimmedName) {
-        return true;
-    }
-
+    if (!trimmedName) return true;
+    
     const uuidV4Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidV4Pattern.test(trimmedName);
 }
@@ -455,18 +355,11 @@ function isDefaultDisplayName(displayName) {
  * @returns {Promise<boolean>} True when the user should be prompted to change nickname
  */
 async function shouldShowNicknameHint() {
-    if (!window.matrixSession || !window.matrixSession.userId) {
-        return false;
-    }
-
+    if (!mxClient || !window.matrixSession?.userId) return false;
+    
     try {
-        const encodedUserId = encodeURIComponent(window.matrixSession.userId);
-        const profileData = await matrixApi(`/profile/${encodedUserId}/displayname`, 'GET');
-        const displayName = profileData && typeof profileData.displayname === 'string'
-            ? profileData.displayname
-            : '';
-
-        return isDefaultDisplayName(displayName);
+        const profile = await mxClient.getProfile(window.matrixSession.userId);
+        return isDefaultDisplayName(profile?.displayName || '');
     } catch (error) {
         return false;
     }
@@ -474,37 +367,31 @@ async function shouldShowNicknameHint() {
 
 /**
  * Sync mention directory for autocomplete and mention rendering.
- * @param {boolean} force - When true, bypass cache time
+ * @param {boolean} [force=false] - When true, bypass cache time
  * @returns {Promise<void>}
  */
 async function syncMentionDirectory(force = false) {
-    if (!window.matrixSession || !window.matrixSession.roomId) {
-        return;
-    }
-
+    if (!mxClient || !window.matrixSession?.roomId) return;
+    
     const now = Date.now();
     if (!force && chatMode.mentionDirectory.length > 0 && (now - chatMode.mentionLoadedAt) < 30000) {
         return;
     }
-
+    
     try {
-        const members = await matrixApi(`/rooms/${window.matrixSession.roomId}/joined_members`, 'GET');
-        if (!members || !members.joined) {
-            return;
-        }
-
+        const members = await mxClient.getRoomMembers(window.matrixSession.roomId);
+        if (!members) return;
+        
         const directory = [];
-        Object.entries(members.joined).forEach(([userId, member]) => {
-            const fallbackName = userId.split(':')[0].substring(1);
-            const displayName = member && member.display_name ? member.display_name : fallbackName;
-            chatMode.displayNames[userId] = displayName;
-            directory.push({ userId, displayName });
-        });
-
+        for (const member of members) {
+            chatMode.displayNames[member.userId] = member.displayName;
+            directory.push({ userId: member.userId, displayName: member.displayName });
+        }
+        
         chatMode.mentionDirectory = directory;
         chatMode.mentionLoadedAt = now;
     } catch (error) {
-        // Ignore mention directory refresh failures.
+        console.warn('Failed to sync mention directory:', error);
     }
 }
 
@@ -520,7 +407,7 @@ function getMentionMatches(query) {
         const localPart = entry.userId.split(':')[0].substring(1).toLowerCase();
         return display.startsWith(queryLower) || localPart.startsWith(queryLower);
     });
-
+    
     matches.sort((left, right) => left.displayName.localeCompare(right.displayName));
     return matches;
 }
@@ -548,21 +435,15 @@ function getMentionTokenContext() {
     const fullValue = inlineInput.value;
     const textBeforeCursor = fullValue.slice(0, cursorPosition);
     const tokenStart = textBeforeCursor.search(/(?:^|\s)@[^\s]*$/);
-
-    if (tokenStart === -1) {
-        return null;
-    }
-
+    
+    if (tokenStart === -1) return null;
+    
     const atIndex = textBeforeCursor.indexOf('@', tokenStart);
-    if (atIndex === -1) {
-        return null;
-    }
-
+    if (atIndex === -1) return null;
+    
     const tokenText = textBeforeCursor.slice(atIndex + 1);
-    if (!tokenText || tokenText.includes(':')) {
-        return null;
-    }
-
+    if (!tokenText || tokenText.includes(':')) return null;
+    
     return { atIndex, cursorPosition, tokenText };
 }
 
@@ -576,7 +457,7 @@ function renderMentionSuggestions() {
         mentionSuggestions.style.display = 'none';
         return;
     }
-
+    
     const limitedMatches = matches.slice(0, 5);
     mentionSuggestions.innerHTML = limitedMatches.map((entry, entryIndex) => {
         const selectedClass = index >= 0 && entryIndex === (index % limitedMatches.length) ? ' selected' : '';
@@ -620,20 +501,20 @@ export async function refreshMentionSuggestionsFromInput() {
         resetMentionAutocomplete();
         return;
     }
-
+    
     const context = getMentionTokenContext();
     if (!context) {
         resetMentionAutocomplete();
         return;
     }
-
+    
     await syncMentionDirectory();
     const matches = getMentionMatches(context.tokenText);
     if (matches.length === 0) {
         resetMentionAutocomplete();
         return;
     }
-
+    
     chatMode.mentionAutocomplete = {
         tokenStart: context.atIndex,
         tokenEnd: context.cursorPosition,
@@ -651,10 +532,8 @@ export async function refreshMentionSuggestionsFromInput() {
 function applyMentionReplacement(selectedEntry) {
     const rangeStart = chatMode.mentionAutocomplete.tokenStart;
     const rangeEnd = chatMode.mentionAutocomplete.tokenEnd;
-    if (rangeStart < 0 || rangeEnd < 0) {
-        return;
-    }
-
+    if (rangeStart < 0 || rangeEnd < 0) return;
+    
     const fullValue = inlineInput.value;
     const valueBeforeMention = fullValue.slice(0, rangeStart);
     const valueAfterMention = fullValue.slice(rangeEnd);
@@ -662,7 +541,7 @@ function applyMentionReplacement(selectedEntry) {
     const hasTrailingSpace = valueAfterMention.startsWith(' ');
     const nextValue = `${valueBeforeMention}${mentionText}${hasTrailingSpace ? '' : ' '}${valueAfterMention}`;
     const nextCursor = valueBeforeMention.length + mentionText.length + (hasTrailingSpace ? 0 : 1);
-
+    
     inlineInput.value = nextValue;
     inlineInput.setSelectionRange(nextCursor, nextCursor);
     chatMode.inputLine = nextValue;
@@ -674,14 +553,12 @@ function applyMentionReplacement(selectedEntry) {
  * @returns {boolean} True when a suggestion was applied
  */
 export function commitSelectedMentionSuggestion() {
-    if (!hasVisibleMentionSuggestions()) {
-        return false;
-    }
-
+    if (!hasVisibleMentionSuggestions()) return false;
+    
     if (chatMode.mentionAutocomplete.index < 0) {
         chatMode.mentionAutocomplete.index = 0;
     }
-
+    
     const selectedEntry = chatMode.mentionAutocomplete.matches[chatMode.mentionAutocomplete.index];
     applyMentionReplacement(selectedEntry);
     resetMentionAutocomplete();
@@ -694,33 +571,17 @@ export function commitSelectedMentionSuggestion() {
  * @returns {string} Message with mentions converted to @user:server
  */
 function transformOutgoingMentions(message) {
-    if (!message || !chatMode.mentionDirectory.length) {
-        return message;
-    }
-
+    if (!message || !chatMode.mentionDirectory.length) return message;
+    
     return message.replace(/(^|\s)@([^\s:]+)\b/g, (fullMatch, leadingWhitespace, mentionValue) => {
         const matchedEntry = chatMode.mentionDirectory.find((entry) => {
             return entry.displayName.toLowerCase() === mentionValue.toLowerCase();
         });
-
-        if (!matchedEntry) {
-            return fullMatch;
-        }
-
+        
+        if (!matchedEntry) return fullMatch;
+        
         return `${leadingWhitespace}${matchedEntry.userId}`;
     });
-}
-
-/**
- * Build a plain Matrix text payload with canonical mention IDs.
- * @param {string} message - Outgoing raw message
- * @returns {{msgtype: string, body: string}} Matrix content payload
- */
-function buildPlainMentionMessageContent(message) {
-    return {
-        msgtype: 'm.text',
-        body: transformOutgoingMentions(message)
-    };
 }
 
 /**
@@ -750,43 +611,18 @@ function buildFormattedMentionBody(resolvedBody) {
 }
 
 /**
- * Build rich mention payload without m.mentions for compatibility fallback.
- * @param {string} message - Outgoing raw message
- * @returns {{msgtype: string, body: string, format?: string, formatted_body?: string}} Matrix content payload
- */
-function buildRichMentionFallbackContent(message) {
-    const resolvedBody = transformOutgoingMentions(message);
-    if (!hasCanonicalMentions(resolvedBody)) {
-        return {
-            msgtype: 'm.text',
-            body: resolvedBody
-        };
-    }
-
-    return {
-        msgtype: 'm.text',
-        body: resolvedBody,
-        format: 'org.matrix.custom.html',
-        formatted_body: buildFormattedMentionBody(resolvedBody)
-    };
-}
-
-/**
  * Build Matrix message content with mention metadata and formatted HTML.
  * @param {string} message - Outgoing raw message
- * @returns {{msgtype: string, body: string, "m.mentions"?: object, format?: string, formatted_body?: string}} Matrix content payload
+ * @returns {Object} Matrix content payload
  */
 function buildMentionMessageContent(message) {
     const resolvedBody = transformOutgoingMentions(message);
     const hasMentions = hasCanonicalMentions(resolvedBody);
-
+    
     if (!hasMentions) {
-        return {
-            msgtype: 'm.text',
-            body: resolvedBody
-        };
+        return { msgtype: 'm.text', body: resolvedBody };
     }
-
+    
     return {
         msgtype: 'm.text',
         body: resolvedBody,
@@ -802,10 +638,8 @@ function buildMentionMessageContent(message) {
  * @returns {string} Formatted message text for terminal output
  */
 function formatChatTextWithMentions(text) {
-    if (!text) {
-        return '';
-    }
-
+    if (!text) return '';
+    
     return text.replace(/@([A-Za-z0-9._\-=\/]+:[A-Za-z0-9.-]+)/g, (matchValue, userBody) => {
         const userId = `@${userBody}`;
         const knownDisplayName = chatMode.displayNames[userId];
@@ -820,27 +654,26 @@ function formatChatTextWithMentions(text) {
  * @returns {Promise<void>}
  */
 export async function applyMentionAutocomplete() {
-    if (!chatMode.active) {
-        return;
-    }
-
+    if (!chatMode.active) return;
+    
     if (chatMode.mentionAutocomplete.matches.length === 0) {
         await refreshMentionSuggestionsFromInput();
-        if (chatMode.mentionAutocomplete.matches.length === 0) {
-            return;
-        }
+        if (chatMode.mentionAutocomplete.matches.length === 0) return;
         chatMode.mentionAutocomplete.index = 0;
     } else {
         chatMode.mentionAutocomplete.index = (chatMode.mentionAutocomplete.index + 1)
             % chatMode.mentionAutocomplete.matches.length;
     }
-
+    
     const selectedEntry = chatMode.mentionAutocomplete.matches[chatMode.mentionAutocomplete.index];
     applyMentionReplacement(selectedEntry);
     renderMentionSuggestions();
 }
 
-// Enter chat mode
+/**
+ * Enter chat mode
+ * @returns {Promise<void>}
+ */
 export async function enterChatMode() {
     if (!window.matrixSession || !window.matrixSession.roomId) {
         term.writeln('\r\n  Error: Not connected to chat. Use "chat" command first.\r\n');
@@ -868,7 +701,7 @@ export async function enterChatMode() {
     
     // Fetch initial messages
     await syncChatMessages();
-
+    
     // Show nickname setup hint in message history when display name is still default
     const showNicknameHint = await shouldShowNicknameHint();
     if (showNicknameHint) {
@@ -879,10 +712,8 @@ export async function enterChatMode() {
         term.writeln(`\x1b[90m[${hintTime}]\x1b[0m \x1b[93mSystem:\x1b[0m You are using a default name. Use /nick [name] to change it.`);
     }
     
-    // Start polling for new messages
-    chatMode.pollInterval = setInterval(async () => {
-        await syncChatMessages(true);
-    }, 3000);
+    // Start sync loop
+    startSyncLoop();
     
     // Add separator and initial prompt
     term.writeln('');
@@ -897,14 +728,118 @@ export async function enterChatMode() {
     updateQuickCommands('chat');
 }
 
-// Exit chat mode
+/**
+ * Start Matrix sync loop
+ */
+function startSyncLoop() {
+    if (!mxClient) return;
+    
+    chatMode.pollInterval = setInterval(async () => {
+        try {
+            const data = await mxClient.sync(syncToken, 10000);
+            if (data) {
+                syncToken = data.next_batch;
+                mxClient.processSyncData(data);
+            }
+        } catch (error) {
+            console.error('Sync error:', error);
+        }
+    }, 3000);
+}
+
+/**
+ * Sync messages from Matrix (initial load)
+ * @param {boolean} [onlyNew=false] - Only fetch new messages
+ * @returns {Promise<void>}
+ */
+async function syncChatMessages(onlyNew = false) {
+    if (!mxClient || !window.matrixSession?.roomId) return;
+    
+    try {
+        const result = await mxClient.getMessages(window.matrixSession.roomId, { limit: 50, dir: 'b' });
+        if (!result || !result.messages) return;
+        
+        const newMessages = [];
+        for (const event of result.messages.reverse()) {
+            if (event.type === 'm.room.message' && event.content?.msgtype === 'm.text') {
+                const msgId = event.event_id;
+                const exists = chatMode.messages.find(m => m.id === msgId);
+                
+                if (!exists) {
+                    const timestamp = new Date(event.origin_server_ts);
+                    const time = timestamp.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    const displayName = await getDisplayName(event.sender);
+                    
+                    newMessages.push({
+                        id: msgId,
+                        time: time,
+                        sender: displayName,
+                        userId: event.sender,
+                        text: event.content.body
+                    });
+                }
+            }
+        }
+        
+        if (newMessages.length > 0) {
+            chatMode.messages.push(...newMessages);
+            
+            if (chatMode.messages.length > 100) {
+                chatMode.messages = chatMode.messages.slice(-100);
+            }
+            
+            if (!onlyNew && chatMode.active) {
+                const recent = chatMode.messages.slice(-20);
+                recent.forEach(msg => {
+                    const color = getUserColor(msg.sender);
+                    term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
+                });
+            }
+        }
+        
+        chatMode.lastSync = Date.now();
+    } catch (error) {
+        console.error('Sync error:', error);
+    }
+}
+
+/**
+ * Render a chat message (insert above the prompt area)
+ * @param {Object} msg - Message object
+ */
+function renderChatMessage(msg) {
+    const color = getUserColor(msg.sender);
+    
+    term.write('\x1b[1A\x1b[2K\r');
+    term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
+    
+    if (msg.text.startsWith('/samsay ')) {
+        const samMessage = msg.text.substring(8).trim();
+        if (samMessage && typeof window.samSpeak === 'function') {
+            window.samSpeak(samMessage);
+        }
+    }
+    
+    term.writeln('─'.repeat(term.cols || 60));
+    term.write(`\x1b[1;32m>\x1b[0m ${chatMode.inputLine}`);
+    term.scrollToBottom();
+    setTimeout(() => positionInlineInput(), 10);
+}
+
+/**
+ * Exit chat mode
+ */
 export function exitChatMode() {
     chatMode.active = false;
     if (chatMode.pollInterval) {
         clearInterval(chatMode.pollInterval);
         chatMode.pollInterval = null;
     }
-    chatMode.displayNames = {}; // Clear display name cache
+    chatMode.displayNames = {};
     chatMode.mentionDirectory = [];
     chatMode.mentionLoadedAt = 0;
     resetMentionAutocomplete();
@@ -951,7 +886,6 @@ export function runChatCommand(command) {
     if (!chatMode.active) return;
     
     if (command === '/nick') {
-        // For /nick, just fill in the command prefix
         inlineInput.value = '/nick ';
         chatMode.inputLine = inlineInput.value;
         resetMentionAutocomplete();
@@ -960,7 +894,6 @@ export function runChatCommand(command) {
     }
     
     if (command === '/samsay') {
-        // For /samsay, just fill in the command prefix
         inlineInput.value = '/samsay ';
         chatMode.inputLine = inlineInput.value;
         resetMentionAutocomplete();
@@ -968,170 +901,46 @@ export function runChatCommand(command) {
         return;
     }
     
-    // Execute the command
     inlineInput.value = command;
     submitInlineInput();
 }
 
-// Sync messages from Matrix
-async function syncChatMessages(onlyNew = false) {
-    try {
-        let endpoint = `/rooms/${window.matrixSession.roomId}/messages?dir=b&limit=50`;
-        const data = await matrixApi(endpoint);
-        
-        if (!data || !data.chunk) return;
-        
-        const newMessages = [];
-        for (const event of data.chunk.reverse()) {
-            if (event.type === 'm.room.message' && event.content.msgtype === 'm.text') {
-                const msgId = event.event_id;
-                const exists = chatMode.messages.find(m => m.id === msgId);
-                
-                if (!exists) {
-                    const timestamp = new Date(event.origin_server_ts);
-                    const time = timestamp.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                    
-                    // Get display name for sender
-                    const displayName = await getDisplayName(event.sender);
-                    
-                    newMessages.push({
-                        id: msgId,
-                        time: time,
-                        sender: displayName,
-                        userId: event.sender,
-                        text: event.content.body
-                    });
-                }
-            }
-        }
-        
-        if (newMessages.length > 0) {
-            chatMode.messages.push(...newMessages);
-            
-            // Only keep last 100 messages in memory
-            if (chatMode.messages.length > 100) {
-                chatMode.messages = chatMode.messages.slice(-100);
-            }
-            
-            // Render new messages if in chat mode and only updating
-            if (onlyNew && chatMode.active) {
-                newMessages.forEach(msg => {
-                    renderChatMessage(msg);
-                });
-            } else if (!onlyNew && chatMode.active) {
-                // Initial load - show last 20 messages (simple print, no cursor manipulation)
-                const recent = chatMode.messages.slice(-20);
-                recent.forEach(msg => {
-                    const color = getUserColor(msg.sender);
-                    term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
-                    
-                    // If message starts with /samsay, speak it
-                    if (msg.text.startsWith('/samsay ')) {
-                        const samMessage = msg.text.substring(8).trim();
-                        if (samMessage && typeof window.samSpeak === 'function') {
-                            window.samSpeak(samMessage);
-                        }
-                    }
-                });
-            }
-        }
-        
-        chatMode.lastSync = Date.now();
-    } catch (error) {
-        console.error('Sync error:', error);
-    }
-}
-
-// Render a chat message (insert above the prompt area)
-function renderChatMessage(msg) {
-    const color = getUserColor(msg.sender);
-    
-    // Move up to separator line and clear it and the prompt line
-    term.write('\x1b[1A\x1b[2K\r'); // Move up to separator, clear it
-    
-    // Write the new message
-    term.writeln(`\x1b[90m[${msg.time}]\x1b[0m ${color}${msg.sender}:\x1b[0m ${formatChatTextWithMentions(msg.text)}`);
-    
-    // If message starts with /samsay, speak it
-    if (msg.text.startsWith('/samsay ')) {
-        const samMessage = msg.text.substring(8).trim();
-        if (samMessage && typeof window.samSpeak === 'function') {
-            window.samSpeak(samMessage);
-        }
-    }
-    
-    // Redraw separator
-    term.writeln('─'.repeat(term.cols || 60));
-    
-    // Redraw prompt with current input
-    term.write(`\x1b[1;32m>\x1b[0m ${chatMode.inputLine}`);
-    
-    // Scroll to bottom to show new message
-    term.scrollToBottom();
-    
-    // Reposition the inline input after terminal updates
-    setTimeout(() => positionInlineInput(), 10);
-}
-
-// Render chat input prompt (efficiently)
+/**
+ * Render chat input prompt (efficiently)
+ */
 export function renderChatPrompt() {
-    // Move to beginning of line, redraw prompt and input
-    term.write('\r\x1b[K'); // CR + clear rest of line
+    term.write('\r\x1b[K');
     term.write(`\x1b[1;32m>\x1b[0m ${chatMode.inputLine}`);
 }
 
-// Send chat message
+/**
+ * Send chat message
+ * @param {string} message - Message to send
+ * @returns {Promise<void>}
+ */
 export async function sendChatMessage(message) {
     if (!message.trim()) return;
+    if (!mxClient || !window.matrixSession?.roomId) return;
     
     try {
         await syncMentionDirectory();
         const content = buildMentionMessageContent(message);
-        const hasMentions = hasCanonicalMentions(content.body);
-        const txnId = Date.now().toString();
-        let sendResult = await matrixApi(
-            `/rooms/${window.matrixSession.roomId}/send/m.room.message/${txnId}`,
-            'PUT',
-            content
+        
+        const result = await mxClient.sendMessage(
+            window.matrixSession.roomId,
+            content.body,
+            content.formatted_body || null
         );
-
-        if (sendResult && sendResult.errcode && hasMentions) {
-            const richFallbackContent = buildRichMentionFallbackContent(message);
-            sendResult = await matrixApi(
-                `/rooms/${window.matrixSession.roomId}/send/m.room.message/${txnId}-richfallback`,
-                'PUT',
-                richFallbackContent
-            );
-        }
-
-        if (sendResult && sendResult.errcode && !hasMentions) {
-            const fallbackContent = buildPlainMentionMessageContent(message);
-            sendResult = await matrixApi(
-                `/rooms/${window.matrixSession.roomId}/send/m.room.message/${txnId}-fallback`,
-                'PUT',
-                fallbackContent
-            );
-        }
-
-        if (sendResult && sendResult.errcode) {
-            throw new Error(sendResult.error || sendResult.errcode || 'Failed to send message');
+        
+        if (!result) {
+            throw new Error('Failed to send message');
         }
         
-        // Clear the input
         chatMode.inputLine = '';
         resetMentionAutocomplete();
         renderChatPrompt();
-        
-        // Reposition input after render
         setTimeout(() => positionInlineInput(), 10);
-        
-        // Immediately sync to show our message
-        setTimeout(() => syncChatMessages(true), 500);
     } catch (error) {
-        // Show error above separator
         term.write('\x1b[1A\x1b[2K\r');
         term.writeln(`\x1b[31mError: ${error.message}\x1b[0m`);
         term.writeln('─'.repeat(term.cols || 60));
