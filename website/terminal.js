@@ -1298,7 +1298,7 @@ async function writeStartupChatMotd() {
             (async () => {
                 const [latest, presence] = await Promise.all([
                     fetchPublicLastMessage('#generalchat:ruv.wtf'),
-                    fetchPublicPresence('@litruv:b.ruv.wtf')
+                    fetchPublicPresence('@lit:ruv.wtf')
                 ]);
                 return { latest, presence };
             })(),
