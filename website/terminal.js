@@ -11,6 +11,7 @@ import bannerCmd from './scripts/commands/banner.js';
 import githubCmd from './scripts/commands/github.js';
 import contactCmd from './scripts/commands/contact.js';
 import privacyCmd from './scripts/commands/privacy.js';
+import donateCmd from './scripts/commands/donate.js';
 import blueskyCmd from './scripts/commands/bluesky.js';
 import numbermatchCmd, { gameMode, processGameInput, handleTileClick } from './scripts/commands/numbermatch.js';
 import samsayCmd from './scripts/commands/samsay.js';
@@ -543,6 +544,10 @@ const commands = {
     privacy: {
         description: privacyCmd.description,
         execute: (args) => privacyCmd.execute(term, writeClickable, VERSION, args, commandHistory)
+    },
+    donate: {
+        description: donateCmd.description,
+        execute: (args) => donateCmd.execute(term, writeClickable, VERSION, args, commandHistory)
     },
     bluesky: {
         description: blueskyCmd.description,
