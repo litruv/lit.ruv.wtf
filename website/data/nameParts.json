@@ -1,0 +1,26 @@
+{
+  "firstParts": [
+    "Unobtainable","Silent","Crimson","Electric","Feral","Cosmic","Hidden","Broken","Velvet","Rusty",
+    "Neon","Shattered","Golden","Frozen","Burning","Wicked","Lost","Ancient","Phantom","Savage",
+    "Twisted","Glitchy","Rapid","Lunar","Solar","Hollow","Cursed","Vivid","Blazing","Fuzzy",
+    "Static","Dynamic","Echoing","Radiant","Shadow","Icy","Stormy","Dusty","Wild","Chaotic",
+    "Prime","Obsidian","Crystal","Toxic","Grim","Lucid","Warped","Mellow","Slick","Gritty",
+    "Daring","Fatal","Nimble","Quantum","Pixel","Binary","Cyber","Turbo","Hyper","Mega",
+    "Ultra","Alpha","Omega","Delta","Nova","Zen","Mythic","Arcane","Ethereal","Infernal",
+    "Celestial","Divine","Void","Spectral","Iron","Steel","Bronze","Silver","Platinum","Titanium",
+    "Ghostly","Savory","Spicy","Sweet","Bitter","Zesty","Noisy","Quiet","Loud","Soft",
+    "Curious","Clever","Brutal","Gentle","Kind","Ruthless","Lucky","Unlucky","Faded","Bright"
+  ],
+  "secondParts": [
+    "Orange","Tiger","Falcon","Wizard","Knight","Samurai","Pirate","Ninja","Dragon","Phoenix",
+    "Wolf","Bear","Shark","Eagle","Lion","Panther","Viper","Cobra","Raven","Fox",
+    "Otter","Badger","Hawk","Crow","Dolphin","Whale","Kraken","Leviathan","Hydra","Griffin",
+    "Unicorn","Pegasus","Golem","Goblin","Orc","Troll","Elf","Dwarf","Mage","Warlock",
+    "Hunter","Sniper","Assassin","Guardian","Wanderer","Nomad","Outlaw","Bandit","Rogue","Mercenary",
+    "Captain","Pilot","Driver","Rider","Runner","Jumper","Climber","Diver","Surfer","Skater",
+    "Coder","Hacker","Debugger","Builder","Crafter","Smith","Engineer","Architect","Designer","Artist",
+    "Painter","Singer","Drummer","Gamer","Streamer","Player","Champion","Legend","Hero","Villain",
+    "Boss","King","Queen","Jester","Clown","Monk","Priest","Scholar","Sage","Oracle",
+    "Prophet","Seeker","Finder","Keeper","Watcher","Observer","Listener","Speaker","Caller","Breaker"
+  ]
+}

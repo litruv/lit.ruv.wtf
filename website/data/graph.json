@@ -1,0 +1,858 @@
+{
+  "settings": {
+    "draggable": true,
+    "initialViewbox": {
+      "x": -33,
+      "y": -73,
+      "width": 750,
+      "height": 412
+    },
+    "introDurationMs": 700
+  },
+  "images": [
+    {
+      "src": "images/logo-modern.svg",
+      "width": 256,
+      "inline": true,
+      "position": {
+        "x": 320,
+        "y": 90
+      },
+      "cssStyle": "fill: #ffffff"
+    },
+    {
+      "src": "images/image.svg",
+      "width": 256,
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_custom_event",
+      "type": "custom_event",
+      "title": "Begin Play",
+      "position": {
+        "x": 340,
+        "y": 200
+      },
+      "focusOptions": {
+        "minWorldBox": {
+          "width": 750,
+          "height": 412
+        },
+        "anchorX": 0.7,
+        "responsiveWorldBox": [
+          {
+            "minViewportWidth": 768,
+            "minWorldBox": {
+              "width": 748,
+              "height": 600
+            },
+            "anchorX": 0.7,
+            "anchorY": 0.6
+          },
+          {
+            "minViewportWidth": 480,
+            "minWorldBox": {
+              "width": 620,
+              "height": 338
+            },
+            "anchorX": 0.75,
+            "anchorY": 0.75
+          }
+        ],
+        "anchorY": 0.7
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "zoom_in_animation",
+      "type": "lottie",
+      "title": "Zoom In",
+      "position": {
+        "x": 340,
+        "y": 360
+      },
+      "width": 300,
+      "lottieSrc": "data/zoom_in.json",
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "node_sequence",
+      "type": "sequence",
+      "title": "Sequence",
+      "position": {
+        "x": 1180,
+        "y": 120
+      },
+      "focusOptions": {
+        "minWorldBox": {
+          "width": 300,
+          "height": 300
+        }
+      },
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "Back",
+          "kind": "exec",
+          "direction": "input"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "then_0",
+          "name": "About Me",
+          "direction": "output",
+          "kind": "exec"
+        },
+        {
+          "id": "then_1",
+          "name": "Socials",
+          "direction": "output",
+          "kind": "exec"
+        },
+        {
+          "id": "then_2",
+          "name": "Chat",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "node_whoami",
+      "type": "info",
+      "title": "Who Am I",
+      "position": {
+        "x": 1780,
+        "y": -640
+      },
+      "width": 340,
+      "markdownSrc": "data/whoami.md",
+      "focusOptions": {
+        "durationMs": 600,
+        "minWorldBox": {
+          "width": 1055,
+          "height": 770
+        },
+        "anchorX": 0.2,
+        "anchorY": 0.5,
+        "responsiveWorldBox": [
+          {
+            "minViewportWidth": 480,
+            "minWorldBox": {
+              "width": 364,
+              "height": 715
+            },
+            "anchorX": 0.5,
+            "anchorY": 0.5
+          },
+          {
+            "minViewportWidth": 768,
+            "minWorldBox": {
+              "width": 1055,
+              "height": 604
+            },
+            "anchorX": 0.2,
+            "anchorY": 0.5
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "Back",
+          "direction": "input",
+          "kind": "exec"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "id": "socials",
+      "type": "info",
+      "title": "Find Me Online",
+      "position": {
+        "x": 2460,
+        "y": 140
+      },
+      "markdownSrc": "data/socials.md",
+      "focusOptions": {
+        "minWorldBox": {
+          "width": 300,
+          "height": 300
+        }
+      },
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "Back",
+          "direction": "input",
+          "kind": "exec"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "id": "node_stringtest",
+      "type": "pure",
+      "title": "String Node",
+      "position": {
+        "x": 2260,
+        "y": -280
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "val_out",
+          "name": "Value",
+          "direction": "output",
+          "kind": "string",
+          "defaultValue": "Hello"
+        }
+      ]
+    },
+    {
+      "id": "btn_run",
+      "type": "button",
+      "title": "Run",
+      "position": {
+        "x": 2180,
+        "y": -360
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "node_timer",
+      "type": "timer",
+      "title": "Timer",
+      "position": {
+        "x": 2180,
+        "y": -460
+      },
+      "inputs": [
+        {
+          "id": "interval",
+          "name": "Interval (s)",
+          "direction": "input",
+          "kind": "number",
+          "defaultValue": "1",
+          "min": 0.1,
+          "max": 10
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "node_print",
+      "type": "print",
+      "title": "Print String",
+      "position": {
+        "x": 2540,
+        "y": -460
+      },
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "",
+          "direction": "input",
+          "kind": "exec"
+        },
+        {
+          "id": "value",
+          "name": "Value",
+          "direction": "input",
+          "kind": "string",
+          "defaultValue": "Hello!"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "string_homeserver",
+      "type": "pure",
+      "title": "Homeserver",
+      "position": {
+        "x": 1520,
+        "y": 1020
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "val_out",
+          "name": "Value",
+          "direction": "output",
+          "kind": "string",
+          "defaultValue": "https://chat.ruv.wtf"
+        }
+      ]
+    },
+    {
+      "id": "string_room",
+      "type": "pure",
+      "title": "Room",
+      "position": {
+        "x": 1520,
+        "y": 1100
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "val_out",
+          "name": "Value",
+          "direction": "output",
+          "kind": "string",
+          "defaultValue": "#general:chat.ruv.wtf"
+        }
+      ]
+    },
+    {
+      "id": "chat_node",
+      "type": "chat",
+      "title": "Matrix Chat",
+      "position": {
+        "x": 1800,
+        "y": 920
+      },
+      "width": 400,
+      "focusOptions": {
+        "minWorldBox": {
+          "width": 1700,
+          "height": 750
+        },
+        "anchorX": 0.3,
+        "anchorY": 0.5,
+        "responsiveWorldBox": [
+          {
+            "minViewportWidth": 768,
+            "minWorldBox": {
+              "width": 800,
+              "height": 600
+            },
+            "anchorX": 0.65,
+            "anchorY": 0.58
+          },
+          {
+            "minViewportWidth": 480,
+            "minWorldBox": {
+              "width": 436,
+              "height": 630
+            },
+            "anchorX": 0.5,
+            "anchorY": 0.54
+          }
+        ]
+      },
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "Back",
+          "direction": "input",
+          "kind": "exec"
+        },
+        {
+          "id": "chat_object",
+          "name": "Chat Object",
+          "direction": "input",
+          "kind": "object"
+        },
+        {
+          "id": "homeserver",
+          "name": "Homeserver",
+          "direction": "input",
+          "kind": "string",
+          "defaultValue": "https://chat.ruv.wtf"
+        },
+        {
+          "id": "room",
+          "name": "Room",
+          "direction": "input",
+          "kind": "string",
+          "defaultValue": "#general:chat.ruv.wtf"
+        },
+        {
+          "id": "guestName",
+          "name": "Guest Name",
+          "direction": "input",
+          "kind": "string",
+          "defaultValue": ""
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "id": "random_name_generator",
+      "type": "random_name",
+      "title": "Random Name",
+      "position": {
+        "x": 1520,
+        "y": 1180
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "name",
+          "name": "Name",
+          "direction": "output",
+          "kind": "string"
+        }
+      ]
+    },
+    {
+      "id": "btn_connect_chat",
+      "type": "button",
+      "title": "Connect Chat",
+      "position": {
+        "x": 1960,
+        "y": 820
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "connect_chat_node",
+      "type": "chat_connect",
+      "title": "Connect Chat",
+      "position": {
+        "x": 2220,
+        "y": 880
+      },
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "",
+          "direction": "input",
+          "kind": "exec"
+        },
+        {
+          "id": "target",
+          "name": "Target",
+          "direction": "input",
+          "kind": "object"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "get_matrix_chat",
+      "type": "get_matrix_chat",
+      "title": "Get MatrixChat",
+      "position": {
+        "x": 1520,
+        "y": 940
+      },
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "value",
+          "name": "",
+          "direction": "output",
+          "kind": "object",
+          "defaultValue": {}
+        }
+      ]
+    },
+    {
+      "id": "bind_chat_message",
+      "type": "bind_event",
+      "title": "Bind: Chat On Message",
+      "position": {
+        "x": 2460,
+        "y": 880
+      },
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "",
+          "direction": "input",
+          "kind": "exec"
+        },
+        {
+          "id": "target",
+          "name": "Target",
+          "direction": "input",
+          "kind": "object"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "",
+          "direction": "output",
+          "kind": "exec"
+        },
+        {
+          "id": "event_out",
+          "name": "On Message",
+          "direction": "output",
+          "kind": "exec"
+        },
+        {
+          "id": "username",
+          "name": "Username",
+          "direction": "output",
+          "kind": "string",
+          "defaultValue": "446"
+        },
+        {
+          "id": "message",
+          "name": "Message",
+          "direction": "output",
+          "kind": "string",
+          "defaultValue": "quick"
+        }
+      ]
+    },
+    {
+      "id": "append_message",
+      "type": "append",
+      "title": "Append",
+      "position": {
+        "x": 2700,
+        "y": 960
+      },
+      "inputs": [
+        {
+          "id": "input1",
+          "name": "A",
+          "direction": "input",
+          "kind": "string",
+          "defaultValue": ""
+        },
+        {
+          "id": "input2",
+          "name": "B",
+          "direction": "input",
+          "kind": "string",
+          "defaultValue": ": "
+        },
+        {
+          "id": "input3",
+          "name": "C",
+          "direction": "input",
+          "kind": "string",
+          "defaultValue": ""
+        }
+      ],
+      "outputs": [
+        {
+          "id": "result",
+          "name": "Result",
+          "direction": "output",
+          "kind": "string"
+        }
+      ]
+    },
+    {
+      "id": "chat_message_print",
+      "type": "print",
+      "title": "Print Chat Message",
+      "position": {
+        "x": 2940,
+        "y": 900
+      },
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "",
+          "direction": "input",
+          "kind": "exec"
+        },
+        {
+          "id": "value",
+          "name": "Value",
+          "direction": "input",
+          "kind": "string",
+          "defaultValue": ""
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "f9df6643-9333-4aa1-8093-0a9b54a825ac",
+      "from": {
+        "nodeId": "node_custom_event",
+        "pinId": "exec_out"
+      },
+      "to": {
+        "nodeId": "node_sequence",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "10861820-5e2d-468a-82fe-838bf90ce274",
+      "from": {
+        "nodeId": "node_sequence",
+        "pinId": "then_0"
+      },
+      "to": {
+        "nodeId": "node_whoami",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "41accdc0-125d-4a2e-8695-db6e80230c19",
+      "from": {
+        "nodeId": "node_sequence",
+        "pinId": "then_1"
+      },
+      "to": {
+        "nodeId": "socials",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "chat-connection",
+      "from": {
+        "nodeId": "node_sequence",
+        "pinId": "then_2"
+      },
+      "to": {
+        "nodeId": "chat_node",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "homeserver-connection",
+      "from": {
+        "nodeId": "string_homeserver",
+        "pinId": "val_out"
+      },
+      "to": {
+        "nodeId": "chat_node",
+        "pinId": "homeserver"
+      },
+      "kind": "string"
+    },
+    {
+      "id": "room-connection",
+      "from": {
+        "nodeId": "string_room",
+        "pinId": "val_out"
+      },
+      "to": {
+        "nodeId": "chat_node",
+        "pinId": "room"
+      },
+      "kind": "string"
+    },
+    {
+      "id": "guest-name-connection",
+      "from": {
+        "nodeId": "random_name_generator",
+        "pinId": "name"
+      },
+      "to": {
+        "nodeId": "chat_node",
+        "pinId": "guestName"
+      },
+      "kind": "string"
+    },
+    {
+      "id": "matrix-chat-to-node",
+      "from": {
+        "nodeId": "get_matrix_chat",
+        "pinId": "value"
+      },
+      "to": {
+        "nodeId": "chat_node",
+        "pinId": "chat_object"
+      },
+      "kind": "object"
+    },
+    {
+      "id": "btn-to-connect",
+      "from": {
+        "nodeId": "btn_connect_chat",
+        "pinId": "exec_out"
+      },
+      "to": {
+        "nodeId": "connect_chat_node",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "bind-event-exec",
+      "from": {
+        "nodeId": "bind_chat_message",
+        "pinId": "event_out"
+      },
+      "to": {
+        "nodeId": "chat_message_print",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "bind-username-to-append",
+      "from": {
+        "nodeId": "bind_chat_message",
+        "pinId": "username"
+      },
+      "to": {
+        "nodeId": "append_message",
+        "pinId": "input1"
+      },
+      "kind": "string"
+    },
+    {
+      "id": "bind-message-to-append",
+      "from": {
+        "nodeId": "bind_chat_message",
+        "pinId": "message"
+      },
+      "to": {
+        "nodeId": "append_message",
+        "pinId": "input3"
+      },
+      "kind": "string"
+    },
+    {
+      "id": "bdff9556-2096-40ae-a9a9-342b3718ee76",
+      "from": {
+        "nodeId": "node_timer",
+        "pinId": "exec_out"
+      },
+      "to": {
+        "nodeId": "node_print",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "3ed1cdfc-82e9-49cb-8af5-091287828967",
+      "from": {
+        "nodeId": "btn_run",
+        "pinId": "exec_out"
+      },
+      "to": {
+        "nodeId": "node_print",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "8ad696ef-5177-4915-8982-951747c95174",
+      "from": {
+        "nodeId": "append_message",
+        "pinId": "result"
+      },
+      "to": {
+        "nodeId": "chat_message_print",
+        "pinId": "value"
+      },
+      "kind": "string"
+    },
+    {
+      "id": "0c641c03-2e9b-48b8-b6b8-ce9d8377debc",
+      "from": {
+        "nodeId": "node_stringtest",
+        "pinId": "val_out"
+      },
+      "to": {
+        "nodeId": "node_print",
+        "pinId": "value"
+      },
+      "kind": "string"
+    },
+    {
+      "id": "feac08f5-c62f-4a84-88d0-ee0f851a553a",
+      "from": {
+        "nodeId": "connect_chat_node",
+        "pinId": "exec_out"
+      },
+      "to": {
+        "nodeId": "bind_chat_message",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "93b5a6d0-9d14-4b61-9337-11d315f9d1a6",
+      "from": {
+        "nodeId": "get_matrix_chat",
+        "pinId": "value"
+      },
+      "to": {
+        "nodeId": "connect_chat_node",
+        "pinId": "target"
+      },
+      "kind": "object"
+    },
+    {
+      "id": "d8ce76ab-1cae-4e62-a5d9-208f07e33b02",
+      "from": {
+        "nodeId": "get_matrix_chat",
+        "pinId": "value"
+      },
+      "to": {
+        "nodeId": "bind_chat_message",
+        "pinId": "target"
+      },
+      "kind": "object"
+    }
+  ]
+}
