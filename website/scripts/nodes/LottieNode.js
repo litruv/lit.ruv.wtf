@@ -17,6 +17,16 @@ export class LottieNode extends NodeBase {
     static NodeType = "lottie";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [],
+            outputs: []
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintNativeEvent)
      * @param {HTMLElement} article
      * @param {import('../GraphNode.js').GraphNode} graphNode

@@ -47,4 +47,19 @@ export class NodeRegistry {
     static BlueprintPure_GetRegisteredTypes() {
         return [...this.#registry.keys()];
     }
+
+    /**
+     * Returns default pin configuration for a node type by delegating to the node class.
+     *
+     * @UFUNCTION(BlueprintPure)
+     * @param {string} nodeType
+     * @returns {{ inputs: Array<{id: string, name: string, direction: string, kind: string, defaultValue?: string}>, outputs: Array<{id: string, name: string, direction: string, kind: string}> }}
+     */
+    static BlueprintPure_GetDefaultPins(nodeType) {
+        const handler = this.BlueprintPure_Get(nodeType);
+        if (!handler) {
+            return { inputs: [], outputs: [] };
+        }
+        return handler.constructor.BlueprintPure_GetDefaultPins();
+    }
 }

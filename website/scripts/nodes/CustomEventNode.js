@@ -17,6 +17,18 @@ export class CustomEventNode extends NodeBase {
     static NodeType = "custom_event";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [],
+            outputs: [
+                { id: 'exec_out', name: '', direction: 'output', kind: 'exec' }
+            ]
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintNativeEvent)
      * @param {HTMLElement} article
      * @param {import('../GraphNode.js').GraphNode} graphNode

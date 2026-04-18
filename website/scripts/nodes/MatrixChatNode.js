@@ -18,6 +18,22 @@ export class MatrixChatNode extends NodeBase {
     static NodeType = "chat";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [
+                { id: 'exec_in', name: '', direction: 'input', kind: 'exec' },
+                { id: 'homeserver', name: 'Homeserver', direction: 'input', kind: 'string', defaultValue: 'https://matrix.org' },
+                { id: 'room_id', name: 'Room ID', direction: 'input', kind: 'string', defaultValue: '' }
+            ],
+            outputs: [
+                { id: 'exec_out', name: '', direction: 'output', kind: 'exec' }
+            ]
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintNativeEvent)
      * @param {HTMLElement} article
      * @param {import('../GraphNode.js').GraphNode} graphNode

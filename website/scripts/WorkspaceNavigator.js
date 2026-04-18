@@ -131,6 +131,17 @@ export class WorkspaceNavigator {
     get zoomLevel() { return this.#zoomLevel; }
 
     /**
+     * Checks if a pan operation occurred recently (within the threshold).
+     * Useful for suppressing context menus after right-click drag pans.
+     *
+     * @param {number} [thresholdMs=100] - Time window in milliseconds
+     * @returns {boolean}
+     */
+    didPanRecently(thresholdMs = 100) {
+        return (this.#timestamp() - this.#lastPanTimestamp) < thresholdMs;
+    }
+
+    /**
      * Returns the total effective offset (backgroundOffset + pendingLayerOffset).
      * Matches WorkspaceNavigationManager.getEffectiveOffset() in Picograph.
      *

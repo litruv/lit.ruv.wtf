@@ -16,6 +16,21 @@ export class BindEventNode extends NodeBase {
     static NodeType = "bind_event";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [
+                { id: 'exec_in', name: '', direction: 'input', kind: 'exec' },
+                { id: 'event_name', name: 'Event', direction: 'input', kind: 'string', defaultValue: 'click' }
+            ],
+            outputs: [
+                { id: 'exec_out', name: '', direction: 'output', kind: 'exec' }
+            ]
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintCallable)
      * @param {import('./NodeExecutionContext.js').NodeExecutionContext} ctx
      */

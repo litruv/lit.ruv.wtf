@@ -17,6 +17,18 @@ export class GetMatrixChatNode extends NodeBase {
     static NodeType = "get_matrix_chat";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [],
+            outputs: [
+                { id: 'chat', name: 'Chat', direction: 'output', kind: 'table' }
+            ]
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintNativeEvent)
      * @param {HTMLElement} article
      * @param {import('../GraphNode.js').GraphNode} graphNode

@@ -28,6 +28,17 @@ export class NodeBase {
     static NodeType = "";
 
     /**
+     * Returns default pin configuration for this node type.
+     * Override in subclasses to define node-specific pins.
+     *
+     * @UFUNCTION(BlueprintPure)
+     * @returns {{ inputs: Array<{id: string, name: string, direction: string, kind: string, defaultValue?: string, min?: number, max?: number}>, outputs: Array<{id: string, name: string, direction: string, kind: string}> }}
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return { inputs: [], outputs: [] };
+    }
+
+    /**
      * Called after the node's base DOM (header, pins) has been built.
      * Override to inject type-specific UI into the article element.
      *

@@ -15,6 +15,20 @@ export class TimerNode extends NodeBase {
     static NodeType = "timer";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [
+                { id: 'interval', name: 'Interval (s)', direction: 'input', kind: 'number', defaultValue: '1', min: 0.1, max: 10 }
+            ],
+            outputs: [
+                { id: 'exec_out', name: '', direction: 'output', kind: 'exec' }
+            ]
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintNativeEvent)
      * @param {HTMLElement} article
      * @param {import('../GraphNode.js').GraphNode} graphNode

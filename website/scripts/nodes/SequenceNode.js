@@ -15,6 +15,21 @@ export class SequenceNode extends NodeBase {
     static NodeType = "sequence";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [
+                { id: 'exec_in', name: '', direction: 'input', kind: 'exec' }
+            ],
+            outputs: [
+                { id: 'then_1', name: 'Then 1', direction: 'output', kind: 'exec' },
+                { id: 'then_2', name: 'Then 2', direction: 'output', kind: 'exec' }
+            ]
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintCallable)
      * @param {import('./NodeExecutionContext.js').NodeExecutionContext} ctx
      */

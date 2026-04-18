@@ -115,6 +115,51 @@ export class NodeRenderer {
     }
 
     /**
+     * Removes a node from the graph and DOM.
+     *
+     * @param {string} nodeId
+     */
+    removeNode(nodeId) {
+        const element = this.#nodeElements.get(nodeId);
+        if (element) {
+            element.remove();
+            this.#nodeElements.delete(nodeId);
+        }
+        
+        // Remove all connections touching this node
+        const connIds = [];
+        for (const [id, conn] of this.#connections) {
+            if (conn.from.nodeId === nodeId || conn.to.nodeId === nodeId) {
+                connIds.push(id);
+            }
+        }
+        
+        for (const id of connIds) {
+            this.#connections.delete(id);
+        }
+        
+        // Stop any active timers
+        const intervalHandle = this.#timerIntervals.get(nodeId);
+        if (intervalHandle !== undefined) {
+            clearInterval(intervalHandle);
+            this.#timerIntervals.delete(nodeId);
+        }
+        
+        // Clean up chat instances
+        const chatInstance = this.#chatInstances.get(nodeId);
+        if (chatInstance) {
+            this.#chatInstances.delete(nodeId);
+        }
+        
+        this.#nodes.delete(nodeId);
+        
+        // Notify connections need refresh
+        if (connIds.length > 0) {
+            this.#onConnectionRemoved?.();
+        }
+    }
+
+    /**
      * Adds a comment box to the graph and renders it into the DOM.
      *
      * @param {GraphComment} comment

@@ -15,6 +15,21 @@ export class PrintNode extends NodeBase {
     static NodeType = "print";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [
+                { id: 'exec_in', name: '', direction: 'input', kind: 'exec' },
+                { id: 'value', name: 'Value', direction: 'input', kind: 'string', defaultValue: 'Hello!' }
+            ],
+            outputs: [
+                { id: 'exec_out', name: '', direction: 'output', kind: 'exec' }
+            ]
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintCallable)
      * @param {import('./NodeExecutionContext.js').NodeExecutionContext} ctx
      */

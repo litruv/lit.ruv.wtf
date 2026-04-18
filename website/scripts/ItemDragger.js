@@ -681,6 +681,23 @@ export class ItemDragger {
     }
 
     /**
+     * Unregisters a node that's being deleted.
+     *
+     * @param {string} nodeId
+     */
+    unregisterNode(nodeId) {
+        this.#itemPositions.delete(nodeId);
+        this.#applyTransform.delete(nodeId);
+        this.#dragRotation.delete(nodeId);
+        this.#dragOrigin.delete(nodeId);
+        
+        // Clear active if it's the deleted node
+        if (this.#activeId === nodeId) {
+            this.clearSelection();
+        }
+    }
+
+    /**
      * Clear the current selection
      */
     clearSelection() {

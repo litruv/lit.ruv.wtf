@@ -25,6 +25,21 @@ export class RandomNameNode extends NodeBase {
     static #loadPromise = null;
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [
+                { id: 'exec_in', name: '', direction: 'input', kind: 'exec' }
+            ],
+            outputs: [
+                { id: 'exec_out', name: '', direction: 'output', kind: 'exec' },
+                { id: 'name', name: 'Name', direction: 'output', kind: 'string' }
+            ]
+        };
+    }
+
+    /**
      * Load name parts from JSON
      */
     static async #loadNameParts() {
@@ -57,6 +72,28 @@ export class RandomNameNode extends NodeBase {
         const first = this.#firstParts[Math.floor(Math.random() * this.#firstParts.length)];
         const second = this.#secondParts[Math.floor(Math.random() * this.#secondParts.length)];
         return `${first}${second}`;
+    }
+
+    /**
+     * @UFUNCTION(BlueprintCallable)
+     * @param {import('./NodeExecutionContext.js').NodeExecutionContext} ctx
+     */
+    async BlueprintCallable_Execute(ctx) {
+        const graphNode = ctx.BlueprintPure_GetNode();
+        if (!graphNode) return;
+        
+        // Generate new name
+        graphNode._generatedName = RandomNameNode.generateName();
+        
+        // Update DOM if rendered
+        const nodeEl = document.querySelector(`[data-node-id="${graphNode.id}"]`);
+        if (nodeEl) {
+            const nameDisplay = nodeEl.querySelector('.node-name-display');
+            if (nameDisplay) {
+                nameDisplay.textContent = graphNode._generatedName;
+            }
+        }
+        
     }
 
     /**

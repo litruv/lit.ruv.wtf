@@ -12,6 +12,8 @@ import { GraphExecutor } from "./GraphExecutor.js";
 import { PrintBubble } from "./PrintBubble.js";
 import { SpatialAudio } from "./SpatialAudio.js";
 import { getTypeColor } from "./getTypeColor.js";
+import { NodeContextMenu } from "./NodeContextMenu.js";
+import { NodeRegistry } from "./nodes/NodeRegistry.js";
 
 const canvas       = document.getElementById("workspaceCanvas");
 const worldLayer   = document.getElementById("worldLayer");
@@ -85,6 +87,43 @@ const dragger    = new ItemDragger(canvas, nav, nodeRend,
 nav.setDragInProgressChecker(() => dragger.isDragging);
 // Drop the active drag immediately when a pinch-to-zoom starts so the two gestures don't conflict
 nav.setOnPinchStart(() => dragger.cancelDrag());
+
+// Node context menu for adding nodes
+const nodeContextMenu = new NodeContextMenu(canvas, (type, worldX, worldY) => {
+    // Generate unique node ID
+    const existingIds = nodeRend.getNodes().map(n => n.id);
+    let counter = 1;
+    let newId = type;
+    while (existingIds.includes(newId)) {
+        counter++;
+        newId = `${type}_${counter}`;
+    }
+
+    // Get default pins from node definition
+    const pins = NodeRegistry.BlueprintPure_GetDefaultPins(type);
+
+    // Create and add new node
+    const newNode = new GraphNode({
+        id: newId,
+        type: type,
+        title: type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        position: { x: Math.round(worldX), y: Math.round(worldY) },
+        inputs: pins.inputs.map(p => ({ ...p })),
+        outputs: pins.outputs.map(p => ({ ...p })),
+        userSpawned: true
+    });
+
+    nodeRend.addNode(newNode);
+    dragger.registerNode(newId);
+    connRend.render();
+    
+    // Attach PrintBubble if it's a print node
+    if (type === "print") {
+        const el = nodeRend.getNodeElements().get(newId);
+        if (el) printBubbles.set(newId, new PrintBubble(el));
+    }
+});
+
 const debugPanel = new DebugPanel(debugPanelEl, 
     (enabled) => { dragger.enabled = enabled; pinConns.enabled = enabled; }, 
     () => {
@@ -497,6 +536,7 @@ let graphData = await response.json();
 
 // Load spatial audio
 await audio.load('pop', 'data/pop.mp3');
+await audio.load('denied', 'data/denied.mp3');
 
 graphData.comments?.forEach(c => nodeRend.addComment(new GraphComment(c)));
 graphData.nodes.forEach(n => nodeRend.addNode(new GraphNode(n)));
@@ -665,6 +705,68 @@ canvas.addEventListener("click", (e) => {
         dragger.clearSelection();
         propertiesPanel.loadNode(null);
     }
+});
+
+// Delete key to remove selected node
+document.addEventListener("keydown", (e) => {
+    // Skip if user is typing in an input
+    if (e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement ||
+        e.target.isContentEditable) {
+        return;
+    }
+    
+    if (e.key === "Delete" || e.key === "Backspace") {
+        const activeId = dragger.getActiveId();
+        if (activeId) {
+            const node = nodeRend.getNodes().find(n => n.id === activeId);
+            if (node?.userSpawned) {
+                e.preventDefault();
+                dragger.unregisterNode(activeId);
+                nodeRend.removeNode(activeId);
+                printBubbles.delete(activeId);
+                propertiesPanel.loadNode(null);
+                connRend.render();
+            } else if (node) {
+                // Node can't be deleted - shake it red and play denied sound
+                e.preventDefault();
+                const nodeEl = nodeRend.getNodeElements().get(activeId);
+                if (nodeEl) {
+                    nodeEl.classList.add('node-shake-red');
+                    nodeEl.addEventListener('animationend', () => {
+                        nodeEl.classList.remove('node-shake-red');
+                    }, { once: true });
+                }
+                
+                // Play denied sound at node position
+                const rect = nodeRend.getNodeWorldRect(activeId);
+                if (rect) {
+                    const centerX = rect.x + rect.width / 2;
+                    const centerY = rect.y + rect.height / 2;
+                    audio.play('denied', centerX, centerY, rect.width, rect.height);
+                }
+            }
+        }
+    }
+});
+
+// Right-click context menu for adding nodes
+canvas.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    
+    // Don't show menu if we just finished a pan drag
+    if (nav.didPanRecently(150)) {
+        return;
+    }
+    
+    // Convert client coords to world coords
+    const rect = canvas.getBoundingClientRect();
+    const zoom = Math.max(0.01, nav.zoomLevel || 1);
+    const offset = nav.getEffectiveOffset();
+    const worldX = (e.clientX - rect.left) / zoom - offset.x;
+    const worldY = (e.clientY - rect.top) / zoom - offset.y;
+    
+    nodeContextMenu.show(e.clientX, e.clientY, worldX, worldY);
 });
 
 // Initialize dragging as disabled

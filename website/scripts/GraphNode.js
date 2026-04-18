@@ -14,7 +14,7 @@
  */
 export class GraphNode {
     /**
-     * @param {{ id: string, type: string, title: string, position: {x:number,y:number}, width?: number, inputs: PinDescriptor[], outputs: PinDescriptor[], markdownSrc?: string, imageSrc?: string, lottieSrc?: string, focusOptions?: { paddingFraction?: number, durationMs?: number, minWorldBox?: { width: number, height: number }, responsiveWorldBox?: { minViewportWidth: number, minWorldBox: { width: number, height: number }, anchorX?: number, anchorY?: number } | Array<{ minViewportWidth: number, minWorldBox: { width: number, height: number }, anchorX?: number, anchorY?: number }>, anchorX?: number, anchorY?: number } }} init
+     * @param {{ id: string, type: string, title: string, position: {x:number,y:number}, width?: number, inputs: PinDescriptor[], outputs: PinDescriptor[], markdownSrc?: string, imageSrc?: string, lottieSrc?: string, userSpawned?: boolean, focusOptions?: { paddingFraction?: number, durationMs?: number, minWorldBox?: { width: number, height: number }, responsiveWorldBox?: { minViewportWidth: number, minWorldBox: { width: number, height: number }, anchorX?: number, anchorY?: number } | Array<{ minViewportWidth: number, minWorldBox: { width: number, height: number }, anchorX?: number, anchorY?: number }>, anchorX?: number, anchorY?: number } }} init
      */
     constructor(init) {
         this.id = init.id;
@@ -31,6 +31,8 @@ export class GraphNode {
         this.imageSrc = init.imageSrc;
         /** @type {string | undefined} */
         this.lottieSrc = init.lottieSrc;
+        /** @type {boolean | undefined} */
+        this.userSpawned = init.userSpawned;
         /** @type {{ paddingFraction?: number, durationMs?: number, minWorldBox?: { width: number, height: number }, anchorX?: number, anchorY?: number } | undefined} */
         this.focusOptions = init.focusOptions;
     }

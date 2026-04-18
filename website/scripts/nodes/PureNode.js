@@ -15,6 +15,18 @@ export class PureNode extends NodeBase {
     static NodeType = "pure";
 
     /**
+     * @UFUNCTION(BlueprintPure)
+     */
+    static BlueprintPure_GetDefaultPins() {
+        return {
+            inputs: [],
+            outputs: [
+                { id: 'val_out', name: 'Value', direction: 'output', kind: 'string', defaultValue: '' }
+            ]
+        };
+    }
+
+    /**
      * @UFUNCTION(BlueprintNativeEvent)
      * @param {HTMLElement} article
      * @param {import('../GraphNode.js').GraphNode} graphNode

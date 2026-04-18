@@ -2074,3 +2074,120 @@ svg.world-image {
     text-align: right;
 }
 
+/* ─── Node Context Menu ────────────────────────────────────────────────────── */
+
+.node-context-menu {
+    position: fixed;
+    display: none;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 220px;
+    max-width: 320px;
+    max-height: 400px;
+    padding: 0.5rem;
+    background: rgba(20, 20, 28, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+}
+
+.node-context-menu.is-visible {
+    display: flex;
+}
+
+.context-menu-search {
+    width: 100%;
+    padding: 0.5rem 0.7rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.context-menu-search:focus {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(100, 181, 246, 0.5);
+}
+
+.context-menu-search::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.context-menu-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.context-menu-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.context-menu-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.context-menu-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.context-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.context-menu-item:hover,
+.context-menu-item:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    outline: none;
+}
+
+.context-menu-item:active {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.context-menu-item.is-selected,
+.context-menu-item[aria-selected='true'] {
+    background: rgba(100, 181, 246, 0.15);
+    border-color: rgba(100, 181, 246, 0.4);
+    color: rgba(255, 255, 255, 1);
+    box-shadow: inset 3px 0 0 #64b5f6;
+}
+
+.context-menu-empty {
+    margin: 0;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    padding: 1rem 0;
+}
+
+@keyframes node-shake-red {
+    0%, 100% { margin-left: 0; filter: drop-shadow(0 0 0 rgba(255, 82, 82, 0)); }
+    10%, 30%, 50%, 70%, 90% { margin-left: -4px; filter: drop-shadow(0 0 8px rgba(255, 82, 82, 0.6)); }
+    20%, 40%, 60%, 80% { margin-left: 4px; filter: drop-shadow(0 0 8px rgba(255, 82, 82, 0.6)); }
+}
+
+.node-shake-red {
+    animation: node-shake-red 0.4s ease-in-out;
+}
