@@ -16,6 +16,7 @@ export { CustomEventNode }   from './CustomEventNode.js';
 export { ButtonNode }        from './ButtonNode.js';
 export { TimerNode }         from './TimerNode.js';
 export { InfoNode }          from './InfoNode.js';
+export { BlogPostNode }      from './BlogPostNode.js';
 export { PureNode }          from './PureNode.js';
 export { MatrixChatNode }    from './MatrixChatNode.js';
 export { GetMatrixChatNode } from './GetMatrixChatNode.js';

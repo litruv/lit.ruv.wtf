@@ -40,6 +40,12 @@ export class WorkspaceNavigator {
     /** @type {{ screenPoint: { x: number, y: number }, pointer: { clientX?: number, clientY?: number } } | null} */
     #smoothZoomFocus = null;
 
+    /** @type {number | null} */
+    #smoothPanRafId = null;
+
+    /** @type {{ x: number, y: number }} */
+    #targetPanOffset = { x: 0, y: 0 };
+
     /** @type {{ pointerId: number, startX: number, startY: number, currentClientX: number, currentClientY: number, hasMoved: boolean, backgroundOrigin: { x: number, y: number }, lastDelta: { x: number, y: number } } | null} */
     #panState = null;
 
@@ -436,6 +442,37 @@ export class WorkspaceNavigator {
 
         if (screenPoint.x < 0 || screenPoint.y < 0 || screenPoint.x > rect.width || screenPoint.y > rect.height) return;
 
+        // Check if scrolling over a code block with max-height - let it scroll
+        const codeBlock = e.target.closest('.md-pre');
+        if (codeBlock && codeBlock.scrollHeight > codeBlock.clientHeight) {
+            const scrollTop = codeBlock.scrollTop;
+            const scrollHeight = codeBlock.scrollHeight;
+            const clientHeight = codeBlock.clientHeight;
+            const tolerance = 1; // Add tolerance for precision issues
+            
+            const canScrollDown = scrollTop < (scrollHeight - clientHeight - tolerance);
+            const canScrollUp = scrollTop > tolerance;
+            
+            // Allow scrolling if there's room to scroll in that direction
+            if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
+                return; // Don't prevent default, let the element scroll
+            }
+            // If at the edge, fall through to camera pan
+        }
+
+        // Check if scrolling over an info or blog_post node - pan the camera vertically
+        const blueprintNode = e.target.closest('.blueprint-node');
+        if (blueprintNode) {
+            const nodeType = blueprintNode.dataset.nodeType;
+            if (nodeType === 'info' || nodeType === 'blog_post') {
+                e.preventDefault();
+                const panAmount = e.deltaY * 0.5;
+                this.#pushSmoothPan(panAmount);
+                return;
+            }
+        }
+
+        // Not over a scrollable node or code block, proceed with zoom
         e.preventDefault();
         const direction = e.deltaY < 0 ? 1 : -1;
         this.#pushSmoothZoom(screenPoint, direction, { clientX: e.clientX, clientY: e.clientY });
@@ -608,6 +645,12 @@ export class WorkspaceNavigator {
         // Do not start a pan while a node drag is actively in progress
         if (this.#isDragInProgress?.()) return;
 
+        // Cancel any in-progress smooth pan
+        if (this.#smoothPanRafId !== null) {
+            cancelAnimationFrame(this.#smoothPanRafId);
+            this.#smoothPanRafId = null;
+        }
+
         const state = {
             pointerId: event.pointerId,
             startX: event.clientX,
@@ -752,6 +795,54 @@ export class WorkspaceNavigator {
         }
     }
 
+    // ─── Smooth Pan ───────────────────────────────────────────────────────────
+
+    /**
+     * @param {number} deltaY
+     */
+    #pushSmoothPan(deltaY) {
+        // Cancel any in-progress zoom or focus animation
+        if (this.#smoothZoomRafId !== null) {
+            cancelAnimationFrame(this.#smoothZoomRafId);
+            this.#smoothZoomRafId = null;
+            this.#smoothZoomFocus = null;
+        }
+        if (this.#focusAnimRafId !== null) {
+            cancelAnimationFrame(this.#focusAnimRafId);
+            this.#focusAnimRafId = null;
+            this.#focusAnimGen++;
+        }
+        
+        // Accumulate the pan delta
+        this.#targetPanOffset.y -= deltaY / this.#zoomLevel;
+        
+        // Start animation loop if not already running
+        if (this.#smoothPanRafId === null) {
+            this.#smoothPanRafId = requestAnimationFrame(() => this.#tickSmoothPan());
+        }
+    }
+
+    #tickSmoothPan() {
+        this.#smoothPanRafId = null;
+        
+        const targetY = this.#targetPanOffset.y;
+        const currentY = this.#backgroundOffset.y;
+        const diffY = targetY - currentY;
+        const settled = Math.abs(diffY) < 0.01;
+        
+        if (settled) {
+            // Snap to target and stop
+            this.#backgroundOffset.y = targetY;
+            this.#targetPanOffset.y = targetY;
+            this.#applyBackgroundOffset();
+        } else {
+            // Ease toward target
+            this.#backgroundOffset.y += diffY * 0.25;
+            this.#applyBackgroundOffset();
+            this.#smoothPanRafId = requestAnimationFrame(() => this.#tickSmoothPan());
+        }
+    }
+
     // ─── Transform helpers ────────────────────────────────────────────────────
 
     /** @param {{ x: number, y: number }} offset */
@@ -760,6 +851,8 @@ export class WorkspaceNavigator {
             x: Number.isFinite(offset.x) ? offset.x : 0,
             y: Number.isFinite(offset.y) ? offset.y : 0,
         };
+        // Keep target pan offset in sync
+        this.#targetPanOffset = { ...this.#backgroundOffset };
         this.#applyBackgroundOffset();
     }
 

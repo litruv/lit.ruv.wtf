@@ -1332,6 +1332,26 @@ svg.world-image {
     line-height: 1.6;
     user-select: text;
     cursor: text;
+    overflow-y: visible;
+    overflow-x: hidden;
+}
+
+.node-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.node-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.node-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.node-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .node-body .md-h1,
@@ -1385,10 +1405,95 @@ svg.world-image {
     border-radius: 5px;
     padding: 0.5em 0.7em;
     overflow-x: auto;
+    overflow-y: auto;
     margin: 0.4em 0;
     font-family: "Cascadia Code", "Fira Code", ui-monospace, monospace;
     font-size: 0.76em;
     color: #a8daff;
+    scroll-behavior: smooth;
+}
+
+.node-body .md-pre::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.node-body .md-pre::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+}
+
+.node-body .md-pre::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.node-body .md-pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.node-body .md-pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+/* Prism syntax highlighting overrides */
+.node-body .md-pre .token.comment,
+.node-body .md-pre .token.prolog,
+.node-body .md-pre .token.doctype,
+.node-body .md-pre .token.cdata {
+    color: #6a9955;
+}
+
+.node-body .md-pre .token.punctuation {
+    color: #d4d4d4;
+}
+
+.node-body .md-pre .token.property,
+.node-body .md-pre .token.tag,
+.node-body .md-pre .token.boolean,
+.node-body .md-pre .token.number,
+.node-body .md-pre .token.constant,
+.node-body .md-pre .token.symbol,
+.node-body .md-pre .token.deleted {
+    color: #b5cea8;
+}
+
+.node-body .md-pre .token.selector,
+.node-body .md-pre .token.attr-name,
+.node-body .md-pre .token.string,
+.node-body .md-pre .token.char,
+.node-body .md-pre .token.builtin,
+.node-body .md-pre .token.inserted {
+    color: #ce9178;
+}
+
+.node-body .md-pre .token.operator,
+.node-body .md-pre .token.entity,
+.node-body .md-pre .token.url,
+.node-body .md-pre .language-css .token.string,
+.node-body .md-pre .style .token.string {
+    color: #d4d4d4;
+}
+
+.node-body .md-pre .token.atrule,
+.node-body .md-pre .token.attr-value,
+.node-body .md-pre .token.keyword {
+    color: #569cd6;
+}
+
+.node-body .md-pre .token.function,
+.node-body .md-pre .token.class-name {
+    color: #dcdcaa;
+}
+
+.node-body .md-pre .token.regex,
+.node-body .md-pre .token.important,
+.node-body .md-pre .token.variable {
+    color: #9cdcfe;
 }
 
 .node-body .md-hr {

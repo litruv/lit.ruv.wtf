@@ -1,0 +1,38 @@
+[
+  {
+    "slug": "markdown-test",
+    "title": "Markdown Formatting Test",
+    "date": "2026-04-20",
+    "author": "Test Author",
+    "tags": [
+      "test",
+      "formatting",
+      "markdown"
+    ],
+    "content": "\r\n# Heading 1\r\n\r\n## Heading 2\r\n\r\n### Heading 3\r\n\r\n#### Heading 4\r\n\r\n##### Heading 5\r\n\r\n###### Heading 6\r\n\r\n## Text Formatting\r\n\r\nThis is **bold text** and this is *italic text* and this is ***bold italic text***.\r\n\r\nHere's some `inline code` in a sentence.\r\n\r\n## Links\r\n\r\nHere's a [regular link](https://example.com) and here's a [YouTube link](https://youtube.com/watch?v=test).\r\n\r\n## Lists\r\n\r\nUnordered list:\r\n- First item\r\n- Second item\r\n- Third item\r\n\r\nOrdered list:\r\n1. First step\r\n2. Second step\r\n3. Third step\r\n\r\n## Code Blocks\r\n\r\nStandard JavaScript:\r\n```javascript\r\nconst hello = \"world\";\r\nconsole.log(hello);\r\n\r\nfunction test() {\r\n    return true;\r\n}\r\n```\r\n\r\nPython with syntax highlighting:\r\n```python\r\ndef hello_world():\r\n    print(\"Hello, World!\")\r\n    return True\r\n```\r\n\r\nCode with max height (200px):\r\n```javascript {maxHeight: 200}\r\n// This is a long code block that will scroll\r\nconst data = [1, 2, 3, 4, 5];\r\n\r\nfunction processData(arr) {\r\n    return arr.map(x => x * 2);\r\n}\r\n\r\nconsole.log(processData(data));\r\n\r\n// Adding more lines to demonstrate scrolling\r\nfor (let i = 0; i < 10; i++) {\r\n    console.log(`Iteration ${i}`);\r\n}\r\n\r\n// Even more content\r\nconst obj = {\r\n    name: \"Test\",\r\n    value: 42,\r\n    nested: {\r\n        deep: true\r\n    }\r\n};\r\n```\r\n\r\n## Blockquotes\r\n\r\n> This is a blockquote.\r\n> It can span multiple lines.\r\n> And continues here.\r\n\r\n## Horizontal Rule\r\n\r\n---\r\n\r\n## Images\r\n\r\n![Test Image](data/blog/media/test.png)\r\n\r\n## Mixed Content\r\n\r\nYou can mix **bold**, *italic*, and `code` in the same paragraph. Here's a [link with **bold** text](https://example.com) too.\r\n\r\n### Nested Lists\r\n\r\n- Top level item\r\n- Another top level\r\n  - Nested item (if supported)\r\n  - Another nested\r\n\r\n1. Numbered item\r\n2. Another numbered\r\n   - Mixed with bullets\r\n   - More bullets\r\n\r\n## Special Characters\r\n\r\nTesting special chars: < > & \" ' \r\n\r\n## Long Paragraph\r\n\r\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n\r\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\r\n"
+  },
+  {
+    "slug": "welcome",
+    "title": "Welcome to My Blog",
+    "date": "2026-04-19",
+    "author": "Max Litruv Boonzaayer",
+    "tags": [
+      "welcome",
+      "meta",
+      "introduction"
+    ],
+    "content": "\r\n# Welcome to My Blog\r\n\r\nThis is my first blog post! I'm excited to share my thoughts and experiences with you.\r\n\r\n## What This Blog Is About\r\n\r\nThis blog is built using a **custom node-based graph system** where each blog post is represented as a node in an interactive visual graph. Pretty cool, right?\r\n\r\n### Features\r\n\r\n- 📝 Markdown support with YAML front matter\r\n- 📅 Date-based organization\r\n- 🏷️ Tag system for categorization\r\n- 🎨 Interactive node-based visualization\r\n- 📁 Media support in `data/blog/media/`\r\n\r\n## Technical Details\r\n\r\nThe build system automatically:\r\n1. Scans the `data/blog/` directory for `.md` files\r\n2. Parses YAML front matter for metadata\r\n3. Generates a `blogs.json` file\r\n4. Makes posts available to the BlogPostNode\r\n\r\nYou can reference images like this:\r\n![Example](data/blog/media/example.png)\r\n\r\n## Code Examples\r\n\r\nHere's some example code:\r\n\r\n```javascript\r\nconst greeting = \"Hello, World!\";\r\nconsole.log(greeting);\r\n```\r\n\r\n## Conclusion\r\n\r\nStay tuned for more posts! This is just the beginning of an exciting journey.\r\n"
+  },
+  {
+    "slug": "node-graphs",
+    "title": "Building Interactive Node Graphs",
+    "date": "2026-04-15",
+    "author": "Max Litruv Boonzaayer",
+    "tags": [
+      "javascript",
+      "graph-systems",
+      "tutorial"
+    ],
+    "content": "\r\n# Building Interactive Node Graphs\r\n\r\nIn this post, I'll share some insights on building interactive node-based graph systems for the web.\r\n\r\n## Why Node Graphs?\r\n\r\nNode graphs are powerful visual programming tools that make complex logic easier to understand and manipulate:\r\n\r\n- **Visual Clarity**: See the flow of data and execution at a glance\r\n- **Modularity**: Each node is a self-contained unit\r\n- **Flexibility**: Easy to add new node types and behaviors\r\n\r\n## The Architecture\r\n\r\nThe system is built on several key classes:\r\n\r\n### NodeBase\r\nThe abstract base class that all nodes inherit from. It defines the blueprint interface:\r\n\r\n```javascript\r\nclass NodeBase {\r\n    static NodeType = \"\";\r\n    static BlueprintPure_GetDefaultPins() { }\r\n    BlueprintNativeEvent_OnRender(article, graphNode, renderCtx) { }\r\n    async BlueprintCallable_Execute(ctx) { }\r\n}\r\n```\r\n\r\n### Node Registry\r\nAutomatically registers node types and creates instances based on type strings.\r\n\r\n### Execution Context\r\nHandles the graph traversal and execution flow when nodes are triggered.\r\n\r\n## Creating Custom Nodes\r\n\r\nTo create a new node type:\r\n\r\n1. Extend `NodeBase`\r\n2. Set a unique `NodeType`\r\n3. Define pins with `BlueprintPure_GetDefaultPins()`\r\n4. Implement rendering in `BlueprintNativeEvent_OnRender()`\r\n5. Implement logic in `BlueprintCallable_Execute()`\r\n\r\nThat's the blueprint system in a nutshell!\r\n"
+  }
+]

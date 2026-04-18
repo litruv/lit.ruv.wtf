@@ -94,8 +94,8 @@
       "type": "sequence",
       "title": "Sequence",
       "position": {
-        "x": 1180,
-        "y": 120
+        "x": 1080,
+        "y": 20
       },
       "focusOptions": {
         "minWorldBox": {
@@ -137,8 +137,8 @@
       "type": "info",
       "title": "Who Am I",
       "position": {
-        "x": 1780,
-        "y": -640
+        "x": 1600,
+        "y": -860
       },
       "width": 340,
       "markdownSrc": "data/whoami.md",
@@ -186,8 +186,8 @@
       "type": "info",
       "title": "Find Me Online",
       "position": {
-        "x": 2460,
-        "y": 140
+        "x": 2420,
+        "y": -280
       },
       "markdownSrc": "data/socials.md",
       "focusOptions": {
@@ -211,8 +211,8 @@
       "type": "pure",
       "title": "String Node",
       "position": {
-        "x": 2260,
-        "y": -280
+        "x": 2180,
+        "y": -500
       },
       "inputs": [],
       "outputs": [
@@ -230,8 +230,8 @@
       "type": "button",
       "title": "Run",
       "position": {
-        "x": 2180,
-        "y": -360
+        "x": 2100,
+        "y": -600
       },
       "inputs": [],
       "outputs": [
@@ -248,8 +248,8 @@
       "type": "timer",
       "title": "Timer",
       "position": {
-        "x": 2180,
-        "y": -460
+        "x": 2100,
+        "y": -700
       },
       "inputs": [
         {
@@ -276,8 +276,8 @@
       "type": "print",
       "title": "Print String",
       "position": {
-        "x": 2540,
-        "y": -460
+        "x": 2380,
+        "y": -680
       },
       "inputs": [
         {
@@ -308,8 +308,8 @@
       "type": "pure",
       "title": "Homeserver",
       "position": {
-        "x": 1520,
-        "y": 1020
+        "x": 1480,
+        "y": 340
       },
       "inputs": [],
       "outputs": [
@@ -327,8 +327,8 @@
       "type": "pure",
       "title": "Room",
       "position": {
-        "x": 1520,
-        "y": 1100
+        "x": 1480,
+        "y": 420
       },
       "inputs": [],
       "outputs": [
@@ -346,8 +346,8 @@
       "type": "chat",
       "title": "Matrix Chat",
       "position": {
-        "x": 1800,
-        "y": 920
+        "x": 1740,
+        "y": 220
       },
       "width": 400,
       "focusOptions": {
@@ -420,8 +420,8 @@
       "type": "random_name",
       "title": "Random Name",
       "position": {
-        "x": 1520,
-        "y": 1180
+        "x": 1480,
+        "y": 500
       },
       "inputs": [],
       "outputs": [
@@ -438,8 +438,8 @@
       "type": "button",
       "title": "Connect Chat",
       "position": {
-        "x": 1960,
-        "y": 820
+        "x": 1920,
+        "y": 120
       },
       "inputs": [],
       "outputs": [
@@ -456,8 +456,8 @@
       "type": "chat_connect",
       "title": "Connect Chat",
       "position": {
-        "x": 2220,
-        "y": 880
+        "x": 2260,
+        "y": 220
       },
       "inputs": [
         {
@@ -487,8 +487,8 @@
       "type": "get_matrix_chat",
       "title": "Get MatrixChat",
       "position": {
-        "x": 1520,
-        "y": 940
+        "x": 1500,
+        "y": 240
       },
       "inputs": [],
       "outputs": [
@@ -506,8 +506,8 @@
       "type": "bind_event",
       "title": "Bind: Chat On Message",
       "position": {
-        "x": 2460,
-        "y": 880
+        "x": 2540,
+        "y": 220
       },
       "inputs": [
         {
@@ -557,8 +557,8 @@
       "type": "append",
       "title": "Append",
       "position": {
-        "x": 2700,
-        "y": 960
+        "x": 2780,
+        "y": 280
       },
       "inputs": [
         {
@@ -597,8 +597,8 @@
       "type": "print",
       "title": "Print Chat Message",
       "position": {
-        "x": 2940,
-        "y": 900
+        "x": 3040,
+        "y": 220
       },
       "inputs": [
         {
@@ -623,6 +623,73 @@
           "kind": "exec"
         }
       ]
+    },
+    {
+      "id": "blog_markdown-test",
+      "type": "blog_post",
+      "title": "Markdown Formatting Test",
+      "blogSlug": "markdown-test",
+      "position": {
+        "x": 1500,
+        "y": 900
+      },
+      "width": 600,
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "Next",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "blog_welcome",
+      "type": "blog_post",
+      "title": "Welcome to My Blog",
+      "blogSlug": "welcome",
+      "position": {
+        "x": 2200,
+        "y": 900
+      },
+      "width": 600,
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "Previous",
+          "direction": "input",
+          "kind": "exec"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "Next",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
+      "id": "blog_node-graphs",
+      "type": "blog_post",
+      "title": "Building Interactive Node Graphs",
+      "blogSlug": "node-graphs",
+      "position": {
+        "x": 2900,
+        "y": 900
+      },
+      "width": 600,
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "Previous",
+          "direction": "input",
+          "kind": "exec"
+        }
+      ],
+      "outputs": []
     }
   ],
   "connections": [
@@ -853,6 +920,30 @@
         "pinId": "target"
       },
       "kind": "object"
+    },
+    {
+      "id": "blog_connection_0",
+      "from": {
+        "nodeId": "blog_markdown-test",
+        "pinId": "exec_out"
+      },
+      "to": {
+        "nodeId": "blog_welcome",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "blog_connection_1",
+      "from": {
+        "nodeId": "blog_welcome",
+        "pinId": "exec_out"
+      },
+      "to": {
+        "nodeId": "blog_node-graphs",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
     }
   ]
 }

@@ -37,9 +37,22 @@ export class MarkdownRenderer {
             .replace(/\r\n/g, "\n")
             .replace(/\r/g, "\n");
 
+        // Extract and protect code blocks first (prevents splitting on blank lines inside code)
+        const codeBlocks = [];
+        html = html.replace(/```[\s\S]*?```/g, (match) => {
+            const placeholder = `\n___CODEBLOCK_${codeBlocks.length}___\n`;
+            codeBlocks.push(match);
+            return placeholder;
+        });
+
         // Split into blocks separated by blank lines
         const blocks = html.split(/\n{2,}/);
-        const parts  = blocks.map(block => MarkdownRenderer.#renderBlock(block.trim()));
+        const parts = blocks.map(block => {
+            block = block.trim();
+            // Restore code blocks
+            block = block.replace(/___CODEBLOCK_(\d+)___/g, (_, idx) => codeBlocks[parseInt(idx)]);
+            return MarkdownRenderer.#renderBlock(block);
+        });
         return parts.filter(Boolean).join("\n");
     }
 
@@ -53,11 +66,32 @@ export class MarkdownRenderer {
         if (!block) return "";
 
         // Fenced code block
-        const fenceMatch = block.match(/^```(\w*)\n([\s\S]*?)```$/);
+        const fenceMatch = block.match(/^```(\w*)(?:\s*\{([^}]+)\})?\s*\n([\s\S]*?)\n?```$/);
         if (fenceMatch) {
-            const lang = MarkdownRenderer.#escape(fenceMatch[1] || "");
-            const code = MarkdownRenderer.#escape(fenceMatch[2]);
-            return `<pre class="md-pre"><code${lang ? ` class="lang-${lang}"` : ""}>${code}</code></pre>`;
+            const lang = fenceMatch[1] || "";
+            const options = fenceMatch[2] || "";
+            const code = fenceMatch[3];
+            
+            // Parse options (e.g., {maxHeight: 300})
+            let maxHeight = null;
+            if (options) {
+                const maxHeightMatch = options.match(/maxHeight\s*:\s*(\d+)/);
+                if (maxHeightMatch) {
+                    maxHeight = maxHeightMatch[1];
+                }
+            }
+            
+            // Use Prism for syntax highlighting if available and language is specified
+            let highlightedCode = code;
+            if (lang && typeof Prism !== 'undefined' && Prism.languages[lang]) {
+                highlightedCode = Prism.highlight(code, Prism.languages[lang], lang);
+            } else {
+                highlightedCode = MarkdownRenderer.#escape(code);
+            }
+            
+            const langClass = lang ? ` language-${lang}` : "";
+            const styleAttr = maxHeight ? ` style="max-height: ${maxHeight}px; overflow-y: auto;"` : "";
+            return `<pre class="md-pre"${styleAttr}><code class="${langClass}">${highlightedCode}</code></pre>`;
         }
 
         // Horizontal rule
@@ -66,7 +100,7 @@ export class MarkdownRenderer {
         }
 
         // Headings
-        const headingMatch = block.match(/^(#{1,3})\s+(.+)$/m);
+        const headingMatch = block.match(/^(#{1,6})\s+(.+)$/m);
         if (headingMatch && block.split("\n").length === 1) {
             const level = headingMatch[1].length;
             return `<h${level} class="md-h${level}">${MarkdownRenderer.#renderInline(headingMatch[2])}</h${level}>`;
