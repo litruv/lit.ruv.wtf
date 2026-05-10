@@ -102,7 +102,7 @@ const obj = {
 
 ## Images
 
-![0.50](data/blog/media/test.gif "Caption Test")
+![1.00](data/blog/media/test.gif "Caption Test")
 
 ![0.26](data/blog/media/paste-1778404389024-jnpo3.jpeg)
 

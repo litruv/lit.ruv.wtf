@@ -402,7 +402,7 @@ export class MarkdownRenderer {
     static #sanitizeUrl(url) {
         const trimmed = url.trim();
         // Allow absolute URLs, root-relative, hash links, relative-dot paths, and plain relative paths
-        if (/^(https?:\/\/|mailto:|\/|#|\.)/.test(trimmed)) return trimmed;
+        if (/^(https?:\/\/|mailto:|blob:|\/|#|\.)/.test(trimmed)) return trimmed;
         // Allow relative paths (e.g. data/blog/media/image.png) — no protocol = safe relative
         if (/^[a-zA-Z0-9_\-][a-zA-Z0-9_.\-\/]*$/.test(trimmed)) return trimmed;
         return null;
