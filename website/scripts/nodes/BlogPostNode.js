@@ -55,9 +55,12 @@ export class BlogPostNode extends NodeBase {
                 metaDiv.style.cssText = "margin-bottom: 1em; padding-bottom: 0.5em; border-bottom: 1px solid rgba(255,255,255,0.1);";
                 
                 if (post.title) {
-                    const titleEl = document.createElement("h2");
+                    const titleEl = document.createElement("a");
+                    titleEl.href = `/blog/${encodeURIComponent(post.slug)}/`;
                     titleEl.textContent = post.title;
-                    titleEl.style.cssText = "margin: 0 0 0.5em 0; font-size: 1.5em;";
+                    titleEl.style.cssText = "display:block; margin: 0 0 0.5em 0; font-size: 1.5em; color: inherit; text-decoration: none;";
+                    titleEl.addEventListener('mouseenter', () => titleEl.style.textDecoration = 'underline');
+                    titleEl.addEventListener('mouseleave', () => titleEl.style.textDecoration = 'none');
                     metaDiv.appendChild(titleEl);
                 }
                 
@@ -71,9 +74,12 @@ export class BlogPostNode extends NodeBase {
                 }
                 
                 if (metaInfo.length > 0) {
-                    const infoEl = document.createElement("div");
-                    infoEl.style.cssText = "color: rgba(255,255,255,0.6); font-size: 0.9em;";
+                    const infoEl = document.createElement("a");
+                    infoEl.href = `/blog/${encodeURIComponent(post.slug)}/`;
+                    infoEl.style.cssText = "display:block; color: rgba(255,255,255,0.6); font-size: 0.9em; text-decoration: none;";
                     infoEl.textContent = metaInfo.join(' • ');
+                    infoEl.addEventListener('mouseenter', () => infoEl.style.textDecoration = 'underline');
+                    infoEl.addEventListener('mouseleave', () => infoEl.style.textDecoration = 'none');
                     metaDiv.appendChild(infoEl);
                 }
                 

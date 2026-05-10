@@ -96,6 +96,7 @@ async function processBlogPosts(buildDir) {
 
         await staticBlogGenerator.generate(posts);
         console.log('✓ Generated static blog pages');
+        await generateRssFeed(posts, buildDir);
     } catch (err) {
         if (err.code === 'ENOENT') {
             console.log('⚠ No blog directory found, skipping blog processing');
@@ -360,6 +361,80 @@ async function updateHtmlForBundle() {
         console.error('✗ Failed to update HTML:', error);
         throw error;
     }
+}
+
+/**
+ * Generates an RSS 2.0 feed from blog posts and writes it to build/rss.xml.
+ *
+ * @param {Array<{slug: string, title: string, date: string|null, author: string|null, content: string}>} posts
+ * @param {string} buildDir
+ * @returns {Promise<void>}
+ */
+async function generateRssFeed(posts, buildDir) {
+    const siteUrl = 'https://lit.ruv.wtf';
+    const feedUrl = `${siteUrl}/rss.xml`;
+
+    /**
+     * @param {string} str
+     * @returns {string}
+     */
+    function xmlEscape(str) {
+        return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    }
+
+    /**
+     * Strips markdown syntax to produce plain-text for descriptions.
+     *
+     * @param {string} md
+     * @returns {string}
+     */
+    function mdToPlain(md) {
+        return (md || '')
+            .replace(/```[\s\S]*?```/g, '')
+            .replace(/`[^`]+`/g, '')
+            .replace(/!\[.*?\]\(.*?\)/g, '')
+            .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
+            .replace(/^#{1,6}\s+/gm, '')
+            .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+            .replace(/^[-*_]{3,}$/gm, '')
+            .replace(/\n{2,}/g, ' ')
+            .replace(/\n/g, ' ')
+            .trim()
+            .slice(0, 400);
+    }
+
+    const items = posts.map(post => {
+        const url = `${siteUrl}/blog/${encodeURIComponent(post.slug)}/`;
+        const pubDate = post.date ? new Date(post.date).toUTCString() : '';
+        const description = xmlEscape(mdToPlain(post.content));
+        return [
+            '    <item>',
+            `      <title>${xmlEscape(post.title || post.slug)}</title>`,
+            `      <link>${url}</link>`,
+            `      <guid isPermaLink="true">${url}</guid>`,
+            pubDate ? `      <pubDate>${pubDate}</pubDate>` : '',
+            post.author ? `      <author>${xmlEscape(post.author)}</author>` : '',
+            `      <description>${description}</description>`,
+            '    </item>',
+        ].filter(Boolean).join('\n');
+    });
+
+    const xml = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+        '  <channel>',
+        '    <title>lit.ruv.wtf</title>',
+        `    <link>${siteUrl}</link>`,
+        '    <description>Blog posts from lit.ruv.wtf</description>',
+        '    <language>en-us</language>',
+        `    <atom:link href="${feedUrl}" rel="self" type="application/rss+xml" />`,
+        ...items,
+        '  </channel>',
+        '</rss>',
+    ].join('\n');
+
+    await fs.writeFile(path.join(buildDir, 'rss.xml'), xml, 'utf-8');
+    console.log('✓ Generated RSS feed');
 }
 
 // Run the build

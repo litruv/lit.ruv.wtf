@@ -586,6 +586,20 @@ svg.world-image {
     color: rgba(205, 214, 244, 0.9);
 }
 
+.rss-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #f09040;
+    opacity: 0.7;
+    margin-left: auto;
+}
+
+.rss-link:hover {
+    color: #f09040;
+    opacity: 1;
+}
+
 /* ─── Static Blog Pages ─────────────────────────────────────────────────────── */
 
 body.blog-page {
