@@ -65,8 +65,48 @@ function renderStaticBlogPost() {
     wireCopyButtons(target);
 }
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", renderStaticBlogPost, { once: true });
-} else {
+/**
+ * Toggles the compact top bar when the hero logo scrolls out of view.
+ *
+ * @returns {void}
+ */
+function setupScrollTopBar() {
+    const body = document.body;
+    const bar = document.querySelector("[data-blog-scroll-topbar]");
+    const heroLogo = document.querySelector(".blog-logo-link");
+
+    if (!bar) return;
+
+    if (heroLogo && "IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                body.classList.toggle("blog-scrolled", !entry.isIntersecting);
+            },
+            { threshold: 0 }
+        );
+        observer.observe(heroLogo);
+    } else {
+        // Fallback: fixed pixel threshold
+        const applyState = () => {
+            body.classList.toggle("blog-scrolled", window.scrollY >= 80);
+        };
+        window.addEventListener("scroll", applyState, { passive: true });
+        applyState();
+    }
+}
+
+/**
+ * Bootstraps static blog page behaviors.
+ *
+ * @returns {void}
+ */
+function initializeBlogPage() {
     renderStaticBlogPost();
+    setupScrollTopBar();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeBlogPage, { once: true });
+} else {
+    initializeBlogPage();
 }

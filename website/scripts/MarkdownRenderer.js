@@ -45,8 +45,8 @@ export class MarkdownRenderer {
             return placeholder;
         });
 
-        // Split into blocks separated by blank lines
-        const blocks = html.split(/\n{2,}/);
+        // Split into blocks, preserving loose-list continuity across blank lines
+        const blocks = MarkdownRenderer.#splitBlocks(html);
         const parts = blocks.map(block => {
             block = block.trim();
             // Restore code blocks
@@ -318,6 +318,100 @@ export class MarkdownRenderer {
     static #renderLineBreakBlock(block) {
         const lineCount = block.split("\n").map(line => line.trim()).filter(Boolean).length;
         return Array.from({ length: lineCount }, () => "<br />").join("\n");
+    }
+
+    /**
+     * Splits markdown into renderable blocks while keeping loose/nested list items together.
+     *
+     * @param {string} markdown
+     * @returns {string[]}
+     */
+    static #splitBlocks(markdown) {
+        const lines = markdown.split("\n");
+        const blocks = [];
+        let index = 0;
+
+        while (index < lines.length) {
+            while (index < lines.length && lines[index].trim() === "") {
+                index++;
+            }
+
+            if (index >= lines.length) {
+                break;
+            }
+
+            const line = lines[index];
+            const trimmedLine = line.trim();
+
+            if (/^___CODEBLOCK_\d+___$/.test(trimmedLine)) {
+                blocks.push(trimmedLine);
+                index++;
+                continue;
+            }
+
+            if (MarkdownRenderer.#isListMarkerLine(line)) {
+                const listLines = [line];
+                index++;
+
+                while (index < lines.length) {
+                    const current = lines[index];
+
+                    if (current.trim() === "") {
+                        let lookAhead = index;
+                        while (lookAhead < lines.length && lines[lookAhead].trim() === "") {
+                            lookAhead++;
+                        }
+
+                        if (lookAhead >= lines.length) {
+                            index = lookAhead;
+                            break;
+                        }
+
+                        const next = lines[lookAhead];
+                        if (MarkdownRenderer.#isListMarkerLine(next) || /^\s+/.test(next)) {
+                            listLines.push(...lines.slice(index, lookAhead));
+                            index = lookAhead;
+                            continue;
+                        }
+
+                        break;
+                    }
+
+                    if (MarkdownRenderer.#isListMarkerLine(current) || /^\s+/.test(current)) {
+                        listLines.push(current);
+                        index++;
+                        continue;
+                    }
+
+                    break;
+                }
+
+                blocks.push(listLines.join("\n").trimEnd());
+                continue;
+            }
+
+            const paragraphLines = [line];
+            index++;
+
+            while (index < lines.length && lines[index].trim() !== "") {
+                paragraphLines.push(lines[index]);
+                index++;
+            }
+
+            blocks.push(paragraphLines.join("\n"));
+        }
+
+        return blocks;
+    }
+
+    /**
+     * Checks whether a line starts a markdown list item.
+     *
+     * @param {string} line
+     * @returns {boolean}
+     */
+    static #isListMarkerLine(line) {
+        return /^\s*(?:[-*+]\s+|\d+\.\s+)/.test(line);
     }
 
     // ─── Inline-level ─────────────────────────────────────────────────────────

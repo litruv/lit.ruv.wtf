@@ -133,6 +133,7 @@ class StaticBlogGenerator {
             '<head>',
             '  <meta charset="UTF-8">',
             '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+            '  <base href="/">',
             `  <title>${escapedTitle}</title>`,
             '  <meta name="description" content="Lit.ruv.wtf blog posts.">',
             `  <link rel="canonical" href="https://lit.ruv.wtf${canonicalPath}">`,
@@ -150,7 +151,10 @@ class StaticBlogGenerator {
             '  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>',
             '</head>',
             '<body class="blog-page">',
+            '<nav class="quick-links" aria-label="Primary">',
             this.renderHeaderLinks(),
+            '</nav>',
+            this.renderScrollTopBar(),
             bodyHtml,
             '  <script type="module" src="/scripts/blogPage.js"></script>',
             '</body>',
@@ -163,13 +167,27 @@ class StaticBlogGenerator {
      */
     renderHeaderLinks() {
         return [
-            '<nav class="quick-links" aria-label="Primary">',
             '  <a href="/blog.html" class="quick-link">blog</a>',
             '  <a href="/docs/" class="quick-link">docs</a>',
             '  <a href="https://github.com/litruv" target="_blank" rel="noopener" class="quick-link">github</a>',
             '  <a href="https://bsky.app/profile/lit.mates.dev" target="_blank" rel="noopener" class="quick-link">bluesky</a>',
-            '  <a href="/materials" class="quick-link">materials</a>',
-            '</nav>'
+            '  <a href="/materials" class="quick-link">materials</a>'
+        ].join('\n');
+    }
+
+    /**
+     * @returns {string}
+     */
+    renderScrollTopBar() {
+        return [
+            '<header class="blog-scroll-topbar" data-blog-scroll-topbar>',
+            '  <a class="blog-scroll-logo-link" href="/" aria-label="Back to main site">',
+            '    <img src="/logos/LogoFull.svg" alt="lit.ruv.wtf" class="blog-scroll-logo" />',
+            '  </a>',
+            '  <nav class="blog-scroll-links" aria-label="Scrolled navigation">',
+            this.renderHeaderLinks(),
+            '  </nav>',
+            '</header>'
         ].join('\n');
     }
 
