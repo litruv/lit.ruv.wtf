@@ -3,6 +3,7 @@ const path = require('path');
 const esbuild = require('esbuild');
 const { execSync } = require('child_process');
 const { StaticBlogGenerator } = require('./tools/StaticBlogGenerator');
+const { renderNavLinkItems } = require('./tools/navLinks');
 
 /**
  * Parse YAML front matter from markdown content
@@ -38,13 +39,14 @@ function parseMarkdownWithFrontmatter(content) {
 
 /**
  * Process blog markdown files and generate blogs.json, also update graph.json
+ * @param {string} buildDir - Path to the build output directory
  */
-async function processBlogPosts() {
+async function processBlogPosts(buildDir) {
     const blogDir = path.join(__dirname, 'website', 'data', 'blog');
-    const outputPath = path.join(__dirname, 'website', 'data', 'blogs.json');
-    const graphPath = path.join(__dirname, 'website', 'data', 'graph.json');
+    const outputPath = path.join(buildDir, 'data', 'blogs.json');
+    const graphPath = path.join(buildDir, 'data', 'graph.json');
     const staticBlogGenerator = new StaticBlogGenerator({
-        siteRootDir: path.join(__dirname, 'website')
+        siteRootDir: buildDir
     });
     
     try {
@@ -322,6 +324,11 @@ async function updateHtmlForBundle() {
         );
 
         html = html.replace(/src="\/scripts\/blogPage\.js"/g, 'src="/scripts/blogPage.bundle.js"');
+
+        html = html.replace(
+            /[ \t]*<!-- NAV_LINKS -->/g,
+            renderNavLinkItems('            ')
+        );
         
         await fs.writeFile(filePath, html);
     }
@@ -357,8 +364,9 @@ async function updateHtmlForBundle() {
 
 // Run the build
 async function build() {
-    await processBlogPosts();
+    const buildDir = path.join(__dirname, 'build');
     await copyWebsiteFiles();
+    await processBlogPosts(buildDir);
     await bundleJavaScript();
     await minifyCSS();
     await updateHtmlForBundle();

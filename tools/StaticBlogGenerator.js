@@ -2,6 +2,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const { renderNavLinkItems } = require('./navLinks');
 
 /**
  * Generates static blog pages and an index page from markdown post data.
@@ -32,10 +33,13 @@ class StaticBlogGenerator {
         const indexHtml = this.renderIndexPage(posts);
         await fs.writeFile(this.blogIndexPath, indexHtml, 'utf-8');
 
-        for (const post of posts) {
+        for (let i = 0; i < posts.length; i++) {
+            const post = posts[i];
+            const prev = posts[i + 1] || null;
+            const next = posts[i - 1] || null;
             const postDir = path.join(this.blogRootDir, post.slug);
             await fs.mkdir(postDir, { recursive: true });
-            const postHtml = this.renderPostPage(post);
+            const postHtml = this.renderPostPage(post, prev, next);
             await fs.writeFile(path.join(postDir, 'index.html'), postHtml, 'utf-8');
         }
     }
@@ -82,9 +86,11 @@ class StaticBlogGenerator {
 
     /**
      * @param {{slug: string, title: string, date: string | null, author: string | null, tags?: string[], content: string}} post
+     * @param {{slug: string, title: string, date: string | null} | null} prev - Older post (lower index)
+     * @param {{slug: string, title: string, date: string | null} | null} next - Newer post (higher index)
      * @returns {string}
      */
-    renderPostPage(post) {
+    renderPostPage(post, prev = null, next = null) {
         const safeTitle = this.escapeHtml(post.title || post.slug);
         const dateLabel = post.date ? this.formatDate(post.date) : null;
         const authorLabel = post.author ? this.escapeHtml(post.author) : null;
@@ -100,18 +106,58 @@ class StaticBlogGenerator {
 
         const markdownJson = JSON.stringify(post.content || '').replace(/<\//g, '<\\/');
 
+        const prevPeek = prev
+            ? [
+                `<div class="blog-post-peek-wrapper blog-post-peek-wrapper--prev">`,
+                `<a class="blog-post-peek blog-post-peek--prev" href="/blog/${encodeURIComponent(prev.slug)}/" aria-label="Older post: ${this.escapeHtml(prev.title)}">`,
+                `  <div class="blog-post-peek-header">`,
+                `    <span class="blog-post-peek-direction">← older</span>`,
+                `    <span class="blog-post-peek-pin" data-peek-pin="prev-out"></span>`,
+                `  </div>`,
+                `  <div class="blog-post-peek-body">`,
+                `    <span class="blog-post-peek-title">${this.escapeHtml(prev.title)}</span>`,
+                prev.date ? `    <span class="blog-post-peek-date">${this.formatDate(prev.date)}</span>` : '',
+                `  </div>`,
+                `</a>`,
+                `</div>`,
+            ].join('\n')
+            : '<div class="blog-post-peek-wrapper blog-post-peek-wrapper--prev"></div>';
+
+        const nextPeek = next
+            ? [
+                `<div class="blog-post-peek-wrapper blog-post-peek-wrapper--next">`,
+                `<a class="blog-post-peek blog-post-peek--next" href="/blog/${encodeURIComponent(next.slug)}/" aria-label="Newer post: ${this.escapeHtml(next.title)}">`,
+                `  <div class="blog-post-peek-header">`,
+                `    <span class="blog-post-peek-pin" data-peek-pin="next-in"></span>`,
+                `    <span class="blog-post-peek-direction" style="text-align:right">newer →</span>`,
+                `  </div>`,
+                `  <div class="blog-post-peek-body">`,
+                `    <span class="blog-post-peek-title">${this.escapeHtml(next.title)}</span>`,
+                next.date ? `    <span class="blog-post-peek-date">${this.formatDate(next.date)}</span>` : '',
+                `  </div>`,
+                `</a>`,
+                `</div>`,
+            ].join('\n')
+            : '<div class="blog-post-peek-wrapper blog-post-peek-wrapper--next"></div>';
+
         const content = [
             '<main class="blog-shell">',
             this.renderBrandBar(),
+            '<div class="blog-post-layout">',
+            prevPeek,
             '<article class="blog-card" aria-labelledby="blog-post-title">',
             '  <header class="blog-post-header">',
             `    <h1 id="blog-post-title" class="blog-post-title">${safeTitle}</h1>`,
             metaBits.length > 0 ? `    <p class="blog-post-meta">${metaBits.join('<span aria-hidden="true">-</span>')}</p>` : '',
             tagsHtml,
             '  </header>',
+            '<div class="md-hr" role="separator"><span class="md-hr-line"></span><span class="md-hr-arrow"></span></div>',
             '  <section class="blog-post-content" data-blog-post-content></section>',
             `  <script id="blogPostMarkdown" type="application/json">${markdownJson}</script>`,
             '</article>',
+            nextPeek,
+            '<svg class="blog-post-splines" aria-hidden="true"></svg>',
+            '</div>',
             '</main>'
         ].join('\n');
 
@@ -166,13 +212,7 @@ class StaticBlogGenerator {
      * @returns {string}
      */
     renderHeaderLinks() {
-        return [
-            '  <a href="/blog.html" class="quick-link">blog</a>',
-            '  <a href="/docs/" class="quick-link">docs</a>',
-            '  <a href="https://github.com/litruv" target="_blank" rel="noopener" class="quick-link">github</a>',
-            '  <a href="https://bsky.app/profile/lit.mates.dev" target="_blank" rel="noopener" class="quick-link">bluesky</a>',
-            '  <a href="/materials" class="quick-link">materials</a>'
-        ].join('\n');
+        return renderNavLinkItems('  ');
     }
 
     /**

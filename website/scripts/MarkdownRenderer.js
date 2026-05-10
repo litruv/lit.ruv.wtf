@@ -97,14 +97,17 @@ export class MarkdownRenderer {
 
         // Horizontal rule
         if (/^[-*_]{3,}$/.test(block)) {
-            return `<hr class="md-hr" />`;
+            return `<div class="md-hr" role="separator"><span class="md-hr-line"></span><span class="md-hr-arrow"></span></div>`;
         }
 
         // Headings
         const headingMatch = block.match(/^(#{1,6})\s+(.+)$/m);
         if (headingMatch && block.split("\n").length === 1) {
             const level = headingMatch[1].length;
-            return `<h${level} class="md-h${level}">${MarkdownRenderer.#renderInline(headingMatch[2])}</h${level}>`;
+            const pin = level === 1 ? '<span class="md-h1-pin" aria-hidden="true"></span>'
+                       : level === 2 ? '<span class="md-h2-pin" aria-hidden="true"></span>'
+                       : '';
+            return `<h${level} class="md-h${level}">${pin}${MarkdownRenderer.#renderInline(headingMatch[2])}</h${level}>`;
         }
 
         // Tables

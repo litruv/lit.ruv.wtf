@@ -96,6 +96,106 @@ function setupScrollTopBar() {
 }
 
 /**
+ * Draws SVG bezier splines from the peek-card exec pins to the main blog card.
+ *
+ * @returns {void}
+ */
+function setupPeekSplines() {
+    const svg = document.querySelector(".blog-post-splines");
+    const layout = document.querySelector(".blog-post-layout");
+    const card = document.querySelector(".blog-card");
+    if (!svg || !layout || !card) return;
+
+    const WIRE_COLOR = "#ffffff";
+    const WIRE_OPACITY = "0.35";
+
+    /**
+     * Creates an SVG path element styled as an exec wire.
+     *
+     * @returns {SVGPathElement}
+     */
+    function makePath() {
+        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        p.setAttribute("fill", "none");
+        p.setAttribute("stroke", WIRE_COLOR);
+        p.setAttribute("stroke-width", "2.5");
+        p.setAttribute("stroke-linecap", "round");
+        p.style.opacity = WIRE_OPACITY;
+        return p;
+    }
+
+    /**
+     * Returns the center of an element relative to the layout container.
+     *
+     * @param {Element} el
+     * @returns {{x: number, y: number}}
+     */
+    function centerOf(el) {
+        const er = el.getBoundingClientRect();
+        const lr = layout.getBoundingClientRect();
+        return {
+            x: er.left - lr.left + er.width / 2,
+            y: er.top  - lr.top  + er.height / 2,
+        };
+    }
+
+    /**
+     * Returns the midpoint of a card's left or right edge relative to the layout.
+     *
+     * @param {Element} el
+     * @param {'left'|'right'} side
+     * @returns {{x: number, y: number}}
+     */
+    function edgeOf(el, side) {
+        const er = el.getBoundingClientRect();
+        const lr = layout.getBoundingClientRect();
+        return {
+            x: side === 'left' ? er.left - lr.left : er.right - lr.left,
+            y: er.top - lr.top + 158,
+        };
+    }
+
+    const pathPrev = makePath();
+    const pathNext = makePath();
+    svg.appendChild(pathPrev);
+    svg.appendChild(pathNext);
+
+    /** @returns {void} */
+    function draw() {
+        const lr = layout.getBoundingClientRect();
+        svg.setAttribute("width",  String(lr.width));
+        svg.setAttribute("height", String(lr.height));
+
+        const prevPin  = document.querySelector("[data-peek-pin='prev-out']");
+        const nextPin  = document.querySelector("[data-peek-pin='next-in']");
+        const cardLeft  = edgeOf(card, "left");
+        const cardRight = edgeOf(card, "right");
+
+        if (prevPin) {
+            const s = centerOf(prevPin);
+            const e = cardLeft;
+            const cp = Math.max(60, Math.abs(e.x - s.x) * 0.5);
+            pathPrev.setAttribute("d", `M ${s.x} ${s.y} C ${s.x + cp} ${s.y} ${e.x - cp} ${e.y} ${e.x} ${e.y}`);
+        } else {
+            pathPrev.setAttribute("d", "");
+        }
+
+        if (nextPin) {
+            const s = cardRight;
+            const e = centerOf(nextPin);
+            const cp = Math.max(60, Math.abs(e.x - s.x) * 0.5);
+            pathNext.setAttribute("d", `M ${s.x} ${s.y} C ${s.x + cp} ${s.y} ${e.x - cp} ${e.y} ${e.x} ${e.y}`);
+        } else {
+            pathNext.setAttribute("d", "");
+        }
+    }
+
+    draw();
+    window.addEventListener("resize", draw, { passive: true });
+    window.addEventListener("scroll", draw, { passive: true });
+}
+
+/**
  * Bootstraps static blog page behaviors.
  *
  * @returns {void}
@@ -103,6 +203,7 @@ function setupScrollTopBar() {
 function initializeBlogPage() {
     renderStaticBlogPost();
     setupScrollTopBar();
+    setupPeekSplines();
 }
 
 if (document.readyState === "loading") {
