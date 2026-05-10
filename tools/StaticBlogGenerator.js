@@ -96,7 +96,7 @@ class StaticBlogGenerator {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('!') || trimmed.startsWith('>') || /^[-*_]{3,}$/.test(trimmed) || trimmed.startsWith('```')) continue;
             const plain = trimmed.replace(/[*_`\[\]]/g, '').replace(/!?\[.*?\]\(.*?\)/g, '').trim();
-            if (plain.length > 20) return plain.slice(0, 160);
+            if (plain.length > 20) return plain.slice(0, 400);
         }
         return 'Read this post on lit.ruv.wtf';
     }
@@ -204,11 +204,13 @@ class StaticBlogGenerator {
         const ogType = og.ogType || 'website';
         const ogUrl = og.ogUrl || canonicalUrl;
 
+        const ogImage = og.ogImage || 'https://lit.ruv.wtf/logos/512px.png';
         const ogMeta = [
             `  <meta property="og:title" content="${ogTitle}">`,
             `  <meta property="og:type" content="${ogType}">`,
             `  <meta property="og:url" content="${ogUrl}">`,
             `  <meta property="og:description" content="${description}">`,
+            `  <meta property="og:image" content="${ogImage}">`,
             `  <meta property="og:site_name" content="lit.ruv.wtf">`,
             `  <meta name="twitter:card" content="summary">`,
             `  <meta name="twitter:title" content="${ogTitle}">`,
