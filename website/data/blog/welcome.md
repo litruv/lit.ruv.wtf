@@ -1,10 +1,9 @@
 ---
 title: Welcome to My Blog
-date: 2026-04-19
+date: 2026-05-10
 author: Max Litruv Boonzaayer
 tags: welcome, meta, introduction
 ---
-
 # Welcome to My Blog
 
 This is my first blog post! I'm excited to share my thoughts and experiences with you.
@@ -15,15 +14,20 @@ This blog is built using a **custom node-based graph system** where each blog po
 
 ### Features
 
-- 📝 Markdown support with YAML front matter
-- 📅 Date-based organization
-- 🏷️ Tag system for categorization
-- 🎨 Interactive node-based visualization
-- 📁 Media support in `data/blog/media/`
+* 📝 Markdown support with YAML front matter
+
+* 📅 Date-based organization
+
+* 🏷️ Tag system for categorization
+
+* 🎨 Interactive node-based visualization
+
+* 📁 Media support in `data/blog/media/`
 
 ## Technical Details
 
 The build system automatically:
+
 1. Scans the `data/blog/` directory for `.md` files
 2. Parses YAML front matter for metadata
 3. Generates a `blogs.json` file

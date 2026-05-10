@@ -481,6 +481,19 @@ export class WorkspaceNavigator {
     /** @param {PointerEvent} e */
     #onPointerDown(e) {
         if (e.button !== 0 && e.button !== 2) return;
+        
+        // Allow text selection in blog/info nodes
+        const nodeBody = e.target.closest('.node-body');
+        if (nodeBody) {
+            const blueprintNode = nodeBody.closest('.blueprint-node');
+            if (blueprintNode) {
+                const nodeType = blueprintNode.dataset.nodeType;
+                if (nodeType === 'info' || nodeType === 'blog_post') {
+                    return; // Don't pan, allow text selection
+                }
+            }
+        }
+        
         this.#beginPan(e);
     }
 

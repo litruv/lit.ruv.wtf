@@ -100,6 +100,27 @@ export class BlogPostNode extends NodeBase {
                 const { MarkdownRenderer } = await import('../MarkdownRenderer.js');
                 contentDiv.innerHTML = MarkdownRenderer.render(post.content);
                 
+                // Add copy button handlers
+                contentDiv.querySelectorAll('.md-copy-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const code = btn.getAttribute('data-code');
+                        if (code) {
+                            navigator.clipboard.writeText(code).then(() => {
+                                const originalText = btn.textContent;
+                                btn.textContent = '✓';
+                                btn.classList.add('copied');
+                                setTimeout(() => {
+                                    btn.textContent = originalText;
+                                    btn.classList.remove('copied');
+                                }, 2000);
+                            }).catch(err => {
+                                console.error('Failed to copy:', err);
+                            });
+                        }
+                    });
+                });
+                
             } catch (error) {
                 body.innerHTML = `<p style="color: #ff6b6b;">Error loading blog post: ${error.message}</p>`;
                 console.error('Failed to load blog post:', error);

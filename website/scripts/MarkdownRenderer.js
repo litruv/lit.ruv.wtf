@@ -91,7 +91,8 @@ export class MarkdownRenderer {
             
             const langClass = lang ? ` language-${lang}` : "";
             const styleAttr = maxHeight ? ` style="max-height: ${maxHeight}px; overflow-y: auto;"` : "";
-            return `<pre class="md-pre"${styleAttr}><code class="${langClass}">${highlightedCode}</code></pre>`;
+            const escapedCode = MarkdownRenderer.#escape(code);
+            return `<div class="md-code-block"><button class="md-copy-btn" data-code="${escapedCode}" title="Copy code">📋</button><pre class="md-pre"${styleAttr}><code class="${langClass}">${highlightedCode}</code></pre></div>`;
         }
 
         // Horizontal rule
@@ -106,6 +107,16 @@ export class MarkdownRenderer {
             return `<h${level} class="md-h${level}">${MarkdownRenderer.#renderInline(headingMatch[2])}</h${level}>`;
         }
 
+        // Standalone image
+        const imgBlockMatch = block.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (imgBlockMatch) {
+            const alt = MarkdownRenderer.#escape(imgBlockMatch[1]);
+            const src = MarkdownRenderer.#sanitizeUrl(imgBlockMatch[2]);
+            if (src) {
+                return `<figure class="md-figure"><img class="md-img" src="${src}" alt="${alt}" />${alt ? `<figcaption class="md-figcaption">${alt}</figcaption>` : ""}</figure>`;
+            }
+        }
+
         // Blockquote
         if (/^> /.test(block)) {
             const inner = block.replace(/^> ?/gm, "");
@@ -114,25 +125,68 @@ export class MarkdownRenderer {
 
         // Unordered list
         if (/^[-*+] /.test(block)) {
-            const items = block.split("\n").filter(Boolean).map(line => {
-                const content = line.replace(/^[-*+]\s+/, "");
-                return `<li class="md-li">${MarkdownRenderer.#renderInline(content)}</li>`;
-            });
-            return `<ul class="md-ul">${items.join("")}</ul>`;
+            return MarkdownRenderer.#renderList(block, "ul");
         }
 
         // Ordered list
         if (/^\d+\. /.test(block)) {
-            const items = block.split("\n").filter(Boolean).map(line => {
-                const content = line.replace(/^\d+\.\s+/, "");
-                return `<li class="md-li">${MarkdownRenderer.#renderInline(content)}</li>`;
-            });
-            return `<ol class="md-ol">${items.join("")}</ol>`;
+            return MarkdownRenderer.#renderList(block, "ol");
         }
 
         // Paragraph (handle single-line line breaks within block)
         const lines = block.split("\n").map(l => MarkdownRenderer.#renderInline(l));
         return `<p class="md-p">${lines.join("<br />")}</p>`;
+    }
+
+    /**
+     * Renders nested lists (ul or ol) with indentation support.
+     * @param {string} block
+     * @param {"ul" | "ol"} listType
+     * @returns {string}
+     */
+    static #renderList(block, listType) {
+        const lines = block.split("\n").filter(Boolean);
+        const items = [];
+        let i = 0;
+
+        while (i < lines.length) {
+            const line = lines[i];
+            const indent = line.match(/^(\s*)/)[1].length;
+            
+            // Extract content
+            let content;
+            if (listType === "ul") {
+                content = line.replace(/^\s*[-*+]\s+/, "");
+            } else {
+                content = line.replace(/^\s*\d+\.\s+/, "");
+            }
+
+            // Look ahead for nested items (more indented)
+            let nestedBlock = "";
+            let j = i + 1;
+            while (j < lines.length) {
+                const nextLine = lines[j];
+                const nextIndent = nextLine.match(/^(\s*)/)[1].length;
+                if (nextIndent > indent) {
+                    nestedBlock += (nestedBlock ? "\n" : "") + nextLine.slice(indent + 2); // Remove parent indent
+                    j++;
+                } else {
+                    break;
+                }
+            }
+
+            // Render item with nested list if present
+            let itemHtml = MarkdownRenderer.#renderInline(content);
+            if (nestedBlock) {
+                const nestedType = /^[-*+] /.test(nestedBlock.trim()) ? "ul" : "ol";
+                itemHtml += MarkdownRenderer.#renderList(nestedBlock, nestedType);
+            }
+            items.push(`<li class="md-li">${itemHtml}</li>`);
+            i = j;
+        }
+
+        const tag = listType === "ul" ? "ul" : "ol";
+        return `<${tag} class="md-${tag}">${items.join("")}</${tag}>`;
     }
 
     // ─── Inline-level ─────────────────────────────────────────────────────────
@@ -158,6 +212,16 @@ export class MarkdownRenderer {
 
         // Italic
         out = out.replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+        // Images ![alt](url) — must be matched before links
+        out = out.replace(
+            /!\[([^\]]*)\]\(([^)]+)\)/g,
+            (_, alt, url) => {
+                const safeUrl = MarkdownRenderer.#sanitizeUrl(url);
+                if (!safeUrl) return MarkdownRenderer.#escape(alt);
+                return `<img class="md-img md-img--inline" src="${safeUrl}" alt="${MarkdownRenderer.#escape(alt)}" />`;
+            }
+        );
 
         // Links [text](url)
         out = out.replace(
@@ -203,7 +267,10 @@ export class MarkdownRenderer {
      */
     static #sanitizeUrl(url) {
         const trimmed = url.trim();
+        // Allow absolute URLs, root-relative, hash links, relative-dot paths, and plain relative paths
         if (/^(https?:\/\/|mailto:|\/|#|\.)/.test(trimmed)) return trimmed;
+        // Allow relative paths (e.g. data/blog/media/image.png) — no protocol = safe relative
+        if (/^[a-zA-Z0-9_\-][a-zA-Z0-9_.\-\/]*$/.test(trimmed)) return trimmed;
         return null;
     }
 }

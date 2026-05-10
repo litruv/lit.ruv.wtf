@@ -1,0 +1,84 @@
+{
+    "name": "blog-editor",
+    "displayName": "Blog Editor",
+    "description": "WYSIWYG Milkdown blog post editor for this workspace",
+    "version": "0.1.11",
+    "publisher": "local",
+    "engines": { "vscode": "^1.80.0" },
+    "categories": ["Other"],
+    "repository": { "type": "git", "url": "https://github.com/local/blog-editor" },
+    "activationEvents": [],
+    "main": "./extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "blogEditor.open",
+                "title": "Open Blog Editor",
+                "category": "Blog"
+            },
+            {
+                "command": "blogEditor.openPost",
+                "title": "Open Blog Post",
+                "category": "Blog"
+            },
+            {
+                "command": "blogEditor.refreshPosts",
+                "title": "Refresh Blog Posts",
+                "category": "Blog",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "blogEditor.newPost",
+                "title": "New Post",
+                "category": "Blog",
+                "icon": "$(add)"
+            },
+            {
+                "command": "blogEditor.renamePost",
+                "title": "Rename Post",
+                "category": "Blog"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "blog-editor-container",
+                    "title": "Blog Editor",
+                    "icon": "media/blog-editor.svg"
+                }
+            ]
+        },
+        "views": {
+            "blog-editor-container": [
+                {
+                    "id": "blog-editor-sidebar",
+                    "name": "Posts"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "blogEditor.newPost",
+                    "when": "view == blog-editor-sidebar",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "blogEditor.refreshPosts",
+                    "when": "view == blog-editor-sidebar",
+                    "group": "navigation@2"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "blogEditor.renamePost",
+                    "when": "view == blog-editor-sidebar && viewItem == blogPost",
+                    "group": "inline"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "package": "node ../build-dist.js && npx @vscode/vsce package --out blog-editor.vsix --no-dependencies"
+    }
+}

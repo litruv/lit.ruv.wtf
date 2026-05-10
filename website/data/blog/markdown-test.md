@@ -1,11 +1,10 @@
 ---
 title: Markdown Formatting Test
-date: 2026-04-20
+date: 2026-09-11
 author: Test Author
 tags: test, formatting, markdown
 ---
-
-# Heading 1
+# Heading 1 test 123
 
 ## Heading 2
 
@@ -30,11 +29,15 @@ Here's a [regular link](https://example.com) and here's a [YouTube link](https:/
 ## Lists
 
 Unordered list:
-- First item
-- Second item
-- Third item
+
+* First item
+
+* Second item
+
+* Third item
 
 Ordered list:
+
 1. First step
 2. Second step
 3. Third step
@@ -42,6 +45,7 @@ Ordered list:
 ## Code Blocks
 
 Standard JavaScript:
+
 ```javascript
 const hello = "world";
 console.log(hello);
@@ -52,6 +56,7 @@ function test() {
 ```
 
 Python with syntax highlighting:
+
 ```python
 def hello_world():
     print("Hello, World!")
@@ -59,7 +64,8 @@ def hello_world():
 ```
 
 Code with max height (200px):
-```javascript {maxHeight: 200}
+
+```javascript
 // This is a long code block that will scroll
 const data = [1, 2, 3, 4, 5];
 
@@ -92,31 +98,36 @@ const obj = {
 
 ## Horizontal Rule
 
----
+***
 
 ## Images
 
-![Test Image](data/blog/media/test.png)
+![1.00](data/blog/media/test.gif)
 
 ## Mixed Content
 
-You can mix **bold**, *italic*, and `code` in the same paragraph. Here's a [link with **bold** text](https://example.com) too.
+You can mix **bold**, *italic*, and `code` in the same paragraph. Here's a [link with](https://example.com) **[bold](https://example.com)** [text](https://example.com) too.
 
 ### Nested Lists
 
-- Top level item
-- Another top level
-  - Nested item (if supported)
-  - Another nested
+* Top level itemsss
+
+* Another top level
+
+  * Nested item (if supported)
+
+  * Another nested
 
 1. Numbered item
 2. Another numbered
-   - Mixed with bullets
-   - More bullets
+
+   * Mixed with bullets
+
+   * More bullets
 
 ## Special Characters
 
-Testing special chars: < > & " ' 
+Testing special chars: < > & " '
 
 ## Long Paragraph
 

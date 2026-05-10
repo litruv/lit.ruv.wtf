@@ -1,0 +1,4 @@
+# Exclude source/build artifacts — keep only what's needed in the VSIX
+build-dist.js
+*.vsix
+.gitignore

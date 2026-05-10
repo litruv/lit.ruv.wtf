@@ -202,6 +202,13 @@ export class ItemDragger {
             if (!this.#enabled) return;
             const target = /** @type {HTMLElement} */ (e.target);
             if (target.closest(".pin-handle")) return;
+            
+            // Allow text selection in blog/info node bodies
+            const nodeBody = target.closest(".node-body");
+            if (nodeBody && (node.type === 'info' || node.type === 'blog_post')) {
+                return; // Don't drag, allow text selection
+            }
+            
             e.stopPropagation();
 
             const pointerWorld = this.#clientToWorkspace(e.clientX, e.clientY);

@@ -1,5 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
+const esbuild = require('esbuild');
+const { execSync } = require('child_process');
 
 /**
  * Parse YAML front matter from markdown content
@@ -174,6 +176,54 @@ async function updateGraphWithBlogNodes(posts, graphPath) {
     console.log(`✓ Added ${blogNodes.length} blog node(s) to graph`);
 }
 
+/**
+ * Bundle all JavaScript files into a single bundle.js using esbuild
+ */
+async function bundleJavaScript() {
+    const entryPoint = path.join(__dirname, 'website', 'scripts', 'main.js');
+    const outfile = path.join(__dirname, 'build', 'scripts', 'bundle.js');
+    const scriptsDir = path.join(__dirname, 'build', 'scripts');
+    
+    try {
+        await esbuild.build({
+            entryPoints: [entryPoint],
+            bundle: true,
+            outfile: outfile,
+            format: 'esm',
+            platform: 'browser',
+            target: 'es2022',
+            minify: true,
+            sourcemap: false,
+        });
+        
+        console.log('✓ Bundled JavaScript with esbuild');
+        
+        // Remove all individual JS files except bundle.js
+        async function removeJsFiles(dir) {
+            const items = await fs.readdir(dir);
+            
+            for (const item of items) {
+                const fullPath = path.join(dir, item);
+                const stats = await fs.stat(fullPath);
+                
+                if (stats.isDirectory()) {
+                    await removeJsFiles(fullPath);
+                    // Remove empty directory
+                    await fs.rmdir(fullPath);
+                } else if (item.endsWith('.js') && item !== 'bundle.js') {
+                    await fs.unlink(fullPath);
+                }
+            }
+        }
+        
+        await removeJsFiles(scriptsDir);
+        console.log('✓ Removed individual JS files');
+    } catch (error) {
+        console.error('✗ JavaScript bundling failed:', error);
+        throw error;
+    }
+}
+
 // Copy files recursively from website to build
 async function copyWebsiteFiles() {
     const websiteDir = path.join(__dirname, 'website');
@@ -215,10 +265,71 @@ async function copyWebsiteFiles() {
     }
 }
 
+/**
+ * Minify CSS files in the build directory
+ */
+async function minifyCSS() {
+    const stylesDir = path.join(__dirname, 'build', 'styles');
+    
+    try {
+        const files = await fs.readdir(stylesDir);
+        const cssFiles = files.filter(f => f.endsWith('.css'));
+        
+        for (const file of cssFiles) {
+            const filePath = path.join(stylesDir, file);
+            const outputPath = filePath;
+            
+            execSync(`npx cleancss -o "${outputPath}" "${filePath}"`, {
+                cwd: __dirname,
+                stdio: 'pipe'
+            });
+        }
+        
+        console.log(`✓ Minified ${cssFiles.length} CSS file(s)`);
+    } catch (error) {
+        console.error('✗ CSS minification failed:', error);
+        throw error;
+    }
+}
+
+/**
+ * Update HTML files to use bundled JavaScript
+ */
+async function updateHtmlForBundle() {
+    const htmlPath = path.join(__dirname, 'build', 'index.html');
+    
+    try {
+        let html = await fs.readFile(htmlPath, 'utf-8');
+        
+        // Replace module script tag with bundle script tag (keep type="module" for esm format)
+        html = html.replace(
+            /<script type="module" src="scripts\/main\.js"><\/script>/,
+            '<script type="module" src="scripts/bundle.js"></script>'
+        );
+        
+        await fs.writeFile(htmlPath, html);
+        console.log('✓ Updated HTML to use bundle.js');
+    } catch (error) {
+        console.error('✗ Failed to update HTML:', error);
+        throw error;
+    }
+}
+
 // Run the build
 async function build() {
     await processBlogPosts();
     await copyWebsiteFiles();
+    await bundleJavaScript();
+    await minifyCSS();
+    await updateHtmlForBundle();
+    
+    // Report final sizes
+    console.log('\n=== Build Summary ===');
+    const bundleStats = await fs.stat(path.join(__dirname, 'build', 'scripts', 'bundle.js'));
+    const cssStats = await fs.stat(path.join(__dirname, 'build', 'styles', 'main.css'));
+    console.log(`bundle.js: ${(bundleStats.size / 1024).toFixed(2)} KB`);
+    console.log(`main.css:  ${(cssStats.size / 1024).toFixed(2)} KB`);
+    console.log('=====================\n');
 }
 
 build();

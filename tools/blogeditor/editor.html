@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none';
+                 script-src 'nonce-{{NONCE}}' {{CSP_SOURCE}};
+           connect-src {{CSP_SOURCE}} blob: https:;
+                 style-src  {{CSP_SOURCE}} 'unsafe-inline';
+                 img-src    {{CSP_SOURCE}} data: blob: https:;
+                 font-src   {{CSP_SOURCE}} data:;">
+  <title>Blog Editor</title>
+
+  <link rel="stylesheet" href="{{COMMON_CSS}}">
+  <link rel="stylesheet" href="{{THEME_CSS}}">
+
+  <style>
+    :root {
+      --bg:       #11111b; --mantle:   #181825; --surface0: #313244;
+      --surface1: #45475a; --surface2: #585b70; --text:     #cdd6f4;
+      --sub0:     #a6adc8; --sub1:     #bac2de; --blue:     #89b4fa;
+      --green:    #a6e3a1; --red:      #f38ba8; --peach:    #fab387;
+      --mauve:    #cba6f7; --sky:      #89dceb; --teal:     #94e2d5;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: block;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────── */
+    #sidebar {
+      background: var(--mantle);
+      border-right: 1px solid var(--surface0);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 12px;
+      border-bottom: 1px solid var(--surface0);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sidebar-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--sub0);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    #btn-new {
+      background: var(--surface0);
+      color: var(--blue);
+      border: 1px solid var(--surface1);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    #btn-new:hover { background: var(--surface1); }
+
+    #post-list {
+      list-style: none;
+      overflow-y: auto;
+      flex: 1;
+      padding: 6px 0;
+    }
+    #post-list li {
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin: 1px 6px;
+      font-size: 0.82rem;
+      color: var(--sub1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #post-list li:hover  { background: var(--surface0); color: var(--text); }
+    #post-list li.active { background: var(--surface0); color: var(--blue); font-weight: 600; }
+
+    /* ── Main ────────────────────────────────────────────────────────────── */
+    #main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+      background: var(--bg);
+      width: 100%;
+      height: 100vh;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    #frontmatter {
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      background: var(--mantle);
+      border-bottom: 1px solid var(--surface0);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+      align-items: stretch;
+    }
+    .frontmatter-fields {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .fm-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      background: var(--surface0);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+      padding: 0 8px;
+      height: 34px;
+    }
+    .fm-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--sub0);
+    }
+    .fm-icon {
+      width: 1.1em;
+      text-align: center;
+      opacity: 0.9;
+      cursor: help;
+    }
+    #frontmatter input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      border-radius: 0;
+      padding: 0;
+      font-size: 0.8rem;
+      outline: none;
+      font-family: inherit;
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+    }
+    .fm-field:focus-within { border-color: var(--blue); }
+    .fm-field.slug-field   { flex: 1 1 170px; min-width: 170px; }
+    .fm-field.title-field  { flex: 2.2 1 280px; min-width: 220px; }
+    .fm-field.date-field   { flex: 0.8 1 150px; min-width: 150px; }
+    .fm-field.author-field { flex: 1.1 1 180px; min-width: 160px; }
+    .fm-field.tags-field   { flex: 1.8 1 240px; min-width: 200px; }
+    #fm-slug { font-family: "Cascadia Code", "Fira Code", ui-monospace, monospace; font-size: 0.75rem; color: var(--sub0); }
+    #fm-date { color-scheme: dark; }
+
+    /* ── Editor area ─────────────────────────────────────────────────────── */
+    #editor-wrap {
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+      min-width: 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Milkdown host ───────────────────────────────────────────────────── */
+    .milkdown-root, .milkdown {
+      flex: 1;
+      min-height: 0;
+      background: var(--bg) !important;
+      font-family: system-ui, -apple-system, sans-serif !important;
+      overflow: visible !important;
+    }
+    .milkdown .editor {
+      padding: 40px 56px;
+      max-width: 860px;
+      margin: 0 auto;
+      min-height: calc(100% - 1px);
+      font-family: system-ui, -apple-system, sans-serif !important;
+      font-size: 14px;
+      color: var(--sub1);
+      caret-color: var(--mauve);
+      padding-bottom: 96px;
+    }
+    .milkdown .editor *:not(pre):not(code):not(pre *):not(code *):not(.cm-editor):not(.cm-editor *) {
+      font-family: system-ui, -apple-system, sans-serif !important;
+    }
+
+    /* ── Headings ─────────────────────────────────────────────────────────── */
+    .milkdown .editor h1,
+    .milkdown .editor h2,
+    .milkdown .editor h3,
+    .milkdown .editor h4,
+    .milkdown .editor h5,
+    .milkdown .editor h6 {
+      color: var(--text);
+      font-weight: 700;
+      margin-top: 0.9em;
+      margin-bottom: 0.3em;
+      letter-spacing: 0.01em;
+    }
+    .milkdown .editor h1 { font-size: 1.75rem; }
+    .milkdown .editor h2 { font-size: 1.25rem; }
+    .milkdown .editor h3 { font-size: 1.05rem; }
+    .milkdown .editor h4 { font-size: 0.95rem; }
+    .milkdown .editor h5 { font-size: 0.88rem; }
+    .milkdown .editor h6 { font-size: 0.82rem; }
+
+    /* ── Body text ────────────────────────────────────────────────────────── */
+    .milkdown .editor p { margin: 0.45em 0; line-height: 1.6; }
+
+    /* ── Links ────────────────────────────────────────────────────────────── */
+    .milkdown .editor a { color: var(--blue); text-decoration: none; }
+    .milkdown .editor a:hover { text-decoration: underline; opacity: 0.85; }
+
+    /* ── Strong / em ──────────────────────────────────────────────────────── */
+    .milkdown .editor strong { color: var(--text); font-weight: 700; }
+    .milkdown .editor em     { color: var(--sub1); font-style: italic; }
+
+    /* ── Lists ────────────────────────────────────────────────────────────── */
+    .milkdown .editor ul,
+    .milkdown .editor ol { margin: 0.3em 0 0.3em 1.3em; padding: 0; }
+    .milkdown .editor li { margin: 0.18em 0; line-height: 1.6; }
+
+    /* ── Blockquote ───────────────────────────────────────────────────────── */
+    .milkdown .editor blockquote {
+      border-left: 3px solid rgba(250, 179, 135, 0.5);
+      padding: 0.2em 0.7em;
+      margin: 0.5em 0;
+      color: rgba(186, 194, 222, 0.7);
+      font-style: italic;
+    }
+
+    /* ── Inline code ──────────────────────────────────────────────────────── */
+    .milkdown .editor :not(pre) > code {
+      font-family: "Cascadia Code", "Fira Code", ui-monospace, monospace !important;
+      font-size: 0.82em;
+      background: rgba(49, 50, 68, 0.6);
+      border-radius: 3px;
+      padding: 0.1em 0.35em;
+      color: var(--sky);
+    }
+
+    /* ── Code blocks ──────────────────────────────────────────────────────── */
+    .milkdown .editor pre,
+    .milkdown .editor code,
+    .milkdown .editor pre *,
+    .milkdown .editor code *,
+    .milkdown .editor .cm-editor,
+    .milkdown .editor .cm-editor * {
+      font-family: "Cascadia Code", "Fira Code", ui-monospace, monospace !important;
+    }
+    .milkdown .editor pre {
+      background: rgba(17, 17, 27, 0.7);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+      padding: 0.6em 0.9em;
+      overflow-x: auto;
+      margin: 0.5em 0;
+      font-size: 0.82em;
+      color: var(--sky);
+      line-height: 1.55;
+    }
+    .milkdown .editor pre code { background: none; padding: 0; border-radius: 0; color: inherit; }
+
+    /* ── Horizontal rule ──────────────────────────────────────────────────── */
+    .milkdown .editor hr { border: none; border-top: 1px solid var(--surface1); margin: 0.8em 0; }
+
+    /* ── Images ───────────────────────────────────────────────────────────── */
+    .milkdown .editor img { max-width: 100%; height: auto; border-radius: 6px; display: block; margin: 0.6em auto; }
+
+    /* ── Tables ───────────────────────────────────────────────────────────── */
+    .milkdown .editor table { border-collapse: collapse; width: 100%; margin: 0.5em 0; font-size: 0.88em; }
+    .milkdown .editor th { background: var(--surface0); color: var(--text); font-weight: 600; padding: 0.4em 0.7em; border: 1px solid var(--surface1); text-align: left; }
+    .milkdown .editor td { padding: 0.35em 0.7em; border: 1px solid var(--surface1); color: var(--sub1); }
+    .milkdown .editor tr:nth-child(even) td { background: rgba(49, 50, 68, 0.25); }
+
+    /* ── Milkdown toolbar chrome ──────────────────────────────────────────── */
+    .milkdown-menu { background: var(--mantle) !important; border-bottom: 1px solid var(--surface0) !important; }
+    .milkdown-menu button { color: var(--sub0) !important; }
+    .milkdown-menu button:hover { color: var(--text) !important; background: var(--surface0) !important; }
+    .milkdown-menu button.active { color: var(--mauve) !important; }
+
+    /* ── Status bar ──────────────────────────────────────────────────────── */
+    #statusbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 5px 12px;
+      background: var(--mantle);
+      border-top: 1px solid var(--surface0);
+      font-size: 0.75rem;
+      color: var(--sub0);
+      flex-shrink: 0;
+      min-width: 0;
+      width: 100%;
+      overflow: hidden;
+    }
+    #status {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .status-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    #status.dirty { color: var(--peach); }
+    #status.saved { color: var(--green); }
+    #btn-save {
+      background: transparent;
+      color: var(--blue);
+      border: none;
+      border-radius: 6px;
+      width: 30px;
+      height: 28px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      line-height: 1;
+    }
+    #btn-save:hover { background: rgba(137, 180, 250, 0.12); opacity: 1; }
+    #btn-save:disabled { background: transparent; color: var(--sub0); cursor: default; opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="main">
+    <div id="frontmatter">
+      <div class="frontmatter-fields">
+        <label class="fm-field slug-field" title="Post slug (filename)">
+          <span class="fm-label" title="Post slug (filename)"><span class="fm-icon" title="Post slug (filename)">#</span></span>
+          <input id="fm-slug" placeholder="Slug" title="Post slug (filename)" aria-label="Slug" />
+        </label>
+        <label class="fm-field title-field" title="Post title">
+          <span class="fm-label" title="Post title"><span class="fm-icon" title="Post title">📝</span></span>
+          <input id="fm-title" placeholder="Title" title="Post title" aria-label="Title" />
+        </label>
+        <label class="fm-field date-field" title="Publish date">
+          <span class="fm-label" title="Publish date"><span class="fm-icon" title="Publish date">🗓</span></span>
+          <input id="fm-date" type="date" title="Publish date" aria-label="Date" />
+        </label>
+        <label class="fm-field author-field" title="Post author">
+          <span class="fm-label" title="Post author"><span class="fm-icon" title="Post author">👤</span></span>
+          <input id="fm-author" placeholder="Author" title="Post author" aria-label="Author" />
+        </label>
+        <label class="fm-field tags-field" title="Comma-separated tags">
+          <span class="fm-label" title="Comma-separated tags"><span class="fm-icon" title="Comma-separated tags">🏷</span></span>
+          <input id="fm-tags" placeholder="Tags" title="Comma-separated tags" aria-label="Tags" />
+        </label>
+      </div>
+    </div>
+    <div id="editor-wrap"></div>
+    <div id="statusbar">
+      <span id="status">No file open</span>
+      <div class="status-actions">
+        <button id="btn-save" disabled title="Save (Ctrl+S)" aria-label="Save">&#128190;</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" nonce="{{NONCE}}">
+    import * as Milkdown from '{{MILKDOWN_JS}}';
+
+    const Crepe = Milkdown.Crepe;
+    const imageBlockFeature = Milkdown.CrepeFeature?.ImageBlock ?? 'image-block';
+
+    const vscode     = acquireVsCodeApi();
+    const editorWrap = /** @type {HTMLDivElement} */    (document.getElementById('editor-wrap'));
+    const status     = /** @type {HTMLSpanElement} */   (document.getElementById('status'));
+    const btnSave    = /** @type {HTMLButtonElement} */ (document.getElementById('btn-save'));
+    const fmTitle    = /** @type {HTMLInputElement} */  (document.getElementById('fm-title'));
+    const fmSlug     = /** @type {HTMLInputElement} */  (document.getElementById('fm-slug'));
+    const fmDate     = /** @type {HTMLInputElement} */  (document.getElementById('fm-date'));
+    const fmAuthor   = /** @type {HTMLInputElement} */  (document.getElementById('fm-author'));
+    const fmTags     = /** @type {HTMLInputElement} */  (document.getElementById('fm-tags'));
+
+    /** @type {string | null} */ let currentSlug = null;
+    /** @type {import('{{MILKDOWN_JS}}').Crepe | null} */ let crepe = null;
+    let dirty = false;
+    /** @type {((slug: string) => void) | null} */ let _pendingRenameResolve = null;
+
+    /** @param {string | undefined} slug @returns {boolean} */
+    function isValidSlug(slug) {
+        return typeof slug === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(slug) && slug.length <= 100;
+    }
+
+    // -- Image handling -------------------------------------------------------
+    // Relative image paths are rewritten to webview resource URIs when a post
+    // is loaded (imageMap: webviewUri -> relativePath). Pasted/dropped images
+    // arrive as blob: URLs with no mapping. On save we fetch each unknown blob,
+    // upload it to the extension, await mediaSaved, then write clean paths.
+
+    /** webviewUri -> relativePath */
+    const webviewToRelative = new Map();
+    /** blobUrl -> relativePath, populated after mediaSaved */
+    const blobToRelative = new Map();
+    /** blobUrl -> Promise<void>, de-dupes concurrent saves for same blob */
+    const _blobSavePromises = new Map();
+    /** blobUrl -> resolve(), resolved when mediaSaved arrives */
+    const _blobSaveResolvers = new Map();
+    /** uploadId -> resolve(relativePath) */
+    const _uploadResolvers = new Map();
+
+    /**
+     * Uploads a blob URL to the extension to save to media/.
+     * Returns a Promise that resolves once mediaSaved is received.
+     * @param {string} blobUrl
+     * @returns {Promise<void>}
+     */
+    function saveNewMediaAndWait(blobUrl) {
+        if (blobToRelative.has(blobUrl)) return Promise.resolve();
+        if (_blobSavePromises.has(blobUrl)) return /** @type {Promise<void>} */ (_blobSavePromises.get(blobUrl));
+        const p = new Promise(async (resolve) => {
+            _blobSaveResolvers.set(blobUrl, resolve);
+            try {
+                const resp  = await fetch(blobUrl);
+                const blob  = await resp.blob();
+                const ext   = (blob.type.split('/')[1] ?? 'png').split('+')[0].replace(/[^a-z0-9]/gi, '') || 'png';
+                const name  = `paste-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+                const bytes = new Uint8Array(await blob.arrayBuffer());
+                let b64 = '';
+                for (let i = 0; i < bytes.length; i += 8192) {
+                    b64 += String.fromCharCode(...bytes.subarray(i, i + 8192));
+                }
+                send('saveMedia', { blobUrl, dataBase64: btoa(b64), mimeType: blob.type, filename: name });
+            } catch (e) {
+                console.error('[Blog Editor] Failed to upload pasted image:', e);
+                _blobSaveResolvers.delete(blobUrl);
+                _blobSavePromises.delete(blobUrl);
+                resolve();
+            }
+        });
+        _blobSavePromises.set(blobUrl, p);
+        return p;
+    }
+
+      /**
+       * Uploads a File and resolves with a persistent relative path.
+       * Used by Milkdown image uploads so markdown never stores blob: URLs.
+       * @param {File} file
+       * @returns {Promise<string>}
+       */
+      async function uploadImageFile(file) {
+        console.log('[Blog Editor] uploadImageFile called:', file.name, file.type);
+        const extFromType = (file.type.split('/')[1] ?? '').split('+')[0].replace(/[^a-z0-9]/gi, '').toLowerCase();
+        const extFromName = (file.name.split('.').pop() ?? '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+        const ext = extFromType || extFromName || 'png';
+        const uploadId = `upload:${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let b64 = '';
+        for (let i = 0; i < bytes.length; i += 8192) {
+          b64 += String.fromCharCode(...bytes.subarray(i, i + 8192));
+        }
+
+        const filename = `paste-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        console.log('[Blog Editor] Sending saveMedia:', filename);
+        send('saveMedia', { blobUrl: uploadId, dataBase64: btoa(b64), mimeType: file.type, filename });
+        return new Promise(resolve => {
+          const timeout = setTimeout(() => {
+            console.warn('[Blog Editor] uploadImageFile timeout - no response after 10s:', uploadId);
+            resolve(`data/blog/media/${filename}`);
+          }, 10000);
+          _uploadResolvers.set(uploadId, (path) => {
+            clearTimeout(timeout);
+            console.log('[Blog Editor] uploadImageFile resolved:', path);
+            resolve(path);
+          });
+        });
+      }
+
+    /**
+     * Converts any remaining blob: URLs to file paths by uploading them.
+     * This is a safety fallback for blobs that Crepe inserted before onUpload was called.
+     * @param {string} markdown
+     * @returns {Promise<string>}
+     */
+    async function uploadRemainingBlobs(markdown) {
+        const blobMatches = [...markdown.matchAll(/!\[([^\]]*)\]\((blob:[^)]+)\)/g)];
+        if (blobMatches.length === 0) return markdown;
+        console.warn(`[Blog Editor] Found ${blobMatches.length} remaining blob URLs - uploading them`);
+        const uploads = blobMatches.map(async m => {
+            const blobUrl = m[2];
+            if (blobToRelative.has(blobUrl)) return { blobUrl, relPath: blobToRelative.get(blobUrl) };
+            try {
+                const resp = await fetch(blobUrl);
+                const blob = await resp.blob();
+                const ext = (blob.type.split('/')[1] ?? 'png').split('+')[0].replace(/[^a-z0-9]/gi, '') || 'png';
+                const filename = `paste-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+                const bytes = new Uint8Array(await blob.arrayBuffer());
+                let b64 = '';
+                for (let i = 0; i < bytes.length; i += 8192) {
+                    b64 += String.fromCharCode(...bytes.subarray(i, i + 8192));
+                }
+                console.log('[Blog Editor] Uploading leftover blob:', filename);
+                return await new Promise(resolve => {
+                    send('saveMedia', { blobUrl, dataBase64: btoa(b64), mimeType: blob.type, filename });
+                    const timeout = setTimeout(() => {
+                        console.warn('[Blog Editor] Leftover blob upload timeout:', blobUrl);
+                        resolve({ blobUrl, relPath: `data/blog/media/${filename}` });
+                    }, 5000);
+                    const checkInterval = setInterval(() => {
+                        if (blobToRelative.has(blobUrl)) {
+                            clearTimeout(timeout);
+                            clearInterval(checkInterval);
+                            resolve({ blobUrl, relPath: blobToRelative.get(blobUrl) });
+                        }
+                    }, 100);
+                });
+            } catch (e) {
+                console.error('[Blog Editor] Failed to upload leftover blob:', blobUrl, e);
+                return { blobUrl, relPath: null };
+            }
+        });
+        const results = await Promise.all(uploads);
+        let result = markdown;
+        for (const { blobUrl, relPath } of results) {
+            if (relPath) {
+                result = result.replace(new RegExp(`!\\[([^\\]]*)\\]\\(${blobUrl.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\)`, 'g'), `![$1](${relPath})`);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Replaces blob/webview URIs in markdown with relative paths.
+     * Call only after all saveNewMediaAndWait() promises have settled.
+     * @param {string} markdown
+     * @returns {string}
+     */
+    function cleanImagePaths(markdown) {
+        return markdown.replace(/(\!\[[^\]]*\]\()([^)]+)(\))/g, (_m, open, src, close) => {
+            const rel = blobToRelative.get(src) ?? webviewToRelative.get(src);
+            return rel ? `${open}${rel}${close}` : `${open}${src}${close}`;
+        });
+    }
+
+    // -- Messaging ------------------------------------------------------------
+    /** @param {string} type @param {Record<string, unknown>} [payload] */
+    function send(type, payload = {}) { vscode.postMessage({ type, ...payload }); }
+
+    window.addEventListener('message', async e => {
+        const msg = e.data;
+        console.log('[Blog Editor] Received message:', msg.type);
+        switch (msg.type) {
+        case 'openSlug': requestPost(msg.slug); break;
+            case 'post':
+                console.log('[Blog Editor] Loading post:', msg.slug, 'Image map:', msg.imageMap ? Object.keys(msg.imageMap).length : 0);
+                webviewToRelative.clear();
+                blobToRelative.clear();
+                if (msg.imageMap) {
+                    for (const [uri, rel] of Object.entries(msg.imageMap)) webviewToRelative.set(uri, rel);
+                }
+                await onPostLoaded(msg.slug, msg.content);
+                break;
+            case 'saved':   markClean(); break;
+            case 'renamed': {
+                currentSlug = msg.newSlug;
+                fmSlug.value = msg.newSlug;
+                if (_pendingRenameResolve) { _pendingRenameResolve(msg.newSlug); _pendingRenameResolve = null; }
+                break;
+            }
+            case 'mediaSaved': {
+                console.log('[Blog Editor] mediaSaved:', msg.blobUrl, '->', msg.relativePath);
+                blobToRelative.set(msg.blobUrl, msg.relativePath);
+                webviewToRelative.set(msg.webviewUri, msg.relativePath);
+              const resolveUpload = _uploadResolvers.get(msg.blobUrl);
+              if (resolveUpload) {
+                _uploadResolvers.delete(msg.blobUrl);
+                resolveUpload(msg.relativePath);
+              }
+                _blobSavePromises.delete(msg.blobUrl);
+                const resolve = _blobSaveResolvers.get(msg.blobUrl);
+                if (resolve) { _blobSaveResolvers.delete(msg.blobUrl); resolve(); }
+                markDirty();
+                break;
+            }
+              case 'created': send('refreshPosts'); await requestPost(msg.slug); break;
+            case 'error':   console.error('[Blog Editor] Error:', msg.message); alert(msg.message); break;
+        }
+    });
+
+    // -- Frontmatter ----------------------------------------------------------
+    /**
+     * @param {string} raw
+     * @returns {{ meta: Record<string, string>, body: string }}
+     */
+    function parseFrontmatter(raw) {
+        const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+        if (!m) return { meta: {}, body: raw };
+        const meta = {};
+        for (const line of m[1].split(/\r?\n/)) {
+            const i = line.indexOf(':');
+            if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim().replace(/^["']|["']$/g, '');
+        }
+        return { meta, body: m[2] };
+    }
+
+    /** @returns {string} */
+    function buildDocument() {
+        const fields = [
+            ['title',  fmTitle.value.trim()],
+            ['date',   fmDate.value.trim()],
+            ['author', fmAuthor.value.trim()],
+            ['tags',   fmTags.value.trim()],
+        ].filter(([, v]) => v);
+        const body = crepe ? crepe.getMarkdown() : '';
+        if (fields.length === 0) return body;
+        return `---\n${fields.map(([k, v]) => `${k}: ${v}`).join('\n')}\n---\n${body}`;
+    }
+
+    // -- Dirty state ----------------------------------------------------------
+    function markDirty() {
+        if (!currentSlug) return;
+        dirty = true;
+        status.textContent = `${currentSlug}.md  ·  unsaved`;
+        status.className = 'dirty';
+        btnSave.disabled = false;
+    }
+
+    function markClean() {
+        dirty = false;
+        status.textContent = `${currentSlug}.md  ·  saved`;
+        status.className = 'saved';
+    }
+
+    // -- Editor lifecycle -----------------------------------------------------
+    /**
+     * @param {string} markdown
+     */
+    async function mountEditor(markdown) {
+        if (crepe) { crepe.destroy(); crepe = null; }
+        editorWrap.innerHTML = '';
+      crepe = new Crepe({
+        root: editorWrap,
+        defaultValue: markdown,
+        features: {
+          [imageBlockFeature]: {
+            onUpload: uploadImageFile,
+          },
+        },
+      });
+        crepe.on(api => { api.markdownUpdated(() => markDirty()); });
+        await crepe.create();
+    }
+
+    // -- Post loading ---------------------------------------------------------
+    /**
+     * @param {string} slug
+     * @param {string} content
+     */
+    async function onPostLoaded(slug, content) {
+        const { meta, body } = parseFrontmatter(content);
+        fmTitle.value  = meta.title  ?? '';
+        fmDate.value   = meta.date   ?? '';
+        fmAuthor.value = meta.author ?? '';
+        fmTags.value   = meta.tags   ?? '';
+        currentSlug = slug;
+        fmSlug.value = slug;
+        dirty = false;
+        status.textContent = `${slug}.md`;
+        status.className = '';
+        btnSave.disabled = false;
+        await mountEditor(body);
+    }
+
+    /** @param {string} slug */
+    function requestPost(slug) {
+        if (dirty && !confirm('Discard unsaved changes?')) return;
+        send('getPost', { slug });
+    }
+
+    /**
+     * Uploads any unknown blob images, waits for them to land on disk,
+     * then cleans paths and sends savePost.
+     */
+    async function savePost() {
+        if (!currentSlug) return;
+        btnSave.disabled = true;
+
+        // Rename file if slug was changed.
+        const desiredSlug = fmSlug.value.trim().toLowerCase();
+        if (desiredSlug && desiredSlug !== currentSlug) {
+            if (!isValidSlug(desiredSlug)) {
+                alert('Invalid slug: use only lowercase letters, numbers, and hyphens.');
+                fmSlug.value = currentSlug;
+                btnSave.disabled = false;
+                return;
+            }
+            const renamed = await new Promise(resolve => {
+                _pendingRenameResolve = resolve;
+                send('renamePost', { oldSlug: currentSlug, newSlug: desiredSlug });
+                setTimeout(() => {
+                    if (_pendingRenameResolve) { _pendingRenameResolve = null; resolve(null); }
+                }, 5000);
+            });
+            if (!renamed) {
+                btnSave.disabled = false;
+                return; // error already shown by extension
+            }
+        }
+
+        const rawDoc  = buildDocument();
+        console.log('[Blog Editor] savePost called, cleaning image paths...');
+        const blobs   = [...rawDoc.matchAll(/!\[[^\]]*\]\((blob:[^)]+)\)/g)].map(m => m[1]);
+        const unknown = [...new Set(blobs.filter(b => !blobToRelative.has(b)))];
+
+        if (unknown.length > 0) {
+            status.textContent = `Uploading ${unknown.length} image(s)...`;
+            status.className = 'dirty';
+            await Promise.all(unknown.map(b => saveNewMediaAndWait(b)));
+        }
+
+        const cleanedDoc = cleanImagePaths(rawDoc);
+        const finalDoc = await uploadRemainingBlobs(cleanedDoc);
+        console.log('[Blog Editor] Final markdown blob count:', [...finalDoc.matchAll(/blob:/g)].length);
+        send('savePost', { slug: currentSlug, content: finalDoc });
+    }
+
+    // -- Events ---------------------------------------------------------------
+    [fmTitle, fmDate, fmAuthor, fmTags, fmSlug].forEach(el => el.addEventListener('input', markDirty));
+    btnSave.addEventListener('click', savePost);
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); savePost(); }
+    });
+
+    // -- Init -----------------------------------------------------------------
+    send('refreshPosts');
+    send('ready');
+  </script>
+</body>
+</html>
