@@ -115,9 +115,9 @@ export class MarkdownRenderer {
         // Standalone image
         const imgBlockMatch = block.match(/^!\[([^\]]*)\]\((.+)\)$/);
         if (imgBlockMatch) {
-            const { src, caption, imageStyle } = MarkdownRenderer.#parseImageMeta(imgBlockMatch[1], imgBlockMatch[2]);
+            const { src, caption, imageAttributes } = MarkdownRenderer.#parseImageMeta(imgBlockMatch[1], imgBlockMatch[2]);
             if (src) {
-                return `<figure class="md-figure"><img class="md-img" src="${src}" alt="${caption}"${imageStyle} />${caption ? `<figcaption class="md-figcaption">${caption}</figcaption>` : ""}</figure>`;
+                return `<figure class="md-figure"><img class="md-img" src="${src}" alt="${caption}"${imageAttributes} />${caption ? `<figcaption class="md-figcaption">${caption}</figcaption>` : ""}</figure>`;
             }
         }
 
@@ -351,9 +351,9 @@ export class MarkdownRenderer {
         out = out.replace(
             /!\[([^\]]*)\]\((.+?)\)/g,
             (_, altText, rawMeta) => {
-                const { src, caption } = MarkdownRenderer.#parseImageMeta(altText, rawMeta);
+                const { src, caption, imageAttributes } = MarkdownRenderer.#parseImageMeta(altText, rawMeta);
                 if (!src) return MarkdownRenderer.#escape(altText);
-                return `<img class="md-img md-img--inline" src="${src}" alt="${caption}" />`;
+                return `<img class="md-img md-img--inline" src="${src}" alt="${caption}"${imageAttributes} />`;
             }
         );
 
@@ -409,15 +409,43 @@ export class MarkdownRenderer {
     }
 
     /**
+     * Applies intrinsic pixel scaling to markdown images with a size token.
+     *
+     * @param {ParentNode} container
+     * @returns {void}
+     */
+    static applyImageScale(container) {
+        container.querySelectorAll("img[data-md-scale]").forEach(img => {
+            const scale = parseFloat(img.getAttribute("data-md-scale") || "");
+            if (!Number.isFinite(scale) || scale <= 0) return;
+
+            const applyScale = () => {
+                if (!img.naturalWidth) return;
+                const targetWidthPx = Math.max(1, Math.round(img.naturalWidth * scale));
+                img.style.width = `${targetWidthPx}px`;
+                img.style.height = "auto";
+                img.style.maxWidth = "100%";
+            };
+
+            if (img.complete) {
+                applyScale();
+                return;
+            }
+
+            img.addEventListener("load", applyScale, { once: true });
+        });
+    }
+
+    /**
      * Parses markdown image metadata including optional title and size token.
      *
      * Supported format: ![alt](url "title")
-     * - Numeric alt-only values (e.g. 0.50) are treated as width scale metadata.
+     * - Numeric alt-only values (e.g. 0.50) are treated as intrinsic size scale metadata.
      * - Title text is used as the visible caption when present.
      *
      * @param {string} rawAlt
      * @param {string} rawMeta
-     * @returns {{ src: string | null, caption: string, imageStyle: string }}
+     * @returns {{ src: string | null, caption: string, imageAttributes: string }}
      */
     static #parseImageMeta(rawAlt, rawMeta) {
         const meta = rawMeta.trim();
@@ -426,7 +454,7 @@ export class MarkdownRenderer {
             return {
                 src: null,
                 caption: MarkdownRenderer.#escape(rawAlt),
-                imageStyle: "",
+                imageAttributes: "",
             };
         }
 
@@ -435,12 +463,12 @@ export class MarkdownRenderer {
         const trimmedAlt = rawAlt.trim();
         const sizeScale = MarkdownRenderer.#parseImageSizeScale(trimmedAlt);
         const caption = titleCaption || (sizeScale === null ? MarkdownRenderer.#escape(trimmedAlt) : "");
-        const imageStyle = sizeScale !== null ? ` style="width: ${sizeScale * 100}%;"` : "";
+        const imageAttributes = sizeScale !== null ? ` data-md-scale="${sizeScale}"` : "";
 
         return {
             src,
             caption,
-            imageStyle,
+            imageAttributes,
         };
     }
 

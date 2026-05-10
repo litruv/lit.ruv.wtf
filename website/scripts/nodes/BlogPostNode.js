@@ -99,6 +99,7 @@ export class BlogPostNode extends NodeBase {
                 // Import and use MarkdownRenderer directly
                 const { MarkdownRenderer } = await import('../MarkdownRenderer.js');
                 contentDiv.innerHTML = MarkdownRenderer.render(post.content);
+                MarkdownRenderer.applyImageScale(contentDiv);
                 
                 // Add copy button handlers
                 contentDiv.querySelectorAll('.md-copy-btn').forEach(btn => {

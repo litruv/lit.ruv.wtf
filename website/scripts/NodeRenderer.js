@@ -433,6 +433,7 @@ export class NodeRenderer {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const text = await response.text();
             target.innerHTML = MarkdownRenderer.render(text);
+            MarkdownRenderer.applyImageScale(target);
         } catch (err) {
             target.innerHTML = `<p class="md-error">Failed to load content.</p>`;
             console.error(`[NodeRenderer] Could not load markdown "${src}":`, err);
