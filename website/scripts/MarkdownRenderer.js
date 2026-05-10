@@ -1,7 +1,7 @@
 /**
  * Lightweight markdown-to-HTML renderer.
  * Supports: headings (h1–h3), bold, italic, inline code, code blocks,
- * blockquotes, unordered lists, ordered lists, horizontal rules, links, paragraphs.
+ * blockquotes, unordered lists, ordered lists, horizontal rules, links, tables, paragraphs.
  * No external dependencies.
  */
 
@@ -107,6 +107,11 @@ export class MarkdownRenderer {
             return `<h${level} class="md-h${level}">${MarkdownRenderer.#renderInline(headingMatch[2])}</h${level}>`;
         }
 
+        // Tables
+        if (MarkdownRenderer.#isTableBlock(block)) {
+            return MarkdownRenderer.#renderTable(block);
+        }
+
         // Standalone image
         const imgBlockMatch = block.match(/^!\[([^\]]*)\]\((.+)\)$/);
         if (imgBlockMatch) {
@@ -130,6 +135,11 @@ export class MarkdownRenderer {
         // Ordered list
         if (/^\d+\. /.test(block)) {
             return MarkdownRenderer.#renderList(block, "ol");
+        }
+
+        // Standalone line break tags
+        if (MarkdownRenderer.#isLineBreakBlock(block)) {
+            return MarkdownRenderer.#renderLineBreakBlock(block);
         }
 
         // Paragraph (handle single-line line breaks within block)
@@ -188,6 +198,128 @@ export class MarkdownRenderer {
         return `<${tag} class="md-${tag}">${items.join("")}</${tag}>`;
     }
 
+    /**
+     * Detects whether a block is a markdown pipe table.
+     *
+     * @param {string} block
+     * @returns {boolean}
+     */
+    static #isTableBlock(block) {
+        const lines = block.split("\n").map(line => line.trim()).filter(Boolean);
+        if (lines.length < 2) return false;
+        if (!lines[0].includes("|") || !lines[1].includes("|")) return false;
+        const separators = MarkdownRenderer.#splitTableRow(lines[1]);
+        if (separators.length === 0) return false;
+        return separators.every(cell => /^:?-{3,}:?$/.test(cell.trim()));
+    }
+
+    /**
+     * Renders a markdown pipe table block.
+     *
+     * @param {string} block
+     * @returns {string}
+     */
+    static #renderTable(block) {
+        const lines = block.split("\n").map(line => line.trim()).filter(Boolean);
+        const headerCells = MarkdownRenderer.#splitTableRow(lines[0]);
+        const separatorCells = MarkdownRenderer.#splitTableRow(lines[1]);
+        const columnCount = Math.max(headerCells.length, separatorCells.length);
+        const alignments = MarkdownRenderer.#parseTableAlignments(separatorCells, columnCount);
+
+        const normalizedHeader = MarkdownRenderer.#normalizeTableCells(headerCells, columnCount);
+        const thead = `<thead><tr>${normalizedHeader
+            .map((cell, index) => `<th class="md-th"${MarkdownRenderer.#getTableAlignStyle(alignments[index])}>${MarkdownRenderer.#renderInline(cell)}</th>`)
+            .join("")}</tr></thead>`;
+
+        const bodyRows = lines.slice(2)
+            .map(row => MarkdownRenderer.#normalizeTableCells(MarkdownRenderer.#splitTableRow(row), columnCount))
+            .map(rowCells => `<tr>${rowCells
+                .map((cell, index) => `<td class="md-td"${MarkdownRenderer.#getTableAlignStyle(alignments[index])}>${MarkdownRenderer.#renderInline(cell)}</td>`)
+                .join("")}</tr>`)
+            .join("");
+        const tbody = `<tbody>${bodyRows}</tbody>`;
+
+        return `<div class="md-table-wrap"><table class="md-table">${thead}${tbody}</table></div>`;
+    }
+
+    /**
+     * Splits a markdown table row into cells.
+     *
+     * @param {string} row
+     * @returns {string[]}
+     */
+    static #splitTableRow(row) {
+        let normalized = row.trim();
+        if (normalized.startsWith("|")) normalized = normalized.slice(1);
+        if (normalized.endsWith("|")) normalized = normalized.slice(0, -1);
+        return normalized.split("|").map(cell => cell.trim());
+    }
+
+    /**
+     * Normalizes row cells to a fixed column count.
+     *
+     * @param {string[]} cells
+     * @param {number} columnCount
+     * @returns {string[]}
+     */
+    static #normalizeTableCells(cells, columnCount) {
+        const normalized = cells.slice(0, columnCount);
+        while (normalized.length < columnCount) normalized.push("");
+        return normalized;
+    }
+
+    /**
+     * Parses markdown alignment hints from the table separator row.
+     *
+     * @param {string[]} separatorCells
+     * @param {number} columnCount
+     * @returns {Array<"left" | "center" | "right">}
+     */
+    static #parseTableAlignments(separatorCells, columnCount) {
+        const normalized = MarkdownRenderer.#normalizeTableCells(separatorCells, columnCount);
+        return normalized.map(cell => {
+            const trimmed = cell.trim();
+            const startsWithColon = trimmed.startsWith(":");
+            const endsWithColon = trimmed.endsWith(":");
+            if (startsWithColon && endsWithColon) return "center";
+            if (endsWithColon) return "right";
+            return "left";
+        });
+    }
+
+    /**
+     * Builds a text-align style attribute for table cells.
+     *
+     * @param {"left" | "center" | "right"} align
+     * @returns {string}
+     */
+    static #getTableAlignStyle(align) {
+        return ` style="text-align: ${align};"`;
+    }
+
+    /**
+     * Detects blocks that only contain one or more HTML line break tags.
+     *
+     * @param {string} block
+     * @returns {boolean}
+     */
+    static #isLineBreakBlock(block) {
+        const lines = block.split("\n").map(line => line.trim()).filter(Boolean);
+        if (lines.length === 0) return false;
+        return lines.every(line => /^<br\s*\/?>$/i.test(line));
+    }
+
+    /**
+     * Renders a standalone line-break block without paragraph wrappers.
+     *
+     * @param {string} block
+     * @returns {string}
+     */
+    static #renderLineBreakBlock(block) {
+        const lineCount = block.split("\n").map(line => line.trim()).filter(Boolean).length;
+        return Array.from({ length: lineCount }, () => "<br />").join("\n");
+    }
+
     // ─── Inline-level ─────────────────────────────────────────────────────────
 
     /**
@@ -197,6 +329,9 @@ export class MarkdownRenderer {
     static #renderInline(text) {
         // Escape HTML first, then re-apply formatting
         let out = MarkdownRenderer.#escape(text);
+
+        // Allow explicit line break tags in markdown text only.
+        out = out.replace(/&lt;br\s*\/?&gt;/gi, "<br />");
 
         // Inline code (must come before bold/italic to avoid breaking backtick content)
         out = out.replace(/`([^`]+)`/g, (_, code) =>
