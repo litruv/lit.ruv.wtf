@@ -645,12 +645,39 @@
       ]
     },
     {
+      "id": "blog_testddd",
+      "type": "blog_post",
+      "title": "test d d d d",
+      "blogSlug": "testddd",
+      "position": {
+        "x": 2200,
+        "y": 900
+      },
+      "width": 600,
+      "inputs": [
+        {
+          "id": "exec_in",
+          "name": "Previous",
+          "direction": "input",
+          "kind": "exec"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "name": "Next",
+          "direction": "output",
+          "kind": "exec"
+        }
+      ]
+    },
+    {
       "id": "blog_welcome",
       "type": "blog_post",
       "title": "Welcome to My Blog",
       "blogSlug": "welcome",
       "position": {
-        "x": 2200,
+        "x": 2900,
         "y": 900
       },
       "width": 600,
@@ -677,7 +704,7 @@
       "title": "Building Interactive Node Graphs",
       "blogSlug": "node-graphs",
       "position": {
-        "x": 2900,
+        "x": 3600,
         "y": 900
       },
       "width": 600,
@@ -928,13 +955,25 @@
         "pinId": "exec_out"
       },
       "to": {
-        "nodeId": "blog_welcome",
+        "nodeId": "blog_testddd",
         "pinId": "exec_in"
       },
       "kind": "exec"
     },
     {
       "id": "blog_connection_1",
+      "from": {
+        "nodeId": "blog_testddd",
+        "pinId": "exec_out"
+      },
+      "to": {
+        "nodeId": "blog_welcome",
+        "pinId": "exec_in"
+      },
+      "kind": "exec"
+    },
+    {
+      "id": "blog_connection_2",
       "from": {
         "nodeId": "blog_welcome",
         "pinId": "exec_out"

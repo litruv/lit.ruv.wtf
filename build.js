@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const esbuild = require('esbuild');
 const { execSync } = require('child_process');
+const { StaticBlogGenerator } = require('./tools/StaticBlogGenerator');
 
 /**
  * Parse YAML front matter from markdown content
@@ -42,6 +43,9 @@ async function processBlogPosts() {
     const blogDir = path.join(__dirname, 'website', 'data', 'blog');
     const outputPath = path.join(__dirname, 'website', 'data', 'blogs.json');
     const graphPath = path.join(__dirname, 'website', 'data', 'graph.json');
+    const staticBlogGenerator = new StaticBlogGenerator({
+        siteRootDir: path.join(__dirname, 'website')
+    });
     
     try {
         const files = await fs.readdir(blogDir);
@@ -87,9 +91,14 @@ async function processBlogPosts() {
         if (posts.length > 0) {
             await updateGraphWithBlogNodes(posts, graphPath);
         }
+
+        await staticBlogGenerator.generate(posts);
+        console.log('✓ Generated static blog pages');
     } catch (err) {
         if (err.code === 'ENOENT') {
             console.log('⚠ No blog directory found, skipping blog processing');
+            await staticBlogGenerator.generate([]);
+            console.log('✓ Generated empty static blog index');
         } else {
             throw err;
         }
