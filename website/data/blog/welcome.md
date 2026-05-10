@@ -12,7 +12,7 @@ Expect game dev, systems design, experiments, tools, prototypes, and the occasio
 
 <br />
 
-![1.00](data/blog/media/paste-1778426005842-2tr04.png)
+![1.00](data/blog/media/paste-1778426005842-2tr04.png "Where most of the chaos happens")
 
 Like most people getting into game development, I started with terrible projects, helping others make technical decisions and squishing bugs along the way, I had many overly ambitious ideas, and an unhealthy confidence that I could probably work it out.
 
