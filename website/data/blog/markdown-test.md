@@ -102,11 +102,11 @@ const obj = {
 
 ## Images
 
-![1.00](data/blog/media/test.gif "Caption Test")
+![0.50](data/blog/media/test.gif "Caption Test")
 
 ![0.26](data/blog/media/paste-1778404389024-jnpo3.jpeg)
 
-![1.00](data/blog/media/paste-1778404389025-wzt8y.png)
+![1.00](blob:vscode-webview://1b6n822od8b3q8ir5r6it0k34211vkpefa12tlnhqbm9ukcvq8kt/f5da78e4-e0e9-4fd8-b889-6286ac0769f8 "Caption without resize")
 
 ## Mixed Content
 

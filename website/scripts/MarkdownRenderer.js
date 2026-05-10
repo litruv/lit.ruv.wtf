@@ -108,12 +108,11 @@ export class MarkdownRenderer {
         }
 
         // Standalone image
-        const imgBlockMatch = block.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        const imgBlockMatch = block.match(/^!\[([^\]]*)\]\((.+)\)$/);
         if (imgBlockMatch) {
-            const alt = MarkdownRenderer.#escape(imgBlockMatch[1]);
-            const src = MarkdownRenderer.#sanitizeUrl(imgBlockMatch[2]);
+            const { src, caption, imageStyle } = MarkdownRenderer.#parseImageMeta(imgBlockMatch[1], imgBlockMatch[2]);
             if (src) {
-                return `<figure class="md-figure"><img class="md-img" src="${src}" alt="${alt}" />${alt ? `<figcaption class="md-figcaption">${alt}</figcaption>` : ""}</figure>`;
+                return `<figure class="md-figure"><img class="md-img" src="${src}" alt="${caption}"${imageStyle} />${caption ? `<figcaption class="md-figcaption">${caption}</figcaption>` : ""}</figure>`;
             }
         }
 
@@ -215,11 +214,11 @@ export class MarkdownRenderer {
 
         // Images ![alt](url) — must be matched before links
         out = out.replace(
-            /!\[([^\]]*)\]\(([^)]+)\)/g,
-            (_, alt, url) => {
-                const safeUrl = MarkdownRenderer.#sanitizeUrl(url);
-                if (!safeUrl) return MarkdownRenderer.#escape(alt);
-                return `<img class="md-img md-img--inline" src="${safeUrl}" alt="${MarkdownRenderer.#escape(alt)}" />`;
+            /!\[([^\]]*)\]\((.+?)\)/g,
+            (_, altText, rawMeta) => {
+                const { src, caption } = MarkdownRenderer.#parseImageMeta(altText, rawMeta);
+                if (!src) return MarkdownRenderer.#escape(altText);
+                return `<img class="md-img md-img--inline" src="${src}" alt="${caption}" />`;
             }
         );
 
@@ -272,5 +271,55 @@ export class MarkdownRenderer {
         // Allow relative paths (e.g. data/blog/media/image.png) — no protocol = safe relative
         if (/^[a-zA-Z0-9_\-][a-zA-Z0-9_.\-\/]*$/.test(trimmed)) return trimmed;
         return null;
+    }
+
+    /**
+     * Parses markdown image metadata including optional title and size token.
+     *
+     * Supported format: ![alt](url "title")
+     * - Numeric alt-only values (e.g. 0.50) are treated as width scale metadata.
+     * - Title text is used as the visible caption when present.
+     *
+     * @param {string} rawAlt
+     * @param {string} rawMeta
+     * @returns {{ src: string | null, caption: string, imageStyle: string }}
+     */
+    static #parseImageMeta(rawAlt, rawMeta) {
+        const meta = rawMeta.trim();
+        const titleMatch = meta.match(/^(\S+)(?:\s+"([\s\S]*?)")?$/);
+        if (!titleMatch) {
+            return {
+                src: null,
+                caption: MarkdownRenderer.#escape(rawAlt),
+                imageStyle: "",
+            };
+        }
+
+        const src = MarkdownRenderer.#sanitizeUrl(titleMatch[1]);
+        const titleCaption = titleMatch[2] ? MarkdownRenderer.#escape(titleMatch[2]) : "";
+        const trimmedAlt = rawAlt.trim();
+        const sizeScale = MarkdownRenderer.#parseImageSizeScale(trimmedAlt);
+        const caption = titleCaption || (sizeScale === null ? MarkdownRenderer.#escape(trimmedAlt) : "");
+        const imageStyle = sizeScale !== null ? ` style="width: ${sizeScale * 100}%;"` : "";
+
+        return {
+            src,
+            caption,
+            imageStyle,
+        };
+    }
+
+    /**
+     * Parses a numeric image scale token from markdown alt text.
+     *
+     * @param {string} rawAlt
+     * @returns {number | null}
+     */
+    static #parseImageSizeScale(rawAlt) {
+        if (!/^\d*\.?\d+$/.test(rawAlt)) return null;
+        const value = parseFloat(rawAlt);
+        if (!Number.isFinite(value)) return null;
+        if (value <= 0 || value > 1) return null;
+        return value;
     }
 }
