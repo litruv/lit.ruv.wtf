@@ -1,50 +1,30 @@
 ---
-title: Welcome to My Blog
+title: welcome
 date: 2026-05-10
 author: Max Litruv Boonzaayer
-tags: welcome, meta, introduction
+tags: welcome
 ---
-# Welcome to My Blog
+Congratulations on making it here, you've stumbled onto a game dev's blog, who's spent the past 12 years buried in Unreal Engine.
 
-This is my first blog post! I'm excited to share my thoughts and experiences with you.
+From studying Programming and 3D Art & Animation at the Academy of Interactive Entertainment, to developing architectural experiences at [Orbit Solutions](https://www.orbitsolutions.com.au/), running 1-on-1 mentoring sessions on [Fiverr](https://www.fiverr.com/litruv), working with [Superfarm](https://superverse.co/), and now building my own games and tools with [Mates.dev](https://mates.dev) - this blog is where I will be dumping my processes.
 
-## What This Blog Is About
+Expect game dev, systems design, experiments, tools, prototypes, and the occasional questionable decision that somehow worked out in the end.
 
-This blog is built using a **custom node-based graph system** where each blog post is represented as a node in an interactive visual graph. Pretty cool, right?
+<br />
 
-### Features
+![1.00](data/blog/media/paste-1778426005842-2tr04.png)
 
-* 📝 Markdown support with YAML front matter
+Like most people getting into game development, I started with terrible projects, helping others make technical decisions and squishing bugs along the way, I had many overly ambitious ideas, and an unhealthy confidence that I could probably work it out.
 
-* 📅 Date-based organization
+*Somehow that part never really changed.*
 
-* 🏷️ Tag system for categorization
+A lot of my work seems to revolve around systems-heavy gameplay, tools, modding workflows, UI frameworks, interaction systems, materials, save systems and going through weird technical problems that Unreal Engine has to solve. Somewhere along the way I also fell into hardware projects, self-hosted infrastructure, audio gear, embedded devices, and other rabbit holes that tend to consume my entire spare time.
 
-* 🎨 Interactive node-based visualization
+These days I'm focused on building my own games and tech, while trying to document more of the process instead of letting years of experiments vanish into forgotten folders and messages.
 
-* 📁 Media support in `data/blog/media/`
+![1.00](blob:vscode-webview://1b6n822od8b3q8ir5r6it0k34211vkpefa12tlnhqbm9ukcvq8kt/01da462e-a8df-4331-ac20-7c487c5ba23b "Sewercide: Mash Lab")
 
-## Technical Details
+This blog is mostly going to be a mix of development logs, technical breakdowns, experiments, ideas, failures, discoveries and whatever else crawls out of the workshop. Some posts will just document strange decisions made at unreasonable hours, the others might even be useful. Both are worth keeping around.
 
-The build system automatically:
+<br />
 
-1. Scans the `data/blog/` directory for `.md` files
-2. Parses YAML front matter for metadata
-3. Generates a `blogs.json` file
-4. Makes posts available to the BlogPostNode
-
-You can reference images like this:
-![Example](data/blog/media/example.png)
-
-## Code Examples
-
-Here's some example code:
-
-```javascript
-const greeting = "Hello, World!";
-console.log(greeting);
-```
-
-## Conclusion
-
-Stay tuned for more posts! This is just the beginning of an exciting journey.
