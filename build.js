@@ -97,11 +97,13 @@ async function processBlogPosts(buildDir) {
         await staticBlogGenerator.generate(posts);
         console.log('✓ Generated static blog pages');
         await generateRssFeed(posts, buildDir);
+        return posts;
     } catch (err) {
         if (err.code === 'ENOENT') {
             console.log('⚠ No blog directory found, skipping blog processing');
             await staticBlogGenerator.generate([]);
             console.log('✓ Generated empty static blog index');
+            return [];
         } else {
             throw err;
         }
@@ -437,11 +439,65 @@ async function generateRssFeed(posts, buildDir) {
     console.log('✓ Generated RSS feed');
 }
 
+/**
+ * Generates a sitemap.xml from static routes and blog posts.
+ *
+ * @param {Array<{slug: string, date: string|null}>} posts
+ * @param {string} buildDir
+ * @returns {Promise<void>}
+ */
+async function generateSitemap(posts, buildDir) {
+    const siteUrl = 'https://lit.ruv.wtf';
+    const today = new Date().toISOString().slice(0, 10);
+
+    /**
+     * @param {string} loc
+     * @param {{ lastmod?: string, priority?: string }} opts
+     * @returns {string}
+     */
+    function urlEntry(loc, { lastmod = today, priority = '0.80' } = {}) {
+        return [
+            '    <url>',
+            `        <loc>${loc}</loc>`,
+            `        <lastmod>${lastmod}</lastmod>`,
+            `        <priority>${priority}</priority>`,
+            '    </url>',
+        ].join('\n');
+    }
+
+    const staticEntries = [
+        urlEntry(`${siteUrl}/`, { priority: '1.00' }),
+        urlEntry(`${siteUrl}/blog.html`, { priority: '0.90' }),
+        urlEntry(`${siteUrl}/docs/sitemap.xml`, { priority: '0.80' }),
+        urlEntry(`${siteUrl}/materials/`, { priority: '0.80' }),
+    ];
+
+    const postEntries = posts.map(post => {
+        const lastmod = post.date ? new Date(post.date).toISOString().slice(0, 10) : today;
+        return urlEntry(`${siteUrl}/blog/${encodeURIComponent(post.slug)}/`, { lastmod, priority: '0.50' });
+    });
+
+    const xml = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+        '        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+        '        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9',
+        '        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">',
+        ...staticEntries,
+        ...postEntries,
+        '</urlset>',
+    ].join('\n');
+
+    await fs.writeFile(path.join(buildDir, 'sitemap.xml'), xml, 'utf-8');
+    console.log(`✓ Generated sitemap with ${staticEntries.length + postEntries.length} URL(s)`);
+}
+
 // Run the build
 async function build() {
     const buildDir = path.join(__dirname, 'build');
     await copyWebsiteFiles();
-    await processBlogPosts(buildDir);
+    const posts = await processBlogPosts(buildDir);
+    await generateSitemap(posts, buildDir);
     await bundleJavaScript();
     await minifyCSS();
     await updateHtmlForBundle();
