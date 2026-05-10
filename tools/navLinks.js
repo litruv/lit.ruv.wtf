@@ -9,6 +9,7 @@
 
 /** @type {NavLink[]} */
 const NAV_LINKS = [
+    { label: 'home',      href: '/' },
     { label: 'blog',      href: '/blog.html' },
     { label: 'docs',      href: '/docs/' },
     { label: 'github',    href: 'https://github.com/litruv',               external: true },
