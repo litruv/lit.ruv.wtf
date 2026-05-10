@@ -2,7 +2,7 @@
     "name": "blog-editor",
     "displayName": "Blog Editor",
     "description": "WYSIWYG Milkdown blog post editor for this workspace",
-    "version": "0.1.11",
+    "version": "0.1.12",
     "publisher": "local",
     "engines": { "vscode": "^1.80.0" },
     "categories": ["Other"],

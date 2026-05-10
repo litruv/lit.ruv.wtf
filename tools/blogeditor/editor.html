@@ -425,6 +425,18 @@
     const _uploadResolvers = new Map();
 
     /**
+     * Splits markdown image target into src and optional title segment.
+     * @param {string} target
+     * @returns {{ src: string, suffix: string }}
+     */
+    function splitImageTarget(target) {
+      const trimmed = target.trim();
+      const m = trimmed.match(/^(\S+)(\s+["'][\s\S]*["'])?$/);
+      if (!m) return { src: trimmed, suffix: '' };
+      return { src: m[1], suffix: m[2] ?? '' };
+    }
+
+    /**
      * Uploads a blob URL to the extension to save to media/.
      * Returns a Promise that resolves once mediaSaved is received.
      * @param {string} blobUrl
@@ -552,9 +564,10 @@
      * @returns {string}
      */
     function cleanImagePaths(markdown) {
-        return markdown.replace(/(\!\[[^\]]*\]\()([^)]+)(\))/g, (_m, open, src, close) => {
-            const rel = blobToRelative.get(src) ?? webviewToRelative.get(src);
-            return rel ? `${open}${rel}${close}` : `${open}${src}${close}`;
+      return markdown.replace(/(\!\[[^\]]*\]\()([^)]+)(\))/g, (_m, open, target, close) => {
+        const { src, suffix } = splitImageTarget(target);
+        const rel = blobToRelative.get(src) ?? webviewToRelative.get(src);
+        return rel ? `${open}${rel}${suffix}${close}` : `${open}${src}${suffix}${close}`;
         });
     }
 

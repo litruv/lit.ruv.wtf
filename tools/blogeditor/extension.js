@@ -344,15 +344,31 @@ function buildHtml(webview) {
 }
 
 /**
+ * Splits markdown image target into URL/path and optional trailing title segment.
+ * Examples:
+ *   data/blog/media/a.png "Caption" -> { src: data/blog/media/a.png, suffix:  "Caption" }
+ *   https://x/y.png -> { src: https://x/y.png, suffix: '' }
+ * @param {string} target
+ * @returns {{ src: string, suffix: string }}
+ */
+function splitImageTarget(target) {
+    const trimmed = target.trim();
+    const m = trimmed.match(/^(\S+)(\s+["'][\s\S]*["'])?$/);
+    if (!m) return { src: trimmed, suffix: '' };
+    return { src: m[1], suffix: m[2] ?? '' };
+}
+
+/**
  * Replaces relative image paths in markdown with webview-safe URIs.
  * @param {string} content
  * @param {string} websiteBaseUri  Result of webview.asWebviewUri(websiteDir).toString()
  * @returns {string}
  */
 function injectWebviewImageUris(content, websiteBaseUri) {
-    return content.replace(/(\!\[[^\]]*\]\()([^)]+)(\))/g, (match, open, src, close) => {
+    return content.replace(/(\!\[[^\]]*\]\()([^)]+)(\))/g, (match, open, target, close) => {
+        const { src, suffix } = splitImageTarget(target);
         if (/^https?:|^data:|^blob:/.test(src)) return match;
-        return `${open}${websiteBaseUri}/${src.replace(/^\//, '')}${close}`;
+        return `${open}${websiteBaseUri}/${src.replace(/^\//, '')}${suffix}${close}`;
     });
 }
 
@@ -366,7 +382,10 @@ function revertWebviewImageUris(content, websiteBaseUri) {
     const escaped = websiteBaseUri.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return content.replace(
         new RegExp(`(\\!\\[[^\\]]*\\]\\()${escaped}/([^)]+)(\\))`, 'g'),
-        (_m, open, rel, close) => `${open}${rel}${close}`
+        (_m, open, target, close) => {
+            const { src, suffix } = splitImageTarget(target);
+            return `${open}${src}${suffix}${close}`;
+        }
     );
 }
 
@@ -399,7 +418,7 @@ function handleMessage(msg, blogDir, websiteDir) {
                 const imgPattern = /!\[[^\]]*\]\(([^)]+)\)/g;
                 let imgMatch;
                 while ((imgMatch = imgPattern.exec(raw)) !== null) {
-                    const src = imgMatch[1];
+                    const { src } = splitImageTarget(imgMatch[1]);
                     if (/^https?:|^data:|^blob:/.test(src)) continue;
                     const absPath = path.join(websiteDir, src.replace(/^\//, ''));
                     if (fs.existsSync(absPath)) {

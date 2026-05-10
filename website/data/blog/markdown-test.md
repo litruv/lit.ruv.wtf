@@ -104,9 +104,7 @@ const obj = {
 
 ![1.00](data/blog/media/test.gif "Caption Test")
 
-![0.26](blob:vscode-webview://1b6n822od8b3q8ir5r6it0k34211vkpefa12tlnhqbm9ukcvq8kt/69bf42f8-c939-432d-9cf8-d42ed55cf5b5 "A Bear Skull, Grok Generated")
-
-![1.00](blob:vscode-webview://1b6n822od8b3q8ir5r6it0k34211vkpefa12tlnhqbm9ukcvq8kt/669fa236-7079-427f-97ee-6c96f089c32f "AI Generated Goblin")
+![1.00](data/blog/media/paste-1778405550240-ddf8h.png "Gobby")
 
 ## Mixed Content
 
