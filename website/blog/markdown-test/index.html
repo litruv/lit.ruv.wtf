@@ -8,7 +8,16 @@
   <link rel="canonical" href="https://lit.ruv.wtf/blog/markdown-test/">
   <link rel="icon" type="image/png" sizes="32x32" href="/logos/32px.png">
   <link rel="icon" type="image/png" sizes="64x64" href="/logos/64px.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="/styles/main.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
 </head>
 <body class="blog-page">
 <nav class="quick-links" aria-label="Primary">
@@ -28,83 +37,10 @@
     <p class="blog-post-meta"><span>September 11, 2026</span><span aria-hidden="true">-</span><span>Test Author</span></p>
 <div class="blog-post-tags"><span class="blog-tag">test</span><span class="blog-tag">formatting</span><span class="blog-tag">markdown</span></div>
   </header>
-  <section class="blog-post-content"><h1 class="md-h1">Heading 1 test 123</h1>
-<h2 class="md-h2">Heading 2</h2>
-<h3 class="md-h3">Heading 3</h3>
-<h4 class="md-h4">Heading 4</h4>
-<h5 class="md-h5">Heading 5</h5>
-<h6 class="md-h6">Heading 6</h6>
-<h2 class="md-h2">Text Formatting</h2>
-<p class="md-p">This is <strong>bold text</strong> and this is <em>italic text</em> and this is <strong><em>bold italic text</em></strong>.</p>
-<p class="md-p">Here&#39;s some <code class="md-code">inline code</code> in a sentence.</p>
-<h2 class="md-h2">Links</h2>
-<p class="md-p">Here&#39;s a <a class="md-link" href="https://example.com" rel="noopener noreferrer" target="_blank">regular link</a> and here&#39;s a <a class="md-link" href="https://youtube.com/watch?v=test" rel="noopener noreferrer" target="_blank">YouTube link</a>.</p>
-<h2 class="md-h2">Lists</h2>
-<p class="md-p">Unordered list:</p>
-<ul class="md-ul"><li class="md-li">First item</li></ul>
-<ul class="md-ul"><li class="md-li">Second item</li></ul>
-<ul class="md-ul"><li class="md-li">Third item</li></ul>
-<p class="md-p">Ordered list:</p>
-<ol class="md-ol"><li class="md-li">First step</li><li class="md-li">Second step</li><li class="md-li">Third step</li></ol>
-<h2 class="md-h2">Code Blocks</h2>
-<p class="md-p">Standard JavaScript:</p>
-<pre class="md-pre"><code class=" language-javascript">const hello = &quot;world&quot;;
-console.log(hello);
-
-function test() {
-    return true;
-}</code></pre>
-<p class="md-p">Python with syntax highlighting:</p>
-<pre class="md-pre"><code class=" language-python">def hello_world():
-    print(&quot;Hello, World!&quot;)
-    return True</code></pre>
-<p class="md-p">Code with max height (200px):</p>
-<pre class="md-pre"><code class=" language-javascript">// This is a long code block that will scroll
-const data = [1, 2, 3, 4, 5];
-
-function processData(arr) {
-    return arr.map(x =&gt; x * 2);
-}
-
-console.log(processData(data));
-
-// Adding more lines to demonstrate scrolling
-for (let i = 0; i &lt; 10; i++) {
-    console.log(`Iteration ${i}`);
-}
-
-// Even more content
-const obj = {
-    name: &quot;Test&quot;,
-    value: 42,
-    nested: {
-        deep: true
-    }
-};</code></pre>
-<h2 class="md-h2">Blockquotes</h2>
-<blockquote class="md-blockquote">This is a blockquote.<br />It can span multiple lines.<br />And continues here.</blockquote>
-<h2 class="md-h2">Horizontal Rule</h2>
-<hr class="md-hr" />
-<h2 class="md-h2">Images</h2>
-<figure class="md-figure"><img class="md-img" src="/data/blog/media/test.gif" alt="" style="width:100%;" /><figcaption class="md-figcaption">Caption Test</figcaption></figure>
-<figure class="md-figure"><img class="md-img" src="/data/blog/media/paste-1778405550240-ddf8h.png" alt="" style="width:43%;" /><figcaption class="md-figcaption">Gobby</figcaption></figure>
-<h2 class="md-h2">Mixed Content</h2>
-<p class="md-p">&lt;br /&gt;</p>
-<p class="md-p">You can mix <strong>bold</strong>, <em>italic</em>, and <code class="md-code">code</code> in the same paragraph. Here&#39;s a <a class="md-link" href="https://example.com" rel="noopener noreferrer" target="_blank">link with</a> <strong><a class="md-link" href="https://example.com" rel="noopener noreferrer" target="_blank">bold</a></strong> <a class="md-link" href="https://example.com" rel="noopener noreferrer" target="_blank">text</a> too.</p>
-<h3 class="md-h3">Nested Lists</h3>
-<ul class="md-ul"><li class="md-li">Top level itemsss</li></ul>
-<ul class="md-ul"><li class="md-li">Another top level</li></ul>
-<ul class="md-ul"><li class="md-li">Nested item (if supported)</li></ul>
-<ul class="md-ul"><li class="md-li">Another nested</li></ul>
-<ol class="md-ol"><li class="md-li">Numbered item</li><li class="md-li">Another numbered</li></ol>
-<ul class="md-ul"><li class="md-li">Mixed with bullets</li></ul>
-<ul class="md-ul"><li class="md-li">More bullets</li></ul>
-<h2 class="md-h2">Special Characters</h2>
-<p class="md-p">Testing special chars: &lt; &gt; &amp; &quot; &#39;</p>
-<h2 class="md-h2">Long Paragraph</h2>
-<p class="md-p">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-<p class="md-p">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p></section>
+  <section class="blog-post-content" data-blog-post-content></section>
+  <script id="blogPostMarkdown" type="application/json">"# Heading 1 test 123\n\n## Heading 2\n\n### Heading 3\n\n#### Heading 4\n\n##### Heading 5\n\n###### Heading 6\n\n## Text Formatting\n\nThis is **bold text** and this is *italic text* and this is ***bold italic text***.\n\nHere's some `inline code` in a sentence.\n\n## Links\n\nHere's a [regular link](https://example.com) and here's a [YouTube link](https://youtube.com/watch?v=test).\n\n## Lists\n\nUnordered list:\n\n* First item\n\n* Second item\n\n* Third item\n\nOrdered list:\n\n1. First step\n2. Second step\n3. Third step\n\n## Code Blocks\n\nStandard JavaScript:\n\n```javascript\nconst hello = \"world\";\nconsole.log(hello);\n\nfunction test() {\n    return true;\n}\n```\n\nPython with syntax highlighting:\n\n```python\ndef hello_world():\n    print(\"Hello, World!\")\n    return True\n```\n\nCode with max height (200px):\n\n```javascript\n// This is a long code block that will scroll\nconst data = [1, 2, 3, 4, 5];\n\nfunction processData(arr) {\n    return arr.map(x => x * 2);\n}\n\nconsole.log(processData(data));\n\n// Adding more lines to demonstrate scrolling\nfor (let i = 0; i < 10; i++) {\n    console.log(`Iteration ${i}`);\n}\n\n// Even more content\nconst obj = {\n    name: \"Test\",\n    value: 42,\n    nested: {\n        deep: true\n    }\n};\n```\n\n## Blockquotes\n\n> This is a blockquote.\n> It can span multiple lines.\n> And continues here.\n\n## Horizontal Rule\n\n***\n\n## Images\n\n![1.00](data/blog/media/test.gif \"Caption Test\")\n\n![0.43](data/blog/media/paste-1778405550240-ddf8h.png \"Gobby\")\n\n## Mixed Content\n\n<br />\n\nYou can mix **bold**, *italic*, and `code` in the same paragraph. Here's a [link with](https://example.com) **[bold](https://example.com)** [text](https://example.com) too.\n\n### Nested Lists\n\n* Top level itemsss\n\n* Another top level\n\n  * Nested item (if supported)\n\n  * Another nested\n\n1. Numbered item\n2. Another numbered\n\n   * Mixed with bullets\n\n   * More bullets\n\n## Special Characters\n\nTesting special chars: < > & \" '\n\n## Long Paragraph\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n"</script>
 </article>
 </main>
+  <script type="module" src="/scripts/blogPage.js"></script>
 </body>
 </html>

@@ -8,7 +8,16 @@
   <link rel="canonical" href="https://lit.ruv.wtf/blog/node-graphs/">
   <link rel="icon" type="image/png" sizes="32x32" href="/logos/32px.png">
   <link rel="icon" type="image/png" sizes="64x64" href="/logos/64px.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="/styles/main.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
 </head>
 <body class="blog-page">
 <nav class="quick-links" aria-label="Primary">
@@ -28,27 +37,10 @@
     <p class="blog-post-meta"><span>April 15, 2026</span><span aria-hidden="true">-</span><span>Max Litruv Boonzaayer</span></p>
 <div class="blog-post-tags"><span class="blog-tag">javascript</span><span class="blog-tag">graph-systems</span><span class="blog-tag">tutorial</span></div>
   </header>
-  <section class="blog-post-content"><h1 class="md-h1">Building Interactive Node Graphs</h1>
-<p class="md-p">In this post, I&#39;ll share some insights on building interactive node-based graph systems for the web.</p>
-<h2 class="md-h2">Why Node Graphs?</h2>
-<p class="md-p">Node graphs are powerful visual programming tools that make complex logic easier to understand and manipulate:</p>
-<ul class="md-ul"><li class="md-li"><strong>Visual Clarity</strong>: See the flow of data and execution at a glance</li><li class="md-li"><strong>Modularity</strong>: Each node is a self-contained unit</li><li class="md-li"><strong>Flexibility</strong>: Easy to add new node types and behaviors</li></ul>
-<h2 class="md-h2">The Architecture</h2>
-<p class="md-p">The system is built on several key classes:</p>
-<p class="md-p">### NodeBase<br />The abstract base class that all nodes inherit from. It defines the blueprint interface:</p>
-<pre class="md-pre"><code class=" language-javascript">class NodeBase {
-    static NodeType = &quot;&quot;;
-    static BlueprintPure_GetDefaultPins() { }
-    BlueprintNativeEvent_OnRender(article, graphNode, renderCtx) { }
-    async BlueprintCallable_Execute(ctx) { }
-}</code></pre>
-<p class="md-p">### Node Registry<br />Automatically registers node types and creates instances based on type strings.</p>
-<p class="md-p">### Execution Context<br />Handles the graph traversal and execution flow when nodes are triggered.</p>
-<h2 class="md-h2">Creating Custom Nodes</h2>
-<p class="md-p">To create a new node type:</p>
-<ol class="md-ol"><li class="md-li">Extend <code class="md-code">NodeBase</code></li><li class="md-li">Set a unique <code class="md-code">NodeType</code></li><li class="md-li">Define pins with <code class="md-code">BlueprintPure_GetDefaultPins()</code></li><li class="md-li">Implement rendering in <code class="md-code">BlueprintNativeEvent_OnRender()</code></li><li class="md-li">Implement logic in <code class="md-code">BlueprintCallable_Execute()</code></li></ol>
-<p class="md-p">That&#39;s the blueprint system in a nutshell!</p></section>
+  <section class="blog-post-content" data-blog-post-content></section>
+  <script id="blogPostMarkdown" type="application/json">"\r\n# Building Interactive Node Graphs\r\n\r\nIn this post, I'll share some insights on building interactive node-based graph systems for the web.\r\n\r\n## Why Node Graphs?\r\n\r\nNode graphs are powerful visual programming tools that make complex logic easier to understand and manipulate:\r\n\r\n- **Visual Clarity**: See the flow of data and execution at a glance\r\n- **Modularity**: Each node is a self-contained unit\r\n- **Flexibility**: Easy to add new node types and behaviors\r\n\r\n## The Architecture\r\n\r\nThe system is built on several key classes:\r\n\r\n### NodeBase\r\nThe abstract base class that all nodes inherit from. It defines the blueprint interface:\r\n\r\n```javascript\r\nclass NodeBase {\r\n    static NodeType = \"\";\r\n    static BlueprintPure_GetDefaultPins() { }\r\n    BlueprintNativeEvent_OnRender(article, graphNode, renderCtx) { }\r\n    async BlueprintCallable_Execute(ctx) { }\r\n}\r\n```\r\n\r\n### Node Registry\r\nAutomatically registers node types and creates instances based on type strings.\r\n\r\n### Execution Context\r\nHandles the graph traversal and execution flow when nodes are triggered.\r\n\r\n## Creating Custom Nodes\r\n\r\nTo create a new node type:\r\n\r\n1. Extend `NodeBase`\r\n2. Set a unique `NodeType`\r\n3. Define pins with `BlueprintPure_GetDefaultPins()`\r\n4. Implement rendering in `BlueprintNativeEvent_OnRender()`\r\n5. Implement logic in `BlueprintCallable_Execute()`\r\n\r\nThat's the blueprint system in a nutshell!\r\n"</script>
 </article>
 </main>
+  <script type="module" src="/scripts/blogPage.js"></script>
 </body>
 </html>

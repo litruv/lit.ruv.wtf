@@ -604,6 +604,7 @@ body.blog-page {
         var(--grid-size) var(--grid-size),
         var(--grid-size) var(--grid-size);
     background-repeat: repeat;
+    background-attachment: scroll;
     background-position: 0 0, 0 0, 0 0, 0 0;
     background-color: var(--bg);
 }

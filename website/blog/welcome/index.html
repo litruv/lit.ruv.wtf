@@ -8,7 +8,16 @@
   <link rel="canonical" href="https://lit.ruv.wtf/blog/welcome/">
   <link rel="icon" type="image/png" sizes="32x32" href="/logos/32px.png">
   <link rel="icon" type="image/png" sizes="64x64" href="/logos/64px.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
   <link rel="stylesheet" href="/styles/main.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
 </head>
 <body class="blog-page">
 <nav class="quick-links" aria-label="Primary">
@@ -28,27 +37,10 @@
     <p class="blog-post-meta"><span>May 10, 2026</span><span aria-hidden="true">-</span><span>Max Litruv Boonzaayer</span></p>
 <div class="blog-post-tags"><span class="blog-tag">welcome</span><span class="blog-tag">meta</span><span class="blog-tag">introduction</span></div>
   </header>
-  <section class="blog-post-content"><h1 class="md-h1">Welcome to My Blog</h1>
-<p class="md-p">This is my first blog post! I&#39;m excited to share my thoughts and experiences with you.</p>
-<h2 class="md-h2">What This Blog Is About</h2>
-<p class="md-p">This blog is built using a <strong>custom node-based graph system</strong> where each blog post is represented as a node in an interactive visual graph. Pretty cool, right?</p>
-<h3 class="md-h3">Features</h3>
-<ul class="md-ul"><li class="md-li">📝 Markdown support with YAML front matter</li></ul>
-<ul class="md-ul"><li class="md-li">📅 Date-based organization</li></ul>
-<ul class="md-ul"><li class="md-li">🏷️ Tag system for categorization</li></ul>
-<ul class="md-ul"><li class="md-li">🎨 Interactive node-based visualization</li></ul>
-<ul class="md-ul"><li class="md-li">📁 Media support in <code class="md-code">data/blog/media/</code></li></ul>
-<h2 class="md-h2">Technical Details</h2>
-<p class="md-p">The build system automatically:</p>
-<ol class="md-ol"><li class="md-li">Scans the <code class="md-code">data/blog/</code> directory for <code class="md-code">.md</code> files</li><li class="md-li">Parses YAML front matter for metadata</li><li class="md-li">Generates a <code class="md-code">blogs.json</code> file</li><li class="md-li">Makes posts available to the BlogPostNode</li></ol>
-<p class="md-p">You can reference images like this:<br /><img class="md-img md-img--inline" src="/data/blog/media/example.png" alt="Example" /></p>
-<h2 class="md-h2">Code Examples</h2>
-<p class="md-p">Here&#39;s some example code:</p>
-<pre class="md-pre"><code class=" language-javascript">const greeting = &quot;Hello, World!&quot;;
-console.log(greeting);</code></pre>
-<h2 class="md-h2">Conclusion</h2>
-<p class="md-p">Stay tuned for more posts! This is just the beginning of an exciting journey.</p></section>
+  <section class="blog-post-content" data-blog-post-content></section>
+  <script id="blogPostMarkdown" type="application/json">"# Welcome to My Blog\n\nThis is my first blog post! I'm excited to share my thoughts and experiences with you.\n\n## What This Blog Is About\n\nThis blog is built using a **custom node-based graph system** where each blog post is represented as a node in an interactive visual graph. Pretty cool, right?\n\n### Features\n\n* 📝 Markdown support with YAML front matter\n\n* 📅 Date-based organization\n\n* 🏷️ Tag system for categorization\n\n* 🎨 Interactive node-based visualization\n\n* 📁 Media support in `data/blog/media/`\n\n## Technical Details\n\nThe build system automatically:\n\n1. Scans the `data/blog/` directory for `.md` files\n2. Parses YAML front matter for metadata\n3. Generates a `blogs.json` file\n4. Makes posts available to the BlogPostNode\n\nYou can reference images like this:\n![Example](data/blog/media/example.png)\n\n## Code Examples\n\nHere's some example code:\n\n```javascript\nconst greeting = \"Hello, World!\";\r\nconsole.log(greeting);\n```\n\n## Conclusion\n\nStay tuned for more posts! This is just the beginning of an exciting journey.\n"</script>
 </article>
 </main>
+  <script type="module" src="/scripts/blogPage.js"></script>
 </body>
 </html>

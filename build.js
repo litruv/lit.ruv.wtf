@@ -189,15 +189,17 @@ async function updateGraphWithBlogNodes(posts, graphPath) {
  * Bundle all JavaScript files into a single bundle.js using esbuild
  */
 async function bundleJavaScript() {
-    const entryPoint = path.join(__dirname, 'website', 'scripts', 'main.js');
-    const outfile = path.join(__dirname, 'build', 'scripts', 'bundle.js');
+    const entryPointMain = path.join(__dirname, 'website', 'scripts', 'main.js');
+    const entryPointBlog = path.join(__dirname, 'website', 'scripts', 'blogPage.js');
+    const outdir = path.join(__dirname, 'build', 'scripts');
     const scriptsDir = path.join(__dirname, 'build', 'scripts');
     
     try {
         await esbuild.build({
-            entryPoints: [entryPoint],
+            entryPoints: [entryPointMain, entryPointBlog],
             bundle: true,
-            outfile: outfile,
+            outdir: outdir,
+            entryNames: '[name].bundle',
             format: 'esm',
             platform: 'browser',
             target: 'es2022',
@@ -219,7 +221,7 @@ async function bundleJavaScript() {
                     await removeJsFiles(fullPath);
                     // Remove empty directory
                     await fs.rmdir(fullPath);
-                } else if (item.endsWith('.js') && item !== 'bundle.js') {
+                } else if (item.endsWith('.js') && !item.endsWith('.bundle.js')) {
                     await fs.unlink(fullPath);
                 }
             }
@@ -305,19 +307,48 @@ async function minifyCSS() {
  * Update HTML files to use bundled JavaScript
  */
 async function updateHtmlForBundle() {
-    const htmlPath = path.join(__dirname, 'build', 'index.html');
+    const buildDir = path.join(__dirname, 'build');
+
+    /**
+     * @param {string} filePath
+     * @returns {Promise<void>}
+     */
+    async function updateHtmlFile(filePath) {
+        let html = await fs.readFile(filePath, 'utf-8');
     
-    try {
-        let html = await fs.readFile(htmlPath, 'utf-8');
-        
-        // Replace module script tag with bundle script tag (keep type="module" for esm format)
         html = html.replace(
             /<script type="module" src="scripts\/main\.js"><\/script>/,
-            '<script type="module" src="scripts/bundle.js"></script>'
+            '<script type="module" src="scripts/main.bundle.js"></script>'
         );
+
+        html = html.replace(/src="\/scripts\/blogPage\.js"/g, 'src="/scripts/blogPage.bundle.js"');
         
-        await fs.writeFile(htmlPath, html);
-        console.log('✓ Updated HTML to use bundle.js');
+        await fs.writeFile(filePath, html);
+    }
+
+    /**
+     * @param {string} dir
+     * @returns {Promise<void>}
+     */
+    async function walkAndUpdateHtml(dir) {
+        const items = await fs.readdir(dir);
+        for (const item of items) {
+            const fullPath = path.join(dir, item);
+            const stats = await fs.stat(fullPath);
+            if (stats.isDirectory()) {
+                await walkAndUpdateHtml(fullPath);
+                continue;
+            }
+
+            if (item.endsWith('.html')) {
+                await updateHtmlFile(fullPath);
+            }
+        }
+    }
+
+    try {
+        await walkAndUpdateHtml(buildDir);
+        console.log('✓ Updated HTML to use JavaScript bundles');
     } catch (error) {
         console.error('✗ Failed to update HTML:', error);
         throw error;
@@ -334,9 +365,11 @@ async function build() {
     
     // Report final sizes
     console.log('\n=== Build Summary ===');
-    const bundleStats = await fs.stat(path.join(__dirname, 'build', 'scripts', 'bundle.js'));
+    const mainBundleStats = await fs.stat(path.join(__dirname, 'build', 'scripts', 'main.bundle.js'));
+    const blogBundleStats = await fs.stat(path.join(__dirname, 'build', 'scripts', 'blogPage.bundle.js'));
     const cssStats = await fs.stat(path.join(__dirname, 'build', 'styles', 'main.css'));
-    console.log(`bundle.js: ${(bundleStats.size / 1024).toFixed(2)} KB`);
+    console.log(`main.bundle.js: ${(mainBundleStats.size / 1024).toFixed(2)} KB`);
+    console.log(`blogPage.bundle.js: ${(blogBundleStats.size / 1024).toFixed(2)} KB`);
     console.log(`main.css:  ${(cssStats.size / 1024).toFixed(2)} KB`);
     console.log('=====================\n');
 }
