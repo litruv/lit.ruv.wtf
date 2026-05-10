@@ -1,8 +1,8 @@
 ---
-title: welcome
+title: Welcome
 date: 2026-05-10
 author: Max Litruv Boonzaayer
-tags: welcome
+tags: announcement
 ---
 Congratulations on making it here, you've stumbled onto a game dev's blog, who's spent the past 12 years buried in Unreal Engine.
 
