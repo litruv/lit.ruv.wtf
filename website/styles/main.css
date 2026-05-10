@@ -696,7 +696,7 @@ body.blog-page {
 }
 
 .blog-logo-link {
-    margin-bottom: 16px;
+    margin-bottom: 100px;
     opacity: 0.92;
     transition: opacity 0.2s ease;
 }
