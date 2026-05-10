@@ -102,7 +102,7 @@ const obj = {
 
 ## Images
 
-![1.00](data/blog/media/test.gif)
+![1.00](data/blog/media/test.gif "Caption Test")
 
 ## Mixed Content
 
