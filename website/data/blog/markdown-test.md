@@ -104,7 +104,7 @@ const obj = {
 
 ![1.00](data/blog/media/test.gif "Caption Test")
 
-![1.00](data/blog/media/paste-1778405550240-ddf8h.png "Gobby")
+![0.43](data/blog/media/paste-1778405550240-ddf8h.png "Gobby")
 
 ## Mixed Content
 
