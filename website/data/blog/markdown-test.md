@@ -1,10 +1,10 @@
 ---
 title: Markdown Formatting Test
-date: 2026-09-11
+date: 2026-05-11
 author: Test Author
 tags: test, formatting, markdown
 ---
-# Heading 1 test 123
+# Heading 1
 
 ## Heading 2
 
@@ -104,7 +104,7 @@ const obj = {
 
 ![1.00](data/blog/media/test.gif "Caption Test")
 
-![0.43](data/blog/media/paste-1778405550240-ddf8h.png "Gobby")
+![0.52](data/blog/media/paste-1778421636216-2lpkf.png)
 
 ## Mixed Content
 
