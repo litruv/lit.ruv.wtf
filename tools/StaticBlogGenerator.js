@@ -85,6 +85,23 @@ class StaticBlogGenerator {
     }
 
     /**
+     * Extracts a plain-text description from the first paragraph of markdown content.
+     *
+     * @param {string} content
+     * @returns {string}
+     */
+    extractDescription(content) {
+        const lines = (content || '').split('\n');
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('!') || trimmed.startsWith('>') || /^[-*_]{3,}$/.test(trimmed) || trimmed.startsWith('```')) continue;
+            const plain = trimmed.replace(/[*_`\[\]]/g, '').replace(/!?\[.*?\]\(.*?\)/g, '').trim();
+            if (plain.length > 20) return plain.slice(0, 160);
+        }
+        return 'Read this post on lit.ruv.wtf';
+    }
+
+    /**
      * @param {{slug: string, title: string, date: string | null, author: string | null, tags?: string[], content: string}} post
      * @param {{slug: string, title: string, date: string | null} | null} prev - Older post (lower index)
      * @param {{slug: string, title: string, date: string | null} | null} next - Newer post (higher index)
@@ -161,7 +178,16 @@ class StaticBlogGenerator {
             '</main>'
         ].join('\n');
 
-        return this.renderPageTemplate(`${safeTitle} - Blog`, content, `/blog/${encodeURIComponent(post.slug)}/`);
+        const canonicalUrl = `https://lit.ruv.wtf/blog/${encodeURIComponent(post.slug)}/`;
+        return this.renderPageTemplate(`${safeTitle} - Blog`, content, `/blog/${encodeURIComponent(post.slug)}/`, {
+            description: this.extractDescription(post.content),
+            ogTitle: safeTitle,
+            ogType: 'article',
+            ogUrl: canonicalUrl,
+            articlePublishedTime: post.date || null,
+            articleAuthor: post.author || null,
+            articleTags: tags,
+        });
     }
 
     /**
@@ -170,8 +196,27 @@ class StaticBlogGenerator {
      * @param {string} canonicalPath
      * @returns {string}
      */
-    renderPageTemplate(title, bodyHtml, canonicalPath) {
+    renderPageTemplate(title, bodyHtml, canonicalPath, og = {}) {
         const escapedTitle = this.escapeHtml(title);
+        const canonicalUrl = `https://lit.ruv.wtf${canonicalPath}`;
+        const description = this.escapeHtml(og.description || 'lit.ruv.wtf blog posts.');
+        const ogTitle = this.escapeHtml(og.ogTitle || title);
+        const ogType = og.ogType || 'website';
+        const ogUrl = og.ogUrl || canonicalUrl;
+
+        const ogMeta = [
+            `  <meta property="og:title" content="${ogTitle}">`,
+            `  <meta property="og:type" content="${ogType}">`,
+            `  <meta property="og:url" content="${ogUrl}">`,
+            `  <meta property="og:description" content="${description}">`,
+            `  <meta property="og:site_name" content="lit.ruv.wtf">`,
+            `  <meta name="twitter:card" content="summary">`,
+            `  <meta name="twitter:title" content="${ogTitle}">`,
+            `  <meta name="twitter:description" content="${description}">`,
+            og.articlePublishedTime ? `  <meta property="article:published_time" content="${og.articlePublishedTime}">` : '',
+            og.articleAuthor       ? `  <meta property="article:author" content="${this.escapeHtml(og.articleAuthor)}">` : '',
+            ...(og.articleTags || []).map(t => `  <meta property="article:tag" content="${this.escapeHtml(t)}">`,),
+        ].filter(Boolean);
 
         return [
             '<!DOCTYPE html>',
@@ -181,8 +226,9 @@ class StaticBlogGenerator {
             '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
             '  <base href="/">',
             `  <title>${escapedTitle}</title>`,
-            '  <meta name="description" content="Lit.ruv.wtf blog posts.">',
-            `  <link rel="canonical" href="https://lit.ruv.wtf${canonicalPath}">`,
+            `  <meta name="description" content="${description}">`,
+            `  <link rel="canonical" href="${canonicalUrl}">`,
+            ...ogMeta,
             '  <link rel="icon" type="image/png" sizes="32x32" href="/logos/32px.png">',
             '  <link rel="icon" type="image/png" sizes="64x64" href="/logos/64px.png">',
             '  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">',
