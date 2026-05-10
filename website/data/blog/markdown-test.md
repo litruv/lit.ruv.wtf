@@ -104,7 +104,13 @@ const obj = {
 
 ![1.00](data/blog/media/test.gif "Caption Test")
 
+![0.26](data/blog/media/paste-1778404389024-jnpo3.jpeg)
+
+![1.00](data/blog/media/paste-1778404389025-wzt8y.png)
+
 ## Mixed Content
+
+<br />
 
 You can mix **bold**, *italic*, and `code` in the same paragraph. Here's a [link with](https://example.com) **[bold](https://example.com)** [text](https://example.com) too.
 
