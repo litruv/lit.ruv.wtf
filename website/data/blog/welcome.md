@@ -6,7 +6,7 @@ tags: announcement
 ---
 Congratulations on making it here, you've stumbled onto a game dev's blog, who's spent the past 12 years buried in Unreal Engine.
 
-From studying Programming and 3D Art & Animation at the Academy of Interactive Entertainment, to developing architectural experiences at [Orbit Solutions](https://www.orbitsolutions.com.au/), running 1-on-1 mentoring sessions on [Fiverr](https://www.fiverr.com/litruv), working with [Superfarm](https://superverse.co/), and now building my own games and tools with [Mates.dev](https://mates.dev) - this blog is where I will be dumping my processes.
+From studying Programming and 3D Art & Animation at the Academy of Interactive Entertainment, to developing architectural experiences at [Orbit Solutions](https://www.orbitsolutions.com.au/), running 1-on-1 mentoring sessions on [Fiverr](https://www.fiverr.com/litruv), working with [Superfarm](https://superverse.co/) and now building my own games and tools with [Mates.dev](https://mates.dev) - this blog is where I will be dumping my processes.
 
 Expect game dev, systems design, experiments, tools, prototypes, and the occasional questionable decision that somehow worked out in the end.
 
