@@ -86,9 +86,9 @@ function setupScrollTopBar() {
         if (scrollTop < 80) {
             body.classList.remove("blog-scrolled");
         } else if (scrollingDown) {
-            body.classList.add("blog-scrolled");
-        } else {
             body.classList.remove("blog-scrolled");
+        } else {
+            body.classList.add("blog-scrolled");
         }
     };
     body.addEventListener("scroll", applyState, { passive: true });
