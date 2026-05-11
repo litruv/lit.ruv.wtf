@@ -46,8 +46,8 @@ img {
     /* Workspace */
     --bg:                  var(--ctp-crust);
     --grid-size:           20px;
-    --grid-color:          rgba(205, 214, 244, 0.04);
-    --grid-color-strong:   rgba(205, 214, 244, 0.1);
+    --grid-color:          rgba(205, 214, 244, 0.024);
+    --grid-color-strong:   rgba(205, 214, 244, 0.06);
     --workspace-zoom:      1;
 
     /* HUD */
