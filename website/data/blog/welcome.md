@@ -22,6 +22,8 @@ A lot of my work seems to revolve around systems-heavy gameplay, tools, modding 
 
 These days I'm focused on building my own games and tech, while trying to document more of the process instead of letting years of experiments vanish into forgotten folders and messages.
 
+<br />
+
 ![1.00](data/blog/media/paste-1778426403986-pbrbo.jpeg "Sewercide: Mash Lab - Prototype vibes")
 
 This blog is mostly going to be a mix of development logs, technical breakdowns, experiments, ideas, failures, discoveries and whatever else crawls out of the workshop. Some posts will just document strange decisions made at unreasonable hours, the others might even be useful. Both are worth keeping around.
