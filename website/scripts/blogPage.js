@@ -73,26 +73,26 @@ function renderStaticBlogPost() {
 function setupScrollTopBar() {
     const body = document.body;
     const bar = document.querySelector("[data-blog-scroll-topbar]");
-    const heroLogo = document.querySelector(".blog-logo-link");
 
     if (!bar) return;
 
-    if (heroLogo && "IntersectionObserver" in window) {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                body.classList.toggle("blog-scrolled", !entry.isIntersecting);
-            },
-            { threshold: 0 }
-        );
-        observer.observe(heroLogo);
-    } else {
-        // Fallback: fixed pixel threshold
-        const applyState = () => {
-            body.classList.toggle("blog-scrolled", window.scrollY >= 80);
-        };
-        window.addEventListener("scroll", applyState, { passive: true });
-        applyState();
-    }
+    let lastScrollTop = 0;
+
+    const applyState = () => {
+        const scrollTop = body.scrollTop;
+        const scrollingDown = scrollTop > lastScrollTop;
+        lastScrollTop = scrollTop;
+
+        if (scrollTop < 80) {
+            body.classList.remove("blog-scrolled");
+        } else if (scrollingDown) {
+            body.classList.add("blog-scrolled");
+        } else {
+            body.classList.remove("blog-scrolled");
+        }
+    };
+    body.addEventListener("scroll", applyState, { passive: true });
+    applyState();
 }
 
 /**
