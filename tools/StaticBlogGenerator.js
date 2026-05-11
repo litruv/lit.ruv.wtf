@@ -170,6 +170,7 @@ class StaticBlogGenerator {
             '  </header>',
             '<div class="md-hr" role="separator"><span class="md-hr-line"></span><span class="md-hr-arrow"></span></div>',
             '  <section class="blog-post-content" data-blog-post-content></section>',
+            '  <section class="blog-comments" data-blog-comments data-matrix-homeserver="https://chat.ruv.wtf" data-matrix-room="#general:chat.ruv.wtf"></section>',
             `  <script id="blogPostMarkdown" type="application/json">${markdownJson}</script>`,
             '</article>',
             nextPeek,

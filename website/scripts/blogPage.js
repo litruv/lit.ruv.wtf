@@ -1,4 +1,5 @@
 import { MarkdownRenderer } from "./MarkdownRenderer.js";
+import { BlogComments } from "./BlogComments.js";
 
 /**
  * Decodes markdown payload from a JSON script element.
@@ -63,6 +64,33 @@ function renderStaticBlogPost() {
     target.innerHTML = MarkdownRenderer.render(markdown);
     MarkdownRenderer.applyImageScale(target);
     wireCopyButtons(target);
+}
+
+/**
+ * Mounts Matrix-backed comments/reactions for the current blog post.
+ *
+ * @returns {Promise<void>}
+ */
+async function setupBlogComments() {
+    /** @type {HTMLElement | null} */
+    const mount = document.querySelector("[data-blog-comments]");
+    if (!mount) return;
+
+    const slug = window.location.pathname
+        .split("/")
+        .filter(Boolean)
+        .pop() || "unknown";
+
+    const homeserver = mount.dataset.matrixHomeserver || "https://chat.ruv.wtf";
+    const roomAlias = mount.dataset.matrixRoom || "#general:chat.ruv.wtf";
+
+    const comments = new BlogComments({
+        homeserver,
+        roomAlias,
+        postSlug: slug
+    });
+
+    await comments.initialize(mount);
 }
 
 /**
@@ -200,10 +228,11 @@ function setupPeekSplines() {
  *
  * @returns {void}
  */
-function initializeBlogPage() {
+async function initializeBlogPage() {
     renderStaticBlogPost();
     setupScrollTopBar();
     setupPeekSplines();
+    await setupBlogComments();
 }
 
 if (document.readyState === "loading") {

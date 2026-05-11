@@ -50,6 +50,11 @@ const FONT_LOADERS = {
     '.svg':   'dataurl',
 };
 
+const TEXT_LOADERS = {
+    '.aff': 'text',
+    '.dic': 'text',
+};
+
 async function main() {
     fs.mkdirSync(DIST_DIR, { recursive: true });
 
@@ -76,6 +81,20 @@ async function main() {
     });
     fs.writeFileSync(path.join(DIST_DIR, 'milkdown-theme.css'), cssTheme.outputFiles[0].contents);
     console.log(`✓  milkdown-theme.css  ${(cssTheme.outputFiles[0].contents.byteLength / 1024).toFixed(0)} KB`);
+
+    console.log('⏳ Bundling spellcheck JS…');
+    const spellcheckJs = await esbuild.build({
+        entryPoints: [path.join(ROOT, 'spellcheck.js')],
+        bundle: true,
+        format: 'esm',
+        platform: 'browser',
+        target: 'es2022',
+        minify: true,
+        write: false,
+        loader: TEXT_LOADERS,
+    });
+    fs.writeFileSync(path.join(DIST_DIR, 'spellcheck.js'), spellcheckJs.outputFiles[0].contents);
+    console.log(`✓  spellcheck.js  ${(spellcheckJs.outputFiles[0].contents.byteLength / 1024).toFixed(0)} KB`);
 
     console.log('\n✓  dist/ ready — run: npx @vscode/vsce package --out blog-editor.vsix --no-dependencies');
 }

@@ -163,6 +163,86 @@
     .fm-field.date-field   { flex: 0.8 1 150px; min-width: 150px; }
     .fm-field.author-field { flex: 1.1 1 180px; min-width: 160px; }
     .fm-field.tags-field   { flex: 1.8 1 240px; min-width: 200px; }
+    .fm-field-group {
+      display: block;
+      min-width: 0;
+    }
+    .tags-field-group {
+      align-self: flex-start;
+      display: block;
+      position: relative;
+      flex: 1.8 1 240px;
+      min-width: 200px;
+      height: 34px;
+    }
+    .tags-field-row {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      height: 34px;
+    }
+    .fm-field.tags-field {
+      flex: 1 1 auto;
+      height: 34px;
+    }
+    .ai-tag-suggestions {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 40;
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(137, 180, 250, 0.22);
+      background: rgba(24, 24, 37, 0.95);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(10px);
+    }
+    .ai-tag-suggestions.is-visible {
+      display: flex;
+    }
+    .ai-tag-pill {
+      appearance: none;
+      border: 1px solid rgba(137, 180, 250, 0.35);
+      background: rgba(137, 180, 250, 0.12);
+      color: var(--sky);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
+    }
+    .ai-tag-pill:hover {
+      background: rgba(137, 180, 250, 0.2);
+      border-color: rgba(137, 180, 250, 0.52);
+      color: var(--text);
+    }
+    .ai-tag-pill:disabled {
+      cursor: default;
+      opacity: 0.55;
+      color: var(--sub0);
+      border-color: rgba(166, 173, 200, 0.22);
+      background: rgba(166, 173, 200, 0.12);
+    }
+    .ai-tag-pill-clear {
+      margin-left: auto;
+      min-width: 24px;
+      padding: 2px 8px;
+      border-color: rgba(243, 139, 168, 0.4);
+      background: rgba(243, 139, 168, 0.14);
+      color: var(--red);
+      font-weight: 700;
+    }
+    .ai-tag-pill-clear:hover {
+      border-color: rgba(243, 139, 168, 0.7);
+      background: rgba(243, 139, 168, 0.24);
+      color: var(--text);
+    }
     #fm-slug { font-family: "Cascadia Code", "Fira Code", ui-monospace, monospace; font-size: 0.75rem; color: var(--sub0); }
     #fm-date { color-scheme: dark; }
 
@@ -326,6 +406,8 @@
     }
     #status.dirty { color: var(--peach); }
     #status.saved { color: var(--green); }
+    #status.finding { color: var(--blue); }
+    #status.not-found { color: var(--red); }
     #btn-save {
       background: transparent;
       color: var(--blue);
@@ -344,9 +426,163 @@
     }
     #btn-save:hover { background: rgba(137, 180, 250, 0.12); opacity: 1; }
     #btn-save:disabled { background: transparent; color: var(--sub0); cursor: default; opacity: 1; }
+    #btn-spell {
+      background: transparent;
+      color: var(--sub0);
+      border: none;
+      border-radius: 6px;
+      width: 36px;
+      height: 28px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    #btn-spell:hover { background: rgba(137, 180, 250, 0.12); }
+    #btn-spell.on { color: var(--green); }
+    #btn-ai-tags {
+      background: var(--surface0);
+      color: var(--sub0);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      cursor: pointer;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+    #btn-ai-tags:hover { background: rgba(137, 180, 250, 0.12); border-color: rgba(137, 180, 250, 0.4); color: var(--text); }
+    #btn-ai-tags.busy { color: var(--yellow); }
+    #btn-ai-tags:disabled { opacity: 0.65; cursor: default; }
+
+    #findbar {
+      position: fixed;
+      top: 0;
+      right: 10px;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      background: var(--mantle);
+      border: 1px solid var(--surface1);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+    #findbar.visible { display: inline-flex; }
+    #find-input {
+      width: 220px;
+      height: 28px;
+      background: var(--surface0);
+      color: var(--text);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+      padding: 0 8px;
+      outline: none;
+      font-size: 0.8rem;
+    }
+    #find-input:focus { border-color: var(--blue); }
+    #find-count {
+      min-width: 58px;
+      text-align: right;
+      color: var(--sub0);
+      font-size: 0.75rem;
+      font-family: "Cascadia Code", "Fira Code", ui-monospace, monospace;
+      user-select: none;
+    }
+    .find-btn {
+      width: 30px;
+      height: 28px;
+      border: none;
+      border-radius: 6px;
+      background: var(--surface0);
+      color: var(--sub1);
+      font-size: 0.86rem;
+      cursor: pointer;
+    }
+    .find-btn:hover { background: var(--surface1); color: var(--text); }
+    #find-close { font-size: 1.05rem; line-height: 1; }
+
+    #spell-menu {
+      position: fixed;
+      z-index: 80;
+      display: none;
+      min-width: 180px;
+      background: var(--mantle);
+      border: 1px solid var(--surface1);
+      border-radius: 8px;
+      padding: 6px;
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
+    }
+    #spell-menu.visible { display: block; }
+    .spell-menu-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--surface0);
+    }
+    .spell-menu-item {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+    .spell-menu-item:hover { background: var(--surface0); }
+    .spell-menu-item:disabled {
+      color: var(--sub0);
+      cursor: default;
+    }
+
+    ::highlight(blog-editor-spellcheck) {
+      background: transparent;
+      text-decoration-line: underline;
+      text-decoration-style: wavy;
+      text-decoration-color: var(--red);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.12em;
+      text-decoration-skip-ink: auto;
+    }
+    ::highlight(blog-editor-find-match) {
+      background: rgba(249, 226, 175, 0.25);
+      border-radius: 2px;
+    }
+    ::highlight(blog-editor-find-active) {
+      background: rgba(249, 226, 175, 0.65);
+      color: var(--crust);
+      border-radius: 2px;
+    }
   </style>
 </head>
 <body>
+  <div id="spell-menu" role="menu" aria-label="Spellcheck actions">
+    <div id="spell-suggestions" class="spell-menu-group" role="none"></div>
+    <button id="spell-add" class="spell-menu-item" type="button" role="menuitem">Add to Dictionary</button>
+  </div>
+  <div id="findbar" role="dialog" aria-label="Find in post">
+    <input id="find-input" type="text" placeholder="Find in post" aria-label="Find in post" />
+    <span id="find-count" aria-live="polite">0 / 0</span>
+    <button id="find-prev" class="find-btn" title="Previous (Shift+F3)" aria-label="Previous match">&#8593;</button>
+    <button id="find-next" class="find-btn" title="Next (F3)" aria-label="Next match">&#8595;</button>
+    <button id="find-close" class="find-btn" title="Close (Esc)" aria-label="Close find">&#215;</button>
+  </div>
   <div id="main">
     <div id="frontmatter">
       <div class="frontmatter-fields">
@@ -366,16 +602,23 @@
           <span class="fm-label" title="Post author"><span class="fm-icon" title="Post author">👤</span></span>
           <input id="fm-author" placeholder="Author" title="Post author" aria-label="Author" />
         </label>
-        <label class="fm-field tags-field" title="Comma-separated tags">
-          <span class="fm-label" title="Comma-separated tags"><span class="fm-icon" title="Comma-separated tags">🏷</span></span>
-          <input id="fm-tags" placeholder="Tags" title="Comma-separated tags" aria-label="Tags" />
-        </label>
+        <div class="fm-field-group tags-field-group" title="Comma-separated tags">
+          <div class="tags-field-row">
+            <label class="fm-field tags-field" title="Comma-separated tags">
+              <span class="fm-label" title="Comma-separated tags"><span class="fm-icon" title="Comma-separated tags">🏷</span></span>
+              <input id="fm-tags" placeholder="Tags" title="Comma-separated tags" aria-label="Tags" />
+            </label>
+            <button id="btn-ai-tags" title="Generate tags with AI" aria-label="Generate tags with AI">🤖</button>
+          </div>
+          <div id="ai-tag-suggestions" class="ai-tag-suggestions" aria-label="AI tag suggestions" aria-live="polite"></div>
+        </div>
       </div>
     </div>
     <div id="editor-wrap"></div>
     <div id="statusbar">
       <span id="status">No file open</span>
       <div class="status-actions">
+        <button id="btn-spell" class="on" title="Spellcheck On" aria-label="Toggle spellcheck">ABC</button>
         <button id="btn-save" disabled title="Save (Ctrl+S)" aria-label="Save">&#128190;</button>
       </div>
     </div>
@@ -383,6 +626,7 @@
 
   <script type="module" nonce="{{NONCE}}">
     import * as Milkdown from '{{MILKDOWN_JS}}';
+    import { BlogEditorSpellcheck } from '{{SPELLCHECK_JS}}';
 
     const Crepe = Milkdown.Crepe;
     const imageBlockFeature = Milkdown.CrepeFeature?.ImageBlock ?? 'image-block';
@@ -390,17 +634,42 @@
     const vscode     = acquireVsCodeApi();
     const editorWrap = /** @type {HTMLDivElement} */    (document.getElementById('editor-wrap'));
     const status     = /** @type {HTMLSpanElement} */   (document.getElementById('status'));
+    const btnAiTags  = /** @type {HTMLButtonElement} */ (document.getElementById('btn-ai-tags'));
     const btnSave    = /** @type {HTMLButtonElement} */ (document.getElementById('btn-save'));
+    const btnSpell   = /** @type {HTMLButtonElement} */ (document.getElementById('btn-spell'));
+    const findBar    = /** @type {HTMLDivElement} */    (document.getElementById('findbar'));
+    const findInput  = /** @type {HTMLInputElement} */  (document.getElementById('find-input'));
+    const findCount  = /** @type {HTMLSpanElement} */   (document.getElementById('find-count'));
+    const findPrev   = /** @type {HTMLButtonElement} */ (document.getElementById('find-prev'));
+    const findNext   = /** @type {HTMLButtonElement} */ (document.getElementById('find-next'));
+    const findClose  = /** @type {HTMLButtonElement} */ (document.getElementById('find-close'));
+    const spellMenu  = /** @type {HTMLDivElement} */    (document.getElementById('spell-menu'));
+    const spellSuggestions = /** @type {HTMLDivElement} */ (document.getElementById('spell-suggestions'));
+    const spellAdd   = /** @type {HTMLButtonElement} */ (document.getElementById('spell-add'));
     const fmTitle    = /** @type {HTMLInputElement} */  (document.getElementById('fm-title'));
     const fmSlug     = /** @type {HTMLInputElement} */  (document.getElementById('fm-slug'));
     const fmDate     = /** @type {HTMLInputElement} */  (document.getElementById('fm-date'));
     const fmAuthor   = /** @type {HTMLInputElement} */  (document.getElementById('fm-author'));
     const fmTags     = /** @type {HTMLInputElement} */  (document.getElementById('fm-tags'));
+    const aiTagSuggestions = /** @type {HTMLDivElement} */ (document.getElementById('ai-tag-suggestions'));
 
     /** @type {string | null} */ let currentSlug = null;
     /** @type {import('{{MILKDOWN_JS}}').Crepe | null} */ let crepe = null;
     let dirty = false;
+    let aiTagsBusy = false;
+    /** @type {number | null} */ let aiTagsTimeoutId = null;
+    /** @type {number | null} */ let aiTagsAckTimeoutId = null;
+    let spellcheckEnabled = true;
+    let lastFindQuery = '';
+    let findMatchTotal = 0;
+    let findMatchIndex = 0;
+    /** @type {Range[]} */ let findRanges = [];
+    let findActiveIndex = -1;
+    /** @type {BlogEditorSpellcheck | null} */ let spellcheckController = null;
+    /** @type {string | null} */ let pendingSpellWord = null;
+    /** @type {Range | null} */ let pendingSpellRange = null;
     /** @type {((slug: string) => void) | null} */ let _pendingRenameResolve = null;
+    /** @type {string[]} */ let currentAiTagSuggestions = [];
 
     /** @param {string | undefined} slug @returns {boolean} */
     function isValidSlug(slug) {
@@ -590,6 +859,33 @@
                 await onPostLoaded(msg.slug, msg.content);
                 break;
             case 'saved':   markClean(); break;
+              case 'aiTagsStarted': {
+                if (aiTagsAckTimeoutId !== null) {
+                  window.clearTimeout(aiTagsAckTimeoutId);
+                  aiTagsAckTimeoutId = null;
+                }
+                status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  AI request accepted`;
+                status.className = 'finding';
+                break;
+              }
+              case 'aiTagsGenerated': {
+                const tags = Array.isArray(msg.tags)
+                  ? msg.tags.map(v => String(v).trim()).filter(Boolean)
+                  : [];
+                if (tags.length > 0) {
+                  setAiTagSuggestions(tags);
+                  status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  generated ${tags.length} tag suggestion${tags.length === 1 ? '' : 's'}`;
+                  status.className = 'saved';
+                } else {
+                  setAiTagSuggestions([]);
+                  status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  no tags generated`;
+                  status.className = 'not-found';
+                }
+                aiTagsBusy = false;
+                clearAiTimers();
+                updateAiTagsButtonState();
+                break;
+              }
             case 'renamed': {
                 currentSlug = msg.newSlug;
                 fmSlug.value = msg.newSlug;
@@ -612,7 +908,13 @@
                 break;
             }
               case 'created': send('refreshPosts'); await requestPost(msg.slug); break;
-            case 'error':   console.error('[Blog Editor] Error:', msg.message); alert(msg.message); break;
+            case 'error':
+                console.error('[Blog Editor] Error:', msg.message);
+                aiTagsBusy = false;
+              clearAiTimers();
+                updateAiTagsButtonState();
+                alert(msg.message);
+                break;
         }
     });
 
@@ -660,12 +962,530 @@
         status.className = 'saved';
     }
 
+    /**
+     * @param {string} message
+     * @param {boolean} [isError]
+     */
+    function updateSpellStatus(message, isError = false) {
+      btnSpell.classList.toggle('on', spellcheckEnabled);
+      btnSpell.title = spellcheckEnabled ? 'Spellcheck On' : 'Spellcheck Off';
+      if (dirty) {
+        status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  unsaved · ${message}`;
+        status.className = isError ? 'not-found' : 'dirty';
+        return;
+      }
+      status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  ${message}`;
+      status.className = isError ? 'not-found' : 'finding';
+    }
+
+    function updateAiTagsButtonState() {
+      btnAiTags.classList.toggle('busy', aiTagsBusy);
+      btnAiTags.disabled = aiTagsBusy || !currentSlug;
+      btnAiTags.textContent = aiTagsBusy ? '⌛' : '🤖';
+    }
+
+    function clearAiTimers() {
+      if (aiTagsTimeoutId !== null) {
+        window.clearTimeout(aiTagsTimeoutId);
+        aiTagsTimeoutId = null;
+      }
+      if (aiTagsAckTimeoutId !== null) {
+        window.clearTimeout(aiTagsAckTimeoutId);
+        aiTagsAckTimeoutId = null;
+      }
+    }
+
+    /**
+     * @param {string} raw
+     * @returns {string}
+     */
+    function normalizeTagsFieldValue(raw) {
+      const value = (raw ?? '').trim();
+      if (!value || value === '[]') return '';
+      if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            return parsed
+              .map(v => String(v).trim())
+              .filter(Boolean)
+              .join(', ');
+          }
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    }
+
+    /**
+     * @param {string} value
+     * @returns {string[]}
+     */
+    function splitTagList(value) {
+      return (value ?? '')
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+
+    /**
+     * @param {string[]} tags
+     * @returns {string[]}
+     */
+    function dedupeTagList(tags) {
+      const seen = new Set();
+      const result = [];
+      for (const rawTag of tags) {
+        const tag = String(rawTag).trim();
+        if (!tag) continue;
+        const key = tag.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push(tag);
+      }
+      return result;
+    }
+
+    /**
+     * @param {string[]} suggestions
+     */
+    function setAiTagSuggestions(suggestions) {
+      currentAiTagSuggestions = dedupeTagList(suggestions);
+      renderAiTagSuggestions();
+    }
+
+    function clearAiTagSuggestions() {
+      currentAiTagSuggestions = [];
+      renderAiTagSuggestions();
+    }
+
+    function renderAiTagSuggestions() {
+      aiTagSuggestions.replaceChildren();
+      aiTagSuggestions.classList.toggle('is-visible', currentAiTagSuggestions.length > 0);
+      if (currentAiTagSuggestions.length === 0) return;
+
+      const existing = new Set(splitTagList(fmTags.value).map(tag => tag.toLowerCase()));
+      for (const tag of currentAiTagSuggestions) {
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'ai-tag-pill';
+        pill.textContent = tag;
+        pill.disabled = existing.has(tag.toLowerCase());
+        pill.title = pill.disabled ? 'Tag already added' : 'Add this tag';
+        pill.addEventListener('click', () => addTagFromSuggestion(tag));
+        aiTagSuggestions.appendChild(pill);
+      }
+
+      const clearButton = document.createElement('button');
+      clearButton.type = 'button';
+      clearButton.className = 'ai-tag-pill ai-tag-pill-clear';
+      clearButton.textContent = 'X';
+      clearButton.title = 'Clear tag suggestions';
+      clearButton.setAttribute('aria-label', 'Clear tag suggestions');
+      clearButton.addEventListener('click', () => clearAiTagSuggestions());
+      aiTagSuggestions.appendChild(clearButton);
+    }
+
+    /**
+     * @param {string} tag
+     */
+    function addTagFromSuggestion(tag) {
+      const merged = dedupeTagList([...splitTagList(fmTags.value), tag]);
+      const nextValue = merged.join(', ');
+      if (fmTags.value.trim() === nextValue.trim()) {
+        renderAiTagSuggestions();
+        return;
+      }
+      fmTags.value = nextValue;
+      markDirty();
+      renderAiTagSuggestions();
+      status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  tag "${tag}" added`;
+      status.className = 'saved';
+      fmTags.focus();
+    }
+
+    /**
+     * Requests AI tags from extension host.
+     */
+    function requestAiTags() {
+      if (aiTagsBusy || !currentSlug) return;
+      const fullBody = crepe ? crepe.getMarkdown() : '';
+      const body = fullBody.length > 12000 ? fullBody.slice(0, 12000) : fullBody;
+      aiTagsBusy = true;
+      updateAiTagsButtonState();
+      clearAiTimers();
+      status.textContent = `${currentSlug}.md  ·  generating tags...`;
+      status.className = 'finding';
+      aiTagsAckTimeoutId = window.setTimeout(() => {
+        if (!aiTagsBusy) return;
+        aiTagsBusy = false;
+        updateAiTagsButtonState();
+        status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  extension did not acknowledge AI request`;
+        status.className = 'not-found';
+        alert('AI tags request was not acknowledged by the extension. Reinstall/reload the VSIX and try again.');
+      }, 2000);
+      aiTagsTimeoutId = window.setTimeout(() => {
+        if (!aiTagsBusy) return;
+        aiTagsBusy = false;
+        updateAiTagsButtonState();
+        status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  AI tag request timed out`;
+        status.className = 'not-found';
+        alert('AI tag generation timed out after 95s. Check Output > Blog Editor for details.');
+      }, 95000);
+      send('generateTags', {
+        title: fmTitle.value.trim(),
+        body,
+        tags: fmTags.value.trim(),
+      });
+    }
+
+    /**
+     * @returns {HTMLElement | null}
+     */
+    function getEditorContentHost() {
+      return editorWrap.querySelector('.ProseMirror, .editor');
+    }
+
+    /**
+     * @param {boolean} enabled
+     */
+    function setSpellcheck(enabled) {
+      spellcheckEnabled = enabled;
+      spellcheckController?.setEnabled(enabled);
+      if (!spellcheckController) updateSpellStatus(enabled ? 'spellcheck loading' : 'spellcheck off');
+    }
+
+    /**
+     * Opens the find bar and optionally pre-fills text.
+     * @param {string} [prefill]
+     */
+    function openFindBar(prefill) {
+      hideSpellMenu();
+      if (typeof prefill === 'string' && prefill) {
+        findInput.value = prefill;
+        lastFindQuery = prefill;
+      }
+      positionFindBarUnderTopBar();
+      findBar.classList.add('visible');
+      findInput.focus();
+      findInput.select();
+      updateFindStats();
+      status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  find`; 
+      status.className = 'finding';
+    }
+
+    /**
+     * Hides the find bar and restores editor focus.
+     */
+    function closeFindBar() {
+      findBar.classList.remove('visible');
+      findCount.textContent = '0 / 0';
+      clearFindHighlights();
+      findRanges = [];
+      findActiveIndex = -1;
+      findMatchIndex = 0;
+      findMatchTotal = 0;
+      const host = getEditorContentHost();
+      host?.focus();
+      if (dirty) markDirty();
+      else if (currentSlug) {
+        status.textContent = `${currentSlug}.md`;
+        status.className = '';
+      } else {
+        status.textContent = 'No file open';
+        status.className = '';
+      }
+    }
+
+    /**
+     * Positions find bar just under the frontmatter row so it never overlaps it.
+     */
+    function positionFindBarUnderTopBar() {
+      const frontmatter = document.getElementById('frontmatter');
+      const top = frontmatter instanceof HTMLElement
+        ? Math.max(8, Math.round(frontmatter.getBoundingClientRect().bottom + 6))
+        : 14;
+      findBar.style.top = `${top}px`;
+    }
+
+    /**
+     * @param {string} query
+     * @returns {number}
+     */
+    function countFindMatches(query) {
+      const normalized = query.trim().toLowerCase();
+      if (!normalized) return 0;
+      const host = getEditorContentHost();
+      const haystack = (host?.textContent ?? '').toLowerCase();
+      if (!haystack) return 0;
+      let count = 0;
+      let cursor = 0;
+      while (true) {
+        const hit = haystack.indexOf(normalized, cursor);
+        if (hit < 0) break;
+        count += 1;
+        cursor = hit + normalized.length;
+      }
+      return count;
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    function supportsFindHighlights() {
+      return typeof CSS !== 'undefined' && 'highlights' in CSS && typeof Highlight !== 'undefined';
+    }
+
+    function clearFindHighlights() {
+      if (!supportsFindHighlights()) return;
+      CSS.highlights.delete('blog-editor-find-match');
+      CSS.highlights.delete('blog-editor-find-active');
+    }
+
+    /**
+     * @param {string} query
+     * @returns {Range[]}
+     */
+    function buildFindRanges(query) {
+      const normalized = query.trim().toLowerCase();
+      if (!normalized) return [];
+      const host = getEditorContentHost();
+      if (!host) return [];
+
+      const ranges = [];
+      const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          if (!node.textContent || !node.textContent.trim()) return NodeFilter.FILTER_REJECT;
+          const parent = node.parentElement;
+          if (parent && parent.closest('script, style')) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      });
+
+      let node = walker.nextNode();
+      while (node) {
+        const text = node.textContent ?? '';
+        const haystack = text.toLowerCase();
+        let cursor = 0;
+        while (cursor <= haystack.length - normalized.length) {
+          const at = haystack.indexOf(normalized, cursor);
+          if (at < 0) break;
+          const range = new Range();
+          range.setStart(node, at);
+          range.setEnd(node, at + normalized.length);
+          ranges.push(range);
+          cursor = at + normalized.length;
+        }
+        node = walker.nextNode();
+      }
+      return ranges;
+    }
+
+    function applyFindHighlights() {
+      if (!supportsFindHighlights()) return;
+      clearFindHighlights();
+      if (findRanges.length === 0) return;
+      CSS.highlights.set('blog-editor-find-match', new Highlight(...findRanges));
+      const activeRange = findRanges[Math.max(0, Math.min(findActiveIndex, findRanges.length - 1))];
+      if (activeRange) CSS.highlights.set('blog-editor-find-active', new Highlight(activeRange));
+    }
+
+    /**
+     * @param {Range} range
+     */
+    function revealFindRange(range) {
+      const rect = range.getBoundingClientRect();
+      if (rect.width <= 0 && rect.height <= 0) return;
+      const wrapRect = editorWrap.getBoundingClientRect();
+      const margin = 40;
+      if (rect.top < wrapRect.top + margin) {
+        editorWrap.scrollTop -= (wrapRect.top + margin) - rect.top;
+      } else if (rect.bottom > wrapRect.bottom - margin) {
+        editorWrap.scrollTop += rect.bottom - (wrapRect.bottom - margin);
+      }
+    }
+
+    /**
+     * @param {number} [nextIndex]
+     */
+    function updateFindStats(nextIndex) {
+      const query = findInput.value.trim();
+      if (!query) {
+        findMatchTotal = 0;
+        findMatchIndex = 0;
+        findCount.textContent = '0 / 0';
+        return;
+      }
+      findMatchTotal = findRanges.length || countFindMatches(query);
+      if (findMatchTotal === 0) {
+        findMatchIndex = 0;
+        findCount.textContent = '0 / 0';
+        return;
+      }
+
+      if (typeof nextIndex === 'number' && Number.isFinite(nextIndex)) {
+        findMatchIndex = Math.max(1, Math.min(findMatchTotal, Math.trunc(nextIndex)));
+      } else if (findMatchIndex < 1 || findMatchIndex > findMatchTotal) {
+        findMatchIndex = 1;
+      }
+      findCount.textContent = `${findMatchIndex} / ${findMatchTotal}`;
+    }
+
+    /**
+     * Hides the spellcheck context menu.
+     */
+    function hideSpellMenu() {
+      spellMenu.classList.remove('visible');
+      pendingSpellWord = null;
+      pendingSpellRange = null;
+      spellSuggestions.replaceChildren();
+      spellAdd.textContent = 'Add to Dictionary';
+    }
+
+    /**
+     * @param {Range} range
+     * @param {string} replacement
+     */
+    function applySpellSuggestion(range, replacement) {
+      const selection = window.getSelection();
+      if (!selection) return;
+      selection.removeAllRanges();
+      selection.addRange(range);
+      document.execCommand('insertText', false, replacement);
+      markDirty();
+      spellcheckController?.schedule();
+    }
+
+    /**
+     * @param {string[]} suggestions
+     */
+    function renderSpellSuggestions(suggestions) {
+      spellSuggestions.replaceChildren();
+      if (suggestions.length === 0) {
+        const none = document.createElement('button');
+        none.type = 'button';
+        none.className = 'spell-menu-item';
+        none.textContent = 'No suggestions';
+        none.disabled = true;
+        spellSuggestions.appendChild(none);
+        return;
+      }
+
+      for (const suggestion of suggestions) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'spell-menu-item';
+        item.setAttribute('role', 'menuitem');
+        item.textContent = suggestion;
+        item.addEventListener('click', () => {
+          if (!pendingSpellRange) return;
+          applySpellSuggestion(pendingSpellRange.cloneRange(), suggestion);
+          hideSpellMenu();
+        });
+        spellSuggestions.appendChild(item);
+      }
+    }
+
+    /**
+     * @param {number} clientX
+     * @param {number} clientY
+     * @param {string} word
+     * @param {string[]} suggestions
+     * @param {Range} range
+     */
+    function showSpellMenu(clientX, clientY, word, suggestions, range) {
+      pendingSpellWord = word;
+      pendingSpellRange = range;
+      renderSpellSuggestions(suggestions);
+      spellAdd.textContent = `Add "${word}" to Dictionary`;
+      spellMenu.style.left = `${Math.min(clientX, window.innerWidth - 200)}px`;
+      spellMenu.style.top = `${Math.min(clientY, window.innerHeight - 60)}px`;
+      spellMenu.classList.add('visible');
+    }
+
+    /**
+     * Finds next/previous match using the browser find engine.
+     * @param {boolean} forward
+     * @param {{ preserveInputFocus?: boolean }} [options]
+     * @returns {boolean}
+     */
+    function runFind(forward, options = {}) {
+      const query = findInput.value.trim();
+      if (!query) {
+        clearFindHighlights();
+        findRanges = [];
+        findActiveIndex = -1;
+        updateFindStats(0);
+        return false;
+      }
+      const queryChanged = query !== lastFindQuery;
+      if (queryChanged) {
+        findRanges = buildFindRanges(query);
+        findActiveIndex = -1;
+        findMatchIndex = 0;
+      } else if (findRanges.length === 0) {
+        findRanges = buildFindRanges(query);
+      }
+
+      findMatchTotal = findRanges.length;
+      lastFindQuery = query;
+      const selectionStart = findInput.selectionStart ?? query.length;
+      const selectionEnd = findInput.selectionEnd ?? selectionStart;
+
+      if (findMatchTotal === 0) {
+        clearFindHighlights();
+        findActiveIndex = -1;
+        updateFindStats(0);
+        status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  no match for "${query}"`;
+        status.className = 'not-found';
+        if (options.preserveInputFocus) {
+          queueMicrotask(() => {
+            findInput.focus();
+            findInput.setSelectionRange(selectionStart, selectionEnd);
+          });
+        }
+        return false;
+      }
+
+      if (findActiveIndex < 0) {
+        findActiveIndex = forward ? 0 : findMatchTotal - 1;
+      } else {
+        findActiveIndex = forward
+          ? (findActiveIndex + 1) % findMatchTotal
+          : (findActiveIndex - 1 + findMatchTotal) % findMatchTotal;
+      }
+      findMatchIndex = findActiveIndex + 1;
+      applyFindHighlights();
+      const activeRange = findRanges[findActiveIndex];
+      if (activeRange) revealFindRange(activeRange);
+
+      if (options.preserveInputFocus) {
+        queueMicrotask(() => {
+          findInput.focus();
+          findInput.setSelectionRange(selectionStart, selectionEnd);
+        });
+      }
+      updateFindStats(findMatchIndex);
+      status.textContent = `${currentSlug ?? 'No file open'}${currentSlug ? '.md' : ''}  ·  find: "${query}"`;
+      status.className = 'finding';
+      return true;
+    }
+
     // -- Editor lifecycle -----------------------------------------------------
     /**
      * @param {string} markdown
      */
     async function mountEditor(markdown) {
         if (crepe) { crepe.destroy(); crepe = null; }
+        spellcheckController?.destroy();
+        spellcheckController = null;
+      clearFindHighlights();
+      findRanges = [];
+      findActiveIndex = -1;
+      findMatchIndex = 0;
+      findMatchTotal = 0;
+      hideSpellMenu();
         editorWrap.innerHTML = '';
       crepe = new Crepe({
         root: editorWrap,
@@ -676,8 +1496,20 @@
           },
         },
       });
-        crepe.on(api => { api.markdownUpdated(() => markDirty()); });
+        crepe.on(api => {
+          api.markdownUpdated(() => {
+            markDirty();
+            spellcheckController?.schedule();
+          });
+        });
         await crepe.create();
+        const contentHost = getEditorContentHost();
+        if (contentHost) {
+          spellcheckController = new BlogEditorSpellcheck(contentHost, updateSpellStatus);
+          spellcheckController.setEnabled(spellcheckEnabled);
+        } else {
+          updateSpellStatus('spellcheck unavailable', true);
+        }
     }
 
     // -- Post loading ---------------------------------------------------------
@@ -690,13 +1522,17 @@
         fmTitle.value  = meta.title  ?? '';
         fmDate.value   = meta.date   ?? '';
         fmAuthor.value = meta.author ?? '';
-        fmTags.value   = meta.tags   ?? '';
+      fmTags.value   = normalizeTagsFieldValue(meta.tags ?? '');
+        setAiTagSuggestions([]);
         currentSlug = slug;
         fmSlug.value = slug;
         dirty = false;
         status.textContent = `${slug}.md`;
         status.className = '';
         btnSave.disabled = false;
+      aiTagsBusy = false;
+      clearAiTimers();
+      updateAiTagsButtonState();
         await mountEditor(body);
     }
 
@@ -754,13 +1590,86 @@
     }
 
     // -- Events ---------------------------------------------------------------
-    [fmTitle, fmDate, fmAuthor, fmTags, fmSlug].forEach(el => el.addEventListener('input', markDirty));
+    [fmTitle, fmDate, fmAuthor, fmSlug].forEach(el => el.addEventListener('input', markDirty));
+    fmTags.addEventListener('input', () => {
+      markDirty();
+      renderAiTagSuggestions();
+    });
+    btnAiTags.addEventListener('click', requestAiTags);
     btnSave.addEventListener('click', savePost);
+    btnSpell.addEventListener('click', () => setSpellcheck(!spellcheckEnabled));
+    spellAdd.addEventListener('click', () => {
+      if (!pendingSpellWord || !spellcheckController) return;
+      spellcheckController.addToDictionary(pendingSpellWord);
+      hideSpellMenu();
+    });
+    findPrev.addEventListener('click', () => runFind(false));
+    findNext.addEventListener('click', () => runFind(true));
+    findClose.addEventListener('click', closeFindBar);
+    findInput.addEventListener('input', () => {
+      if (findInput.value.trim()) runFind(true, { preserveInputFocus: true });
+      else updateFindStats(0);
+    });
+    findInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        runFind(!e.shiftKey, { preserveInputFocus: true });
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeFindBar();
+      }
+    });
+    document.addEventListener('contextmenu', e => {
+      if (!spellcheckEnabled || !spellcheckController) return;
+      if (!(e.target instanceof Node)) return;
+      if (!editorWrap.contains(e.target)) return;
+
+      const hit = spellcheckController.getMisspelledAtPoint(e.clientX, e.clientY);
+      if (!hit) {
+        hideSpellMenu();
+        return;
+      }
+      const suggestions = spellcheckController.getSuggestions(hit.word, 6);
+
+      e.preventDefault();
+      e.stopPropagation();
+      showSpellMenu(e.clientX, e.clientY, hit.word, suggestions, hit.range);
+    }, true);
+    document.addEventListener('click', e => {
+      if (!spellMenu.classList.contains('visible')) return;
+      if (e.target instanceof Node && spellMenu.contains(e.target)) return;
+      hideSpellMenu();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') hideSpellMenu();
+    });
+    window.addEventListener('resize', () => {
+      if (findBar.classList.contains('visible')) positionFindBarUnderTopBar();
+    });
     document.addEventListener('keydown', e => {
         if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); savePost(); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        const selected = window.getSelection()?.toString().trim();
+        openFindBar(selected || lastFindQuery);
+        return;
+      }
+      if (e.key === 'F3') {
+        e.preventDefault();
+        if (!findBar.classList.contains('visible')) openFindBar(lastFindQuery);
+        runFind(!e.shiftKey);
+        return;
+      }
+      if (e.key === 'Escape' && findBar.classList.contains('visible')) {
+        e.preventDefault();
+        closeFindBar();
+      }
     });
 
     // -- Init -----------------------------------------------------------------
+    updateAiTagsButtonState();
     send('refreshPosts');
     send('ready');
   </script>

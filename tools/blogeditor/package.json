@@ -2,11 +2,18 @@
     "name": "blog-editor",
     "displayName": "Blog Editor",
     "description": "WYSIWYG Milkdown blog post editor for this workspace",
-    "version": "0.1.12",
+    "version": "0.1.32",
     "publisher": "local",
-    "engines": { "vscode": "^1.80.0" },
-    "categories": ["Other"],
-    "repository": { "type": "git", "url": "https://github.com/local/blog-editor" },
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/local/blog-editor"
+    },
     "activationEvents": [],
     "main": "./extension.js",
     "contributes": {
@@ -79,6 +86,8 @@
         }
     },
     "scripts": {
-        "package": "node ../build-dist.js && npx @vscode/vsce package --out blog-editor.vsix --no-dependencies"
+        "prepackage": "node ./bump-version.js",
+        "package": "node ./build-dist.js",
+        "postpackage": "npx @vscode/vsce package --out blog-editor.vsix --no-dependencies --allow-missing-repository"
     }
 }
