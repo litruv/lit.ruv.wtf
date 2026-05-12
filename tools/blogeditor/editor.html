@@ -780,7 +780,7 @@
      * @returns {Promise<string>}
      */
     async function uploadRemainingBlobs(markdown) {
-        const blobMatches = [...markdown.matchAll(/!\[([^\]]*)\]\((blob:[^)]+)\)/g)];
+        const blobMatches = [...markdown.matchAll(/!\[([^\]]*)\]\((blob:[^\s)]+)/g)];
         if (blobMatches.length === 0) return markdown;
         console.warn(`[Blog Editor] Found ${blobMatches.length} remaining blob URLs - uploading them`);
         const uploads = blobMatches.map(async m => {
@@ -820,7 +820,8 @@
         let result = markdown;
         for (const { blobUrl, relPath } of results) {
             if (relPath) {
-                result = result.replace(new RegExp(`!\\[([^\\]]*)\\]\\(${blobUrl.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\)`, 'g'), `![$1](${relPath})`);
+                result = result.replace(new RegExp(`!\\[([^\\]]*)\\]\\(${blobUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s+["'][\\s\\S]*?["'])?\\)`, 'g'), `![$1](${relPath}$2)`);
+
             }
         }
         return result;
@@ -1574,7 +1575,7 @@
 
         const rawDoc  = buildDocument();
         console.log('[Blog Editor] savePost called, cleaning image paths...');
-        const blobs   = [...rawDoc.matchAll(/!\[[^\]]*\]\((blob:[^)]+)\)/g)].map(m => m[1]);
+        const blobs   = [...rawDoc.matchAll(/!\[[^\]]*\]\((blob:[^\s)]+)/g)].map(m => m[1]);
         const unknown = [...new Set(blobs.filter(b => !blobToRelative.has(b)))];
 
         if (unknown.length > 0) {

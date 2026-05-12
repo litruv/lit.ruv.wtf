@@ -230,7 +230,7 @@ export class BlogComments {
     }
 
     /**
-     * Renders the "Commenting as [name] ✏️" identity bar.
+     * Renders the "Commenting as [name]" identity bar with editable text box.
      *
      * @returns {void}
      */
@@ -244,50 +244,67 @@ export class BlogComments {
         label.className = "blog-comments-identity-label";
         label.textContent = "Commenting as ";
 
-        const nameSpan = document.createElement("strong");
-        nameSpan.className = "blog-comments-identity-name";
-        nameSpan.textContent = this.#displayName;
-
-        const editBtn = document.createElement("button");
-        editBtn.type = "button";
-        editBtn.className = "blog-comments-identity-edit-btn";
-        editBtn.setAttribute("aria-label", "Edit display name");
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.className = "blog-comments-identity-name-input";
+        nameInput.value = this.#displayName;
+        nameInput.maxLength = 64;
+        nameInput.setAttribute("aria-label", "Display name");
 
         const remaining = this.#nickCooldownRemaining();
         if (remaining > 0) {
-            editBtn.disabled = true;
-            editBtn.title = `Wait ${remaining}s before changing name again`;
-            editBtn.textContent = `✏️ ${remaining}s`;
-            this.#startCooldownTick(editBtn);
+            nameInput.disabled = true;
+            nameInput.title = `Wait ${remaining}s before changing name again`;
+            this.#startCooldownTick(nameInput);
         } else {
-            editBtn.title = "Edit display name";
-            editBtn.textContent = "✏️";
-            editBtn.addEventListener("click", () => this.#startEditName());
+            nameInput.title = "Edit your display name";
         }
 
-        this.#identityEl.append(label, nameSpan, editBtn);
+        const updateWidth = () => {
+            const tempSpan = document.createElement("span");
+            tempSpan.style.visibility = "hidden";
+            tempSpan.style.position = "absolute";
+            tempSpan.style.fontSize = "0.85rem";
+            tempSpan.style.fontFamily = getComputedStyle(nameInput).fontFamily;
+            tempSpan.textContent = nameInput.value || nameInput.placeholder || "Guest";
+            document.body.appendChild(tempSpan);
+            const width = Math.min(250, Math.max(60, tempSpan.offsetWidth + 20));
+            document.body.removeChild(tempSpan);
+            nameInput.style.width = `${width}px`;
+        };
+
+        nameInput.addEventListener("input", updateWidth);
+        nameInput.addEventListener("blur", () => {
+            const newName = nameInput.value.trim();
+            if (newName && newName !== this.#displayName) {
+                this.#saveDisplayName(newName);
+            } else {
+                nameInput.value = this.#displayName;
+            }
+            updateWidth();
+        });
+
+        this.#identityEl.append(label, nameInput);
+        updateWidth();
     }
 
     /**
-     * Ticks the countdown text on the edit button without rebuilding the DOM.
+     * Ticks the countdown on the name input without rebuilding the DOM.
      *
-     * @param {HTMLButtonElement} editBtn
+     * @param {HTMLInputElement} nameInput
      * @returns {void}
      */
-    #startCooldownTick(editBtn) {
+    #startCooldownTick(nameInput) {
         if (this.#nickCooldownTimer !== null) clearInterval(this.#nickCooldownTimer);
         this.#nickCooldownTimer = setInterval(() => {
             const remaining = this.#nickCooldownRemaining();
             if (remaining <= 0) {
                 clearInterval(this.#nickCooldownTimer);
                 this.#nickCooldownTimer = null;
-                editBtn.disabled = false;
-                editBtn.title = "Edit display name";
-                editBtn.textContent = "✏️";
-                editBtn.addEventListener("click", () => this.#startEditName());
+                nameInput.disabled = false;
+                nameInput.title = "Edit your display name";
             } else {
-                editBtn.textContent = `✏️ ${remaining}s`;
-                editBtn.title = `Wait ${remaining}s before changing name again`;
+                nameInput.title = `Wait ${remaining}s before changing name again`;
             }
         }, 1000);
     }

@@ -477,7 +477,7 @@ svg.world-image {
     width: 100%;
     font-family: inherit;
     font-size: 10px;
-    padding: 3px 8px;
+    padding: 0 4px;
     background: rgba(137, 180, 250, 0.15);
     color: rgba(137, 180, 250, 0.9);
     border: 1px solid rgba(137, 180, 250, 0.3);
@@ -778,7 +778,7 @@ body.blog-page {
 .blog-post-peek-wrapper {
     position: absolute;
     top: 0;
-    width: 160px;
+    min-width: 60px;`n    max-width: 250px;
     height: 0;
     pointer-events: none;
     overflow: visible;
@@ -793,7 +793,7 @@ body.blog-page {
 }
 
 .blog-post-peek {
-    width: 160px;
+    min-width: 60px;`n    max-width: 250px;
     background: var(--node-bg);
     border: 1px solid var(--node-border);
     border-radius: 8px;
@@ -981,7 +981,7 @@ body.blog-page {
     border: 1px solid rgba(137, 180, 250, 0.35);
     background: rgba(137, 180, 250, 0.12);
     color: var(--ctp-sky);
-    padding: 3px 8px;
+    padding: 0 4px;
     border-radius: 999px;
     font-size: 0.78rem;
 }
@@ -1576,14 +1576,38 @@ body.blog-page {
     background: rgba(24, 24, 37, 0.85);
     border-radius: 6px;
     color: var(--ctp-text);
-    padding: 3px 8px;
+    padding: 0 4px;
     font-size: 0.85rem;
-    width: 160px;
+    min-width: 60px;`n    max-width: 250px;
 }
 
 .blog-comments-identity-input:focus {
     outline: none;
     border-color: var(--ctp-blue);
+}
+
+.blog-comments-identity-name-input {
+    border: 1px solid rgba(205, 214, 244, 0.25);
+    background: rgba(24, 24, 37, 0.85);
+    border-radius: 6px;
+    color: var(--ctp-text);
+    padding: 3px 8px;
+    font-size: 0.85rem;
+    min-width: 60px;
+    max-width: 250px;
+    vertical-align: baseline;
+    transition: border-color 0.15s, background 0.15s, width 0.15s;
+}
+
+.blog-comments-identity-name-input:focus {
+    outline: none;
+    border-color: var(--ctp-blue);
+    background: rgba(69, 71, 90, 0.6);
+}
+
+.blog-comments-identity-name-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .blog-comments-identity-save-btn {
@@ -3067,7 +3091,7 @@ body.blog-page {
     color: rgba(243, 139, 168, 0.9);
     border: 1px solid rgba(243, 139, 168, 0.3);
     border-radius: 4px;
-    padding: 3px 8px;
+    padding: 0 4px;
     font-size: 10px;
     cursor: pointer;
     transition: all 0.15s;
@@ -3124,7 +3148,7 @@ body.blog-page {
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 3px 8px;
+    padding: 0 4px;
     border-radius: 3px;
 }
 
