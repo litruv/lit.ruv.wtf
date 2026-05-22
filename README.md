@@ -13,6 +13,7 @@ Interactive terminal interface for lit.ruv.wtf - A retro-styled command line exp
 - **Command History**: Navigate through previous commands using up/down arrows
 - **Bluesky Integration**: Fetch and display recent posts from Bluesky
 - **Quick Links**: Easy access to documentation, GitHub, and social media
+- 
 
 ## Getting Started
 
